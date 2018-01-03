@@ -6,6 +6,9 @@ date: 2014-06-24 22:21:35 +0800
 comments: true
 ---
 
+* content
+{:toc}
+
 说明：来自互联网，如有版权问题，请告知本人将其撤下。
 
 来源：<http://works.jinbuguo.com/linux/understand_package_install.htm>l

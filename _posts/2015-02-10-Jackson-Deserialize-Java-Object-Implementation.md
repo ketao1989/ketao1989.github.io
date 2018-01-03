@@ -8,6 +8,9 @@ date: 2015-02-10 22:21:35 +0800
 comments: true
 ---
 
+* content
+{:toc}
+
 ## <a id="Intro">前言</a>
 
 上一篇博客，介绍了关于[Jackson 自定义序列化](http://ketao1989.github.io/posts/Jackson-Serialize-Java-Object-Implementation.html)，本文将介绍关于 Jackson 自定义反序列化。

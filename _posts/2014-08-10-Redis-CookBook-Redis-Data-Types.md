@@ -8,6 +8,9 @@ date: 2014-08-10 22:21:35 +0800
 comments: true
 ---
 
+* content
+{:toc}
+
 ## <a id="Problem">问题</a>
 
 首先，你需要了解`Redis`的数据类型，这样才能够为特定的应用提供更好的`Redis`使用方式和性能。

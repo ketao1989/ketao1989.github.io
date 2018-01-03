@@ -8,6 +8,9 @@ date: 2014-08-11 22:21:35 +0800
 comments: true
 ---
 
+* content
+{:toc}
+
 ## <a id="Problem">问题</a>
 
 在我们案例里，我们将实现一个数据模型和交互来支持Oauth v1.0a API。一般常常是基于MySQL或者其他的RDBMS实现，但是我们可以利用Redis的数据结构更高效的实现Oauth协议。

@@ -7,6 +7,9 @@ date: 2014-06-04 22:21:35 +0800
 comments: true
 ---
 
+* content
+{:toc}
+
 ## <a id="Intro">前言</a>
 
 最近，系统从 `windows`切换到`Ubuntu`，一些开发软件需要重新安装和配置。但是，众所周知，`windows`上的开发软件客户端比`ubuntu`等linux系系统使用要便捷和傻瓜得多，所以切换到`ubuntu`有很多软件需要安装，但是这些软件需要进行代码编译，就在这里记录下。

@@ -8,6 +8,8 @@ categories:
  - GC
 ---
 
+* content
+{:toc}
 
 ## <a id="Preface">序</a>
 

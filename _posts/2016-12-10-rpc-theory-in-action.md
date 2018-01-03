@@ -9,6 +9,9 @@ categories:
   - thrift
 ---
 
+* content
+{:toc}
+
 > 远程过程调用(Remote Procedure Call，简称RPC)，在微服务大行其道的今天，得到了广泛的应用。因此，在分布式系统服务群中开发应用，了解RPC一些原理和实现架构，还是很有必要的。本文，将从大的框架层面来聊聊RPC原理和实现。
 
 ## 前言

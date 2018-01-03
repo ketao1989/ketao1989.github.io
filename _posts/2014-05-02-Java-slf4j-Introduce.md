@@ -8,6 +8,9 @@ date: 2014-05-02 22:21:35 +0800
 comments: true
 ---
 
+* content
+{:toc}
+
 ## <a id="Intro">前言</a>
 slf4j:简洁的java日志统一接口(Simple Logging Facade for Java),顾名思义,就是一个使用Facade设计模式实现的面向java Logging框架的接口开源包. 
 其和java数据库连接工具包JDBC很像, 在JDBC框架中, 各个不同数据库连接器分别针对不同数据库系统来实现对应的连接操作, 而普通程序员只需要使用统一的JDBC接口而不需要关注具体底层使用的数据库类型, 或者针对不同的数据库系统写各种兼容代码.

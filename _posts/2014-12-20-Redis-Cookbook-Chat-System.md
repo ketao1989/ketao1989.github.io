@@ -8,6 +8,9 @@ date: 2014-12-20 22:21:35 +0800
 comments: true
 ---
 
+* content
+{:toc}
+
 ##  <a id="Problem">问题</a>
 
 想要借助 `Redis`的`PUB/SUB`功能，使用node.js和Socket.io实现一个轻量级的实时聊天系统。

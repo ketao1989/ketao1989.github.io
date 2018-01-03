@@ -6,6 +6,9 @@ date: 2014-11-24 22:21:35 +0800
 comments: true
 ---
 
+* content
+{:toc}
+
 插播广告：ubuntu系统的sublime text 3 中文无法输入，需要修复一些so库。参考：<http://jingyan.baidu.com/article/f3ad7d0ff8731609c3345b3b.html>
 
 

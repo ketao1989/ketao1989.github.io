@@ -7,6 +7,9 @@ date: 2014-06-27 22:21:35 +0800
 comments: true
 ---
 
+* content
+{:toc}
+
 ## <a id="Intro">前言</a>
 
 Intelij IDEA一些快捷键和 Eclipse不同，所以对一些快捷键进行记录，备查。

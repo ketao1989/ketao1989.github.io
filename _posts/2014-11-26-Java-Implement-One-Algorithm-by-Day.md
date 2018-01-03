@@ -6,6 +6,9 @@ date: 2014-11-26 22:21:35 +0800
 comments: true
 ---
 
+* content
+{:toc}
+
 说明：算法背景和解法来自<https://github.com/ketao1989/The-Art-Of-Programming-By-July.git>,如有版权问题，请留言告知！
 
 ## <a id="Intro">前言</a>

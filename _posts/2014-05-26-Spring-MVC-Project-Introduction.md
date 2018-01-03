@@ -8,6 +8,9 @@ date: 2014-05-26 22:21:35 +0800
 comments: true
 ---
 
+* content
+{:toc}
+
 ## <a id="Intro">前言</a>
 
 走入社会工作接近一年了,感慨颇多.一年前的现在,自己对java知之甚少,更不知道怎么去创建一个满足`spring mvc`架构思想的web项目。最近，为了学习`Spring MVC`框架的实现原理，首先新建了一个web项目，该项目包含 `Spring + Mybatis`涉及数据库，DAO，service，API，业务，controller多个模块。

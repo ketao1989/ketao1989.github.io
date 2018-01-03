@@ -7,6 +7,9 @@ date: 2014-06-10 22:21:35 +0800
 comments: true
 ---
 
+* content
+{:toc}
+
 ## <a id="Intro">前言</a>
 
 使用`Ubuntu`系统时，由于系统是默认安装的，所以机器名没有修改成一个合适的名字。在`Ubuntu`下通过命令`sudo vim /etc/hostname`来修改成自己想要的命令，然后注销用户，重新进入系统。

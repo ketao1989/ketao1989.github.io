@@ -8,6 +8,9 @@ date: 2014-05-24 22:21:35 +0800
 comments: true
 ---
 
+* content
+{:toc}
+
 ## <a id="Intro">前言</a>
 
 在并发编程网上,关于ForkJoin框架介绍得很好，推荐去看: [Fork/Join框架](http://ifeve.com/fork-join-1/) 本篇博文只是对一些地方进行补充说明(为了文章连续性，会借鉴一些介绍文字).

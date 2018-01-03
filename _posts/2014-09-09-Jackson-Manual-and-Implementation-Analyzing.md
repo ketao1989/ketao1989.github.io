@@ -8,6 +8,9 @@ date: 2014-09-09 22:21:35 +0800
 comments: true
 ---
 
+* content
+{:toc}
+
 ## <a id="Intro">前言</a>
 
 Json数据格式这两年发展的很快，其声称相对XML格式有很对好处:

@@ -9,6 +9,9 @@ categories:
   - Linux
 ---
 
+* content
+{:toc}
+
 ## <a id="Intro">前言</a>
 
 `Nginx`是一款面向性能设计的HTTP服务器,其性能相对于其他服务器表现优异。内部使用异步的事件处理模型，比如linux平台的`epoll`事件模型，unix平台的`kqueue`事件模型等。在Nginx源码的`src/event/modules`目录下，其对各个平台不同的异步模型进行了二次封装。此外，Nginx在代码实现的时候，会考虑到众多细节优化。比如：根据CPU亲缘性来分配进程和事件，避免CPU级的缓存失效；比如字符串比较时，四字节转换为整数来进行快速指令级比较，等等。
