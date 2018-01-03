@@ -51,3 +51,22 @@
 <script type="text/javascript" src="http://v2.uyan.cc/code/uyan.js?uid={{site.youyan_uid}}"></script>
 <!-- UY END -->
 {% endif %}
+
+
+{% if site.gitment %}
+<div id="container"></div>
+<link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
+<script src="https://imsun.github.io/gitment/dist/gitment.browser.js"></script>
+<script>
+var gitment = new Gitment({
+//   id: '页面 ID', // 可选。默认为 location.href
+  owner: 'ketao1989',
+  repo: 'blog.comments',
+  oauth: {
+    client_id: '3ca5442f28dca07a38f7',
+    client_secret: '926f6564f8fabd944def1eb55898c0dcdf390a99',
+  },
+})
+gitment.render('container')
+</script>
+{% endif %}
