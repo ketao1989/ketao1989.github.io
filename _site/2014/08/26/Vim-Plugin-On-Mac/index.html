@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Mac OS系统Vim酷炫插件安装</title>
+    <meta name="description" content="前言vim工具，对于一个程序猿来讲，是使用非常普遍的。以前在Ubuntu上安装ma6174大神提供的安装脚本，一键安装一些非常好用的插件，但是对于Mac来说，一直不能很好地执行一件安装。这里，记录一下，使用大神提供的安装脚本出现问题的解决方法。Vim一键安装脚本ma6174大神提供的安装脚本，不能直接在Mac 上...">
+
+    <link rel="shortcut icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://at.alicdn.com/t/font_8v3czwksspqlg14i.css">
+    <link rel="stylesheet" href="/css/main.css ">
+    <link rel="canonical" href="http://localhost:4000/2014/08/26/Vim-Plugin-On-Mac/">
+    <link rel="alternate" type="application/rss+xml" title="柯小小西" href="http://localhost:4000/feed.xml ">
+
+
+    <script>
+    // 百度统计代码
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?a9b0f47a0e50b02dafb8a7088436a9bc";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+    </script>
+
+
+
+
+</head>
+
+
+  <body>
+
+    <header id="top">
+    <div class="wrapper">
+        <a href="/" class="brand">柯小小西</a>
+        <small>留着一点点技术积蓄</small>
+        <button id="headerMenu" class="menu"><i class="fa fa-bars"></i></button>
+        <nav id="headerNav">
+            <ul>
+                <li>
+                    
+                    <a href="/">
+                    
+                        <i class="fa fa-home"></i>Home
+                    </a>
+                </li>
+
+                
+                    
+                    <li>
+                        
+                        <a href="/archive/">
+                        
+                            <i class="fa fa-archive"></i>Archives
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/category/">
+                        
+                            <i class="fa fa-th-list"></i>Categories
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/tag/">
+                        
+                            <i class="fa fa-tags"></i>Tags
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/about/">
+                        
+                            <i class="fa fa-heart"></i>About
+                        </a>
+                    </li>
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+        <div class="page clearfix" post>
+    <div class="left">
+        <h1>Mac OS系统Vim酷炫插件安装</h1>
+        <div class="label">
+
+            <div class="label-card">
+                <i class="fa fa-calendar"></i>2014-08-26
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+            
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#tools" title="Category: tools" rel="category">tools</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+            </div>
+
+            <div class="label-card">
+            
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+            </div>
+
+        </div>
+        <hr>
+        <article itemscope itemtype="http://schema.org/BlogPosting">
+        <h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p>vim工具，对于一个程序猿来讲，是使用非常普遍的。以前在Ubuntu上安装<code class="highlighter-rouge">ma6174</code>大神提供的安装脚本，一键安装一些非常好用的插件，但是对于Mac来说，一直不能很好地执行一件安装。</p>
+
+<p>这里，记录一下，使用大神提供的安装脚本出现问题的解决方法。</p>
+
+<h2 id="vim一键安装脚本"><a id="Shell">Vim一键安装脚本</a></h2>
+
+<p><code class="highlighter-rouge">ma6174</code>大神提供的安装脚本，不能直接在Mac 上运行，直接copy到本地，脚本为：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="c">#!/bin/bash</span>
+
+brew <span class="nb">install </span>vim ctags git astyle
+<span class="nb">sudo </span><span class="nv">ARCHFLAGS</span><span class="o">=</span><span class="nt">-Wno-error</span><span class="o">=</span>unused-command-line-argument-hard-error-in-future easy_install twisted
+
+<span class="nb">sudo </span>easy_install <span class="nt">-ZU</span> autopep8 twisted
+<span class="nb">sudo ln</span> <span class="nt">-s</span> /usr/bin/ctags /usr/local/bin/ctags
+<span class="nb">mv</span> <span class="nt">-f</span> ~/vim ~/vim_old
+<span class="nb">cd</span> ~/ <span class="o">&amp;&amp;</span> git clone https://github.com/ma6174/vim.git
+<span class="nb">mv</span> <span class="nt">-f</span> ~/.vim ~/.vim_old
+<span class="nb">mv</span> <span class="nt">-f</span> ~/vim ~/.vim
+<span class="nb">mv</span> <span class="nt">-f</span> ~/.vimrc ~/.vimrc_old
+<span class="nb">mv</span> <span class="nt">-f</span> ~/.vim/.vimrc ~/
+git clone https://github.com/gmarik/vundle.git ~/.vim/bundle/vundle
+vim vim_mac <span class="nt">-c</span> <span class="s2">"BundleInstall"</span> <span class="nt">-c</span> <span class="s2">"q"</span> <span class="nt">-c</span> <span class="s2">"q"</span>
+<span class="nb">rm </span>vim_mac
+<span class="nb">echo</span> <span class="s2">"安装完成"</span>
+            
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Note：上面的脚本是直接从一键安装命令中的build脚本部分拷贝的，因为我的Mac无法直接执行一键安装命令。此外，Mac必须安装HomeBrew工具，关于该工具的安装使用，请参考 <a href="http://brew.sh/index_zh-cn.html">http://brew.sh/index_zh-cn.html</a></p>
+  </blockquote>
+</blockquote>
+
+<!-- more -->
+
+<h2 id="手动安装zope"><a id="Zope">手动安装zope</a></h2>
+
+<p>在上面的脚本安装完成之后，控制台执行<code class="highlighter-rouge">vim</code>命令，会报错：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+Error detected while processing /Users/rum/.vim/plugin/client.vim:
+line 314:
+Traceback (most recent call last):
+File "", line 2, in 
+File "/Library/Python/2.7/site-packages/Twisted-14.0.0-py2.7-macosx-10.9-intel.egg/twisted/init.py", line 53, in 
+checkRequirements()
+File "/Library/Python/2.7/site-packages/Twisted-14.0.0-py2.7-macosx-10.9-intel.egg/twisted/__init_.py", line 37, in _checkRequirements
+raise ImportError(required + ": no module named zope.interface.")
+ImportError: Twisted requires zope.interface 3.6.0 or later: no module named zope.interface.
+
+</code></pre></div></div>
+
+<p>然后，Google搜了各种方法都不生效，无奈执行，只能源码安装了。安装起来很简单，直接执行就好了。</p>
+
+<ol>
+  <li>源码下载地址：<a href="https://pypi.python.org/packages/source/z/zope.interface/zope.interface-4.1.0.tar.gz#md5=ac63de1784ea0327db876c908af07a94">https://pypi.python.org/packages/source/z/zope.interface/zope.interface-4.1.0.tar.gz#md5=ac63de1784ea0327db876c908af07a94</a></li>
+  <li>解压缩之后，执行安装命令:<code class="highlighter-rouge">sudo python setup.py install</code>。</li>
+</ol>
+
+<p>完成之后，在执行	<code class="highlighter-rouge">vim</code>命令，就不会报错了。</p>
+
+<h2 id="后记"><a id="End">后记</a></h2>
+
+<p>安装完插件之后，果然用起来十分爽哇！！此外，<code class="highlighter-rouge">ma6174</code>大神还提供了一些使用<code class="highlighter-rouge">Tips</code>。</p>
+
+<h3 id="编写python程序">编写python程序</h3>
+
+<ol>
+  <li>自动插入头信息：
+    <ul>
+      <li><code class="highlighter-rouge"><span class="c">#!/usr/bin/env python</span></code></li>
+      <li><code class="highlighter-rouge"># coding=utf-8</code>
+    - 输入<code class="highlighter-rouge">.</code>或按<code class="highlighter-rouge">TAB</code>键会触发代码补全功能
+    - <code class="highlighter-rouge">:w</code>保存代码之后会自动检查代码错误与规范
+    - 按<code class="highlighter-rouge">F6</code>可以按<code class="highlighter-rouge">pep8</code>格式对代码格式优化
+    - 按<code class="highlighter-rouge">F5</code>可以一键执行代码</li>
+    </ul>
+  </li>
+</ol>
+
+<h3 id="多窗口操作">多窗口操作</h3>
+
+<ol>
+  <li>使用<code class="highlighter-rouge">:sp + 文件名</code>可以水平分割窗口
+    <ul>
+      <li>使用<code class="highlighter-rouge">:vs + 文件名</code>可以垂直分割窗口</li>
+      <li>使用<code class="highlighter-rouge">Ctrl + w</code>可以快速在窗口间切换</li>
+    </ul>
+  </li>
+</ol>
+
+<h3 id="编写markdown文件">编写markdown文件</h3>
+
+<ol>
+  <li>编写markdown文件(<code class="highlighter-rouge">*.md</code>)的时候，在normal模式下按 <code class="highlighter-rouge">md</code> 即可在当前目录下生成相应的<code class="highlighter-rouge">html</code>文件
+    <ul>
+      <li>生成之后还是在normal模式按<code class="highlighter-rouge">fi</code>可以使用firefox打开相应的<code class="highlighter-rouge">html</code>文件预览</li>
+      <li>当然也可以使用万能的<code class="highlighter-rouge">F5</code>键来一键转换并打开预览</li>
+      <li>如果打开过程中屏幕出现一些混乱信息，可以按<code class="highlighter-rouge">Ctrl + l</code>来恢复</li>
+    </ul>
+  </li>
+</ol>
+
+<h3 id="快速注释">快速注释</h3>
+
+<ul>
+  <li>按<code class="highlighter-rouge"> \ </code> 可以根据文件类型自动注释</li>
+</ul>
+
+        </article>
+        <hr>
+
+        
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+        
+
+        <div class="post-recent">
+    <div class="pre">
+        
+        <p><strong>上一篇</strong> <a href="/2014/08/11/Redis-Cookbook-Implementing-OAuth/">Redis Cookbook 之 基于Redis 实现Oauth协议</a></p>
+        
+    </div>
+    <div class="nex">
+
+        
+        <p><strong>下一篇</strong> <a href="/2014/09/09/Jackson-Manual-and-Implementation-Analyzing/">Jackson 工具类使用及配置指南</a></p>
+        
+    </div>
+</div>
+
+
+        <h2 id="comments">Comments</h2>
+        
+
+
+<div id="disqus_thread"></div>
+<script>
+    /**
+     * RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     * LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+
+    var disqus_config = function() {
+        this.page.url = 'http://localhost:4000/2014/08/26/Vim-Plugin-On-Mac/'; // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = 'http://localhost:4000/2014/08/26/Vim-Plugin-On-Mac/'; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+
+    (function() { // DON'T EDIT BELOW THIS LINE
+        var d = document,
+            s = d.createElement('script');
+
+        s.src = '//taocoder.disqus.com/embed.js';
+
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+
+
+
+    </div>
+    <button class="anchor"><i class="fa fa-anchor"></i></button>
+    <div class="right">
+        <div class="wrap">
+
+            <!-- Content -->
+            <div class="side content">
+                <div>
+                    Content
+                </div>
+                <ul id="content-side" class="content-ul">
+                    
+                    <li><a href="#comments">Comments</a></li>
+                </ul>
+            </div>
+            <!-- 其他div框放到这里 -->
+            <!-- <div class="side">bbbb</div> -->
+        </div>
+    </div>
+</div>
+<script>
+/**
+ * target _blank
+ */
+(function() {
+    var aTags = document.querySelectorAll('article a:not([id])')
+    for (var i = 0; i < aTags.length; i++) {
+        aTags[i].setAttribute('target', '_blank')
+    }
+}());
+</script>
+<script src="/js/pageContent.js " charset="utf-8"></script>
+
+
+    <footer class="site-footer">
+
+
+    <div class="wrapper">
+
+        <p class="description">
+             本站保留着一点点技术积蓄！ 
+        </p>
+        <p class="contact">
+            Contact me at: 
+            <a href="https://github.com/ketao1989" title="GitHub"><i class="fa fa-github" aria-hidden="true"></i></a>  
+            <a href="mailto:ketao1989@126.com" title="email"><i class="fa fa-envelope-o" aria-hidden="true"></i></a>  
+            <a href="http://weibo.com/柯小小西" title="Weibo"><i class="fa fa-weibo" aria-hidden="true"></i></a>       
+        </p>
+        <p>
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次，本站访客数<span id="busuanzi_value_site_uv"></span>人次，本文总阅读量<span id="busuanzi_value_page_pv"></span>次
+        </p>
+        <p class="power">
+            <span>
+                Site powered by <a href="https://jekyllrb.com/">Jekyll</a> & <a href="https://pages.github.com/">Github Pages</a>.
+            </span>
+            <span>
+                Theme designed by <a href="https://github.com/Gaohaoyang">HyG</a>.
+            </span>
+        </p>
+    </div>
+</footer>
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+    <div class="back-to-top">
+    <a href="#top" data-scroll>
+        <i class="fa fa-arrow-up" aria-hidden="true"></i>
+    </a>
+</div>
+
+    <script src=" /js/main.js " charset="utf-8"></script>
+    <script src=" /js/smooth-scroll.min.js " charset="utf-8"></script>
+    <script type="text/javascript">
+      smoothScroll.init({
+        speed: 500, // Integer. How fast to complete the scroll in milliseconds
+        easing: 'easeInOutCubic', // Easing pattern to use
+        offset: 20, // Integer. How far to offset the scrolling anchor location in pixels
+      });
+    </script>
+    <!-- <script src=" /js/scroll.min.js " charset="utf-8"></script> -->
+  </body>
+
+</html>

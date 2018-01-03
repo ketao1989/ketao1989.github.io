@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Redis Cookbook 之 基于Redis 实现一个聊天系统</title>
+    <meta name="description" content="问题想要借助 Redis的PUB/SUB功能，使用node.js和Socket.io实现一个轻量级的实时聊天系统。解决方法由于Redis 天生就支持发布订阅(pub/sub)模式，所以我们可以很容易就使用Node.js 和 Socket.IO来快速创建一个实时的聊天系统。发布订阅模式，其实就是接收者订阅某种特定模...">
+
+    <link rel="shortcut icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://at.alicdn.com/t/font_8v3czwksspqlg14i.css">
+    <link rel="stylesheet" href="/css/main.css ">
+    <link rel="canonical" href="http://localhost:4000/2014/12/20/Redis-Cookbook-Chat-System/">
+    <link rel="alternate" type="application/rss+xml" title="柯小小西" href="http://localhost:4000/feed.xml ">
+
+
+    <script>
+    // 百度统计代码
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?a9b0f47a0e50b02dafb8a7088436a9bc";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+    </script>
+
+
+
+
+</head>
+
+
+  <body>
+
+    <header id="top">
+    <div class="wrapper">
+        <a href="/" class="brand">柯小小西</a>
+        <small>留着一点点技术积蓄</small>
+        <button id="headerMenu" class="menu"><i class="fa fa-bars"></i></button>
+        <nav id="headerNav">
+            <ul>
+                <li>
+                    
+                    <a href="/">
+                    
+                        <i class="fa fa-home"></i>Home
+                    </a>
+                </li>
+
+                
+                    
+                    <li>
+                        
+                        <a href="/archive/">
+                        
+                            <i class="fa fa-archive"></i>Archives
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/category/">
+                        
+                            <i class="fa fa-th-list"></i>Categories
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/tag/">
+                        
+                            <i class="fa fa-tags"></i>Tags
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/about/">
+                        
+                            <i class="fa fa-heart"></i>About
+                        </a>
+                    </li>
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+        <div class="page clearfix" post>
+    <div class="left">
+        <h1>Redis Cookbook 之 基于Redis 实现一个聊天系统</h1>
+        <div class="label">
+
+            <div class="label-card">
+                <i class="fa fa-calendar"></i>2014-12-20
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+            
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Redis" title="Category: Redis" rel="category">Redis</a>&nbsp;
+    
+        <a href="/category/#Redis Cookbook" title="Category: Redis Cookbook" rel="category">Redis Cookbook</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+            </div>
+
+            <div class="label-card">
+            
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+            </div>
+
+        </div>
+        <hr>
+        <article itemscope itemtype="http://schema.org/BlogPosting">
+        <h2 id="问题"><a id="Problem">问题</a></h2>
+
+<p>想要借助 <code class="highlighter-rouge">Redis</code>的<code class="highlighter-rouge">PUB/SUB</code>功能，使用node.js和Socket.io实现一个轻量级的实时聊天系统。</p>
+
+<h2 id="解决方法"><a id="Solution">解决方法</a></h2>
+
+<p>由于Redis 天生就支持发布订阅(pub/sub)模式，所以我们可以很容易就使用<code class="highlighter-rouge">Node.js</code> 和 <code class="highlighter-rouge">Socket.IO</code>来快速创建一个实时的聊天系统。</p>
+
+<p>发布订阅模式，其实就是接收者订阅某种特定模式的消息(比如，发送到某个指定channel的消息)，而发送者发送一个消息到消息云上。当一个消息到达云上的时候，订阅了这一种类的客户端就会获得消息。这中发布订阅模式，然后就可以允许发送者和接收客户端在不知道彼此的情况下，亲密结对交流。而他们仅仅需要以一种既定的模式发送消息和接收匹配类型的消息即可。</p>
+
+<p><code class="highlighter-rouge">Redis</code>直接支持<code class="highlighter-rouge">pub/sub</code>模式，意味着其可以让接收客户端订阅指定的匹配消息频道channel，以及发布消息到一个给定的频道channel。这意味着，我们可以很简单地创建像<code class="highlighter-rouge">chat:cars</code>的聊车频道；或者像<code class="highlighter-rouge">chat:sausage</code>这种关于食物的谈话。此外，频道channel的命名跟Redis 的keySpace无关，所以不用担心会存在某些冲突情况。下面给出，Redis支持的一些命令：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    * PUBLISH：发布消息到指定的频道；
+
+    * SUBSCRIBE：订阅一个指定频道的消息；
+
+    * UNSUBSCRIBE：取消订阅一个指定频道；
+
+    * PSUBSCRIBE：订阅一个满足给定模式的频道集；
+
+    * PUNSUBSCRIBE：取消订阅满足指定模式的频道集。
+</code></pre></div></div>
+
+<p>拥有上面这些知识，为在应用程序逻辑部分之间的终端用户或者流消息实现一个聊天和统计系统，其实还是很琐碎的。
+<code class="highlighter-rouge">pub/sub</code>甚至可以被用来作为一个内建的强壮阻塞队列系统。接下来看看，如何去实现这么一个消息聊天系统吧。</p>
+
+<p>在服务端，<code class="highlighter-rouge">Node.js</code> 和 <code class="highlighter-rouge">Socket.IO</code>将来实现网络层，然后Redis将作为一个在客户端之间递交消息的<code class="highlighter-rouge">pub/sub</code>功能的实现。在客户端，我们使用jQuery来处理消息，然后发送数据到服务器上。</p>
+
+<!-- more -->
+
+<h2 id="讨论"><a id="Discussion">讨论</a></h2>
+
+<p>由于本文使用Node.js来实现一个聊天系统，所以我们假设你已经安装了node.js，并且我们也希望你可以按顺序安装支持我们聊天系统所需要的<code class="highlighter-rouge">node库(Socket.IO and Redis)</code>。</p>
+
+<h3 id="初始设置">初始设置</h3>
+<p>安装所需要的第三方库：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    npm install socket.io
+
+    npm install redis
+</code></pre></div></div>
+
+<h3 id="服务端代码实现">服务端代码实现</h3>
+
+<p>在服务端，我们正在运行<code class="highlighter-rouge">Redis</code>并且创建了一个运行node.js的javaScript文件。该代码主要负责建立到Redis服务之间的链接conn，然后一直监听来自clients端连接请求的端口。因此，我们创建一个javascript代码文件<code class="highlighter-rouge">chat.js</code>:</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+        
+    <span class="kd">var</span> <span class="nx">http</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'http'</span><span class="p">),</span> 
+    <span class="nx">io</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'socket.io'</span><span class="p">),</span> 
+    <span class="nx">redis</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'redis'</span><span class="p">),</span> 
+    <span class="nx">rc</span> <span class="o">=</span> <span class="nx">redis</span><span class="p">.</span><span class="nx">createClient</span><span class="p">();</span>
+
+</code></pre></div></div>
+
+<p>上面的代码，可以建立redis连接，和引入http,socket.io,redis库。接下来，我们需要设置一个简单地server，让客户端可以连接，请求数据：</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+        
+    <span class="nx">server</span> <span class="o">=</span> <span class="nx">http</span><span class="p">.</span><span class="nx">createServer</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">){</span>
+        <span class="c1">// we may want to redirect a client that hits this page </span>
+        <span class="c1">// to the chat URL instead</span>
+        <span class="nx">res</span><span class="p">.</span><span class="nx">writeHead</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="p">{</span><span class="s1">'Content-Type'</span><span class="p">:</span> <span class="s1">'text/html'</span><span class="p">});</span> 
+        <span class="nx">res</span><span class="p">.</span><span class="nx">end</span><span class="p">(</span><span class="s1">'&lt;h1&gt;Hello world&lt;/h1&gt;'</span><span class="p">);</span>
+    <span class="p">});</span>
+    
+    <span class="c1">// Set up our server to listen on 8000 and serve socket.io server.listen(8000);</span>
+    <span class="kd">var</span> <span class="nx">socketio</span> <span class="o">=</span> <span class="nx">io</span><span class="p">.</span><span class="nx">listen</span><span class="p">(</span><span class="nx">server</span><span class="p">);</span>
+
+</code></pre></div></div>
+
+<p>接下来，建立连接了就可以开始使用node.js来完成开发连接redis，客户端订阅某个channel，接收到消息处理动作等功能。所以，接下来使用redis来完成订阅消息：</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+        
+    <span class="c1">// if the Redis server emits a connect event, it means we're ready to work, </span>
+    <span class="c1">// which in turn means we should subscribe to our channels. Which we will. rc.on("connect", function() {</span>
+        <span class="nx">rc</span><span class="p">.</span><span class="nx">subscribe</span><span class="p">(</span><span class="s2">"chat"</span><span class="p">);</span>
+        <span class="c1">// we could subscribe to more channels here </span>
+    <span class="p">});</span>
+        <span class="c1">// When we get a message in one of the channels we're subscribed to, // we send it over to all connected clients.</span>
+    <span class="nx">rc</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s2">"message"</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">channel</span><span class="p">,</span> <span class="nx">message</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Sending: "</span> <span class="o">+</span> <span class="nx">message</span><span class="p">);</span>
+        <span class="nx">socketio</span><span class="p">.</span><span class="nx">sockets</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">'message'</span><span class="p">,</span> <span class="nx">message</span><span class="p">);</span> 
+    <span class="p">})</span>
+
+</code></pre></div></div>
+
+<p>ok，如你所见，这段代码非常简单。其实现，就是我们在特定的channel监听消息，当有消息接收到的时候，服务端就广播给所有订阅该消息的客户端。</p>
+
+<h3 id="客户端代码实现">客户端代码实现</h3>
+
+<p>完成了server端部分的开发，接下来完成一个小页面来连接Node.js，建立客户端的Socket.IO，然后处理进来和出去的消息。所以我们创建了一个很简单的<code class="highlighter-rouge">HTML5</code>页面：</p>
+
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+        
+    <span class="cp">&lt;!doctype html&gt;</span> <span class="nt">&lt;html</span> <span class="na">lang=</span><span class="s">"en"</span><span class="nt">&gt;</span> <span class="nt">&lt;head&gt;</span>
+    <span class="nt">&lt;meta</span> <span class="na">charset=</span><span class="s">"utf-8"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;title&gt;</span>Chat with Redis<span class="nt">&lt;/title&gt;</span> <span class="nt">&lt;/head&gt;</span>
+    <span class="nt">&lt;body&gt;</span>
+    <span class="nt">&lt;ul</span> <span class="na">id=</span><span class="s">"messages"</span><span class="nt">&gt;</span>
+    <span class="c">&lt;!-- chat messages go here --&gt;</span> <span class="nt">&lt;/ul&gt;</span>
+    <span class="nt">&lt;/body&gt;</span> <span class="nt">&lt;/html&gt;</span>
+
+</code></pre></div></div>
+
+<p>现在我们需要引入两个非常重要的库来获得想要的功能：jQuery 和 Socket.IO：</p>
+
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+        
+    <span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"https://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"</span><span class="nt">&gt;&lt;/script&gt;</span> 
+    <span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"http://localhost:8000/socket.io/socket.io.js"</span><span class="nt">&gt;&lt;/script&gt;</span>
+
+</code></pre></div></div>
+
+<p>现在我们准备好了从页面连接Node.js，然后开始监听处理消息。在页面的头部增加下面的代码：</p>
+
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+        
+    <span class="nt">&lt;script&gt;</span>
+    <span class="kd">var</span> <span class="nx">socket</span> <span class="o">=</span> <span class="nx">io</span><span class="p">.</span><span class="nx">connect</span><span class="p">(</span><span class="s1">'localhost'</span><span class="p">,</span> <span class="p">{</span> <span class="na">port</span><span class="p">:</span> <span class="mi">8000</span> <span class="p">});</span>
+    <span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'message'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">){</span>
+        <span class="kd">var</span> <span class="nx">li</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Element</span><span class="p">(</span><span class="s1">'li'</span><span class="p">).</span><span class="nx">insert</span><span class="p">(</span><span class="nx">data</span><span class="p">);</span>
+        <span class="nx">$</span><span class="p">(</span><span class="s1">'messages'</span><span class="p">).</span><span class="nx">insert</span><span class="p">({</span><span class="na">top</span><span class="p">:</span> <span class="nx">li</span><span class="p">});</span> 
+    <span class="p">});</span>
+    <span class="nt">&lt;/script&gt;</span>
+
+</code></pre></div></div>
+
+<p>这个javascript代码片段表示，客户端使用<code class="highlighter-rouge">Socket.IO</code>连接我们的node.js实例8000端口，然后开始监听消息事件。当一个消息到达时，它创建一个新的list元素，并且把它添加到我们事先已经建好的未排序list中。</p>
+
+<p>到这里，还剩下的，就是客户端发送消息了。和server端一样，我们使用<code class="highlighter-rouge">Socket.IO emit</code>方法，如下所示：</p>
+
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+        
+    <span class="nt">&lt;form</span> <span class="na">id=</span><span class="s">"chatform"</span> <span class="na">action=</span><span class="s">""</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;input</span> <span class="na">id=</span><span class="s">"chattext"</span> <span class="na">type=</span><span class="s">"text"</span> <span class="na">value=</span><span class="s">""</span> <span class="nt">/&gt;</span> 
+        <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"submit"</span> <span class="na">value=</span><span class="s">"Send"</span> <span class="nt">/&gt;</span>
+    <span class="nt">&lt;/form&gt;</span>
+    
+    
+    <span class="nt">&lt;script&gt;</span> 
+    <span class="nx">$</span><span class="p">(</span><span class="s1">'#chatform'</span><span class="p">).</span><span class="nx">submit</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+        <span class="nx">socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">'message'</span><span class="p">,</span> <span class="nx">$</span><span class="p">(</span><span class="s1">'chattext'</span><span class="p">).</span><span class="nx">val</span><span class="p">());</span> 
+        <span class="nx">$</span><span class="p">(</span><span class="s1">'chattext'</span><span class="p">).</span><span class="nx">val</span><span class="p">(</span><span class="s2">""</span><span class="p">);</span> <span class="c1">// cleanup the field </span>
+        <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+    <span class="p">});</span> 
+    <span class="nt">&lt;/script&gt;</span>
+
+</code></pre></div></div>
+
+<p>当一个用户写东西到<code class="highlighter-rouge">form</code>中，然后点击<code class="highlighter-rouge">Send</code>，jQuery将会使用我们的socket变量emit发送一个消息事件到服务器端，服务器然后会广播这条消息给其他所有人。最后返回false表示消息事件真的被发送提交出去了。提交的这个动作是由<code class="highlighter-rouge">Socket.IO</code>完成的。</p>
+
+
+        </article>
+        <hr>
+
+        
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+        
+
+        <div class="post-recent">
+    <div class="pre">
+        
+        <p><strong>上一篇</strong> <a href="/2014/12/19/Guava-Cache-Guide-And-Implement-Analyse/">Guava LocalCache 缓存介绍及实现源码深入剖析</a></p>
+        
+    </div>
+    <div class="nex">
+
+        
+        <p><strong>下一篇</strong> <a href="/2014/12/28/Redis-Cookbook-Inverted-Index-Text-Search/">Redis Cookbook 之 基于Redis 实现倒序索引全文搜索</a></p>
+        
+    </div>
+</div>
+
+
+        <h2 id="comments">Comments</h2>
+        
+
+
+<div id="disqus_thread"></div>
+<script>
+    /**
+     * RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     * LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+
+    var disqus_config = function() {
+        this.page.url = 'http://localhost:4000/2014/12/20/Redis-Cookbook-Chat-System/'; // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = 'http://localhost:4000/2014/12/20/Redis-Cookbook-Chat-System/'; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+
+    (function() { // DON'T EDIT BELOW THIS LINE
+        var d = document,
+            s = d.createElement('script');
+
+        s.src = '//taocoder.disqus.com/embed.js';
+
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+
+
+
+    </div>
+    <button class="anchor"><i class="fa fa-anchor"></i></button>
+    <div class="right">
+        <div class="wrap">
+
+            <!-- Content -->
+            <div class="side content">
+                <div>
+                    Content
+                </div>
+                <ul id="content-side" class="content-ul">
+                    
+                    <li><a href="#comments">Comments</a></li>
+                </ul>
+            </div>
+            <!-- 其他div框放到这里 -->
+            <!-- <div class="side">bbbb</div> -->
+        </div>
+    </div>
+</div>
+<script>
+/**
+ * target _blank
+ */
+(function() {
+    var aTags = document.querySelectorAll('article a:not([id])')
+    for (var i = 0; i < aTags.length; i++) {
+        aTags[i].setAttribute('target', '_blank')
+    }
+}());
+</script>
+<script src="/js/pageContent.js " charset="utf-8"></script>
+
+
+    <footer class="site-footer">
+
+
+    <div class="wrapper">
+
+        <p class="description">
+             本站保留着一点点技术积蓄！ 
+        </p>
+        <p class="contact">
+            Contact me at: 
+            <a href="https://github.com/ketao1989" title="GitHub"><i class="fa fa-github" aria-hidden="true"></i></a>  
+            <a href="mailto:ketao1989@126.com" title="email"><i class="fa fa-envelope-o" aria-hidden="true"></i></a>  
+            <a href="http://weibo.com/柯小小西" title="Weibo"><i class="fa fa-weibo" aria-hidden="true"></i></a>       
+        </p>
+        <p>
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次，本站访客数<span id="busuanzi_value_site_uv"></span>人次，本文总阅读量<span id="busuanzi_value_page_pv"></span>次
+        </p>
+        <p class="power">
+            <span>
+                Site powered by <a href="https://jekyllrb.com/">Jekyll</a> & <a href="https://pages.github.com/">Github Pages</a>.
+            </span>
+            <span>
+                Theme designed by <a href="https://github.com/Gaohaoyang">HyG</a>.
+            </span>
+        </p>
+    </div>
+</footer>
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+    <div class="back-to-top">
+    <a href="#top" data-scroll>
+        <i class="fa fa-arrow-up" aria-hidden="true"></i>
+    </a>
+</div>
+
+    <script src=" /js/main.js " charset="utf-8"></script>
+    <script src=" /js/smooth-scroll.min.js " charset="utf-8"></script>
+    <script type="text/javascript">
+      smoothScroll.init({
+        speed: 500, // Integer. How fast to complete the scroll in milliseconds
+        easing: 'easeInOutCubic', // Easing pattern to use
+        offset: 20, // Integer. How far to offset the scrolling anchor location in pixels
+      });
+    </script>
+    <!-- <script src=" /js/scroll.min.js " charset="utf-8"></script> -->
+  </body>
+
+</html>

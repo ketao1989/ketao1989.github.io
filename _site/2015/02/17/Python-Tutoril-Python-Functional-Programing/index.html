@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Python 教程学习之 Python 函数式编程</title>
+    <meta name="description" content="前言函数式编程是一种比较抽象的编程范式,其将各种指令计算运行作为数学中函数计算一样,尽量避免状态和变量的概念,因此函数式编程,一大特点就是无副作用,这对于并发编程大行其道的今天,是非常优良的特点.Python 作为一个动态脚本语言，其很早就支持了函数式编程范式。Python 函数式编程Python 函数式编程，涉...">
+
+    <link rel="shortcut icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://at.alicdn.com/t/font_8v3czwksspqlg14i.css">
+    <link rel="stylesheet" href="/css/main.css ">
+    <link rel="canonical" href="http://localhost:4000/2015/02/17/Python-Tutoril-Python-Functional-Programing/">
+    <link rel="alternate" type="application/rss+xml" title="柯小小西" href="http://localhost:4000/feed.xml ">
+
+
+    <script>
+    // 百度统计代码
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?a9b0f47a0e50b02dafb8a7088436a9bc";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+    </script>
+
+
+
+
+</head>
+
+
+  <body>
+
+    <header id="top">
+    <div class="wrapper">
+        <a href="/" class="brand">柯小小西</a>
+        <small>留着一点点技术积蓄</small>
+        <button id="headerMenu" class="menu"><i class="fa fa-bars"></i></button>
+        <nav id="headerNav">
+            <ul>
+                <li>
+                    
+                    <a href="/">
+                    
+                        <i class="fa fa-home"></i>Home
+                    </a>
+                </li>
+
+                
+                    
+                    <li>
+                        
+                        <a href="/archive/">
+                        
+                            <i class="fa fa-archive"></i>Archives
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/category/">
+                        
+                            <i class="fa fa-th-list"></i>Categories
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/tag/">
+                        
+                            <i class="fa fa-tags"></i>Tags
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/about/">
+                        
+                            <i class="fa fa-heart"></i>About
+                        </a>
+                    </li>
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+        <div class="page clearfix" post>
+    <div class="left">
+        <h1>Python 教程学习之 Python 函数式编程</h1>
+        <div class="label">
+
+            <div class="label-card">
+                <i class="fa fa-calendar"></i>2015-02-17
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+            
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Python" title="Category: Python" rel="category">Python</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+            </div>
+
+            <div class="label-card">
+            
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+            </div>
+
+        </div>
+        <hr>
+        <article itemscope itemtype="http://schema.org/BlogPosting">
+        <h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p>函数式编程是一种比较抽象的编程范式,其将各种指令计算运行作为数学中函数计算一样,尽量避免状态和变量的概念,因此函数式编程,一大特点就是无副作用,这对于并发编程大行其道的今天,是非常优良的特点.</p>
+
+<p>Python 作为一个动态脚本语言，其很早就支持了函数式编程范式。</p>
+
+<h2 id="python-函数式编程"><a id="FunctionalProgram">Python 函数式编程</a></h2>
+
+<p>Python 函数式编程，涉及太多的内容。简单介绍几个点。</p>
+
+<h3 id="高阶函数">高阶函数</h3>
+
+<p>所谓高阶函数，和数学上的高阶函数定义基本一样，就是对函数进行计算处理的函数。其处理对象是另一个函数。</p>
+
+<p><em>Map 和 Reduce 函数</em></p>
+
+<p>云计算中，关于 MapReduce 的并行计算框架，在其他很多编程语言中，都会提供 API 方法。即使在Java这种笨重的语言中，也已经提供了相关的方法给开发者使用。</p>
+
+<p>Python 的 map 方法，表示分别对列表中的元素独立处理；Reduce 方法，则表示对map处理完的结果，按照指定的方式进行聚合处理。</p>
+
+<!-- more -->
+
+<p>看看示例代码：</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+
+<span class="k">def</span> <span class="nf">lowerLetter</span><span class="p">(</span><span class="n">c</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">c</span> <span class="o">&gt;=</span> <span class="s">'a'</span> <span class="ow">and</span> <span class="n">c</span> <span class="o">&lt;=</span> <span class="s">'z'</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">True</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+
+<span class="k">def</span> <span class="nf">firstUpper</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="n">ss</span> <span class="o">=</span> <span class="s">''</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">lowerLetter</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="n">i</span><span class="p">]):</span>
+                <span class="n">ss</span> <span class="o">=</span> <span class="n">ss</span> <span class="o">+</span> <span class="nb">chr</span><span class="p">(</span><span class="nb">ord</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">+</span> <span class="nb">ord</span><span class="p">(</span><span class="s">'A'</span><span class="p">)</span> <span class="o">-</span> <span class="nb">ord</span><span class="p">(</span><span class="s">'a'</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ss</span> <span class="o">=</span> <span class="n">ss</span> <span class="o">+</span> <span class="n">s</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">lowerLetter</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="n">i</span><span class="p">]):</span>
+                <span class="n">ss</span> <span class="o">=</span> <span class="n">ss</span> <span class="o">+</span> <span class="n">s</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ss</span> <span class="o">=</span> <span class="n">ss</span> <span class="o">+</span> <span class="nb">chr</span><span class="p">(</span><span class="nb">ord</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">+</span> <span class="nb">ord</span><span class="p">(</span><span class="s">'a'</span><span class="p">)</span> <span class="o">-</span> <span class="nb">ord</span><span class="p">(</span><span class="s">'A'</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">ss</span>
+
+
+<span class="k">def</span> <span class="nf">mergeWords</span><span class="p">(</span><span class="n">strA</span><span class="p">,</span> <span class="n">strB</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">strA</span> <span class="o">+</span> <span class="s">'-'</span> <span class="o">+</span> <span class="n">strB</span>
+
+<span class="n">mm</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="n">firstUpper</span><span class="p">,</span> <span class="p">[</span><span class="s">'abc'</span><span class="p">,</span> <span class="s">'zfc'</span><span class="p">,</span> <span class="s">'Azc'</span><span class="p">])</span>
+<span class="k">print</span> <span class="n">mm</span>
+
+<span class="n">rr</span> <span class="o">=</span> <span class="nb">reduce</span><span class="p">(</span><span class="n">mergeWords</span><span class="p">,</span> <span class="n">mm</span><span class="p">)</span>
+<span class="k">print</span> <span class="n">rr</span>
+
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Notes ：</p>
+    <ul>
+      <li>
+        <p>map 方法，对每个列表的元素处理，开头字符大写，其他字母都小写。代码中使用了最简单的原始字符处理方式处理，主要是学习下python的字节操作方法。</p>
+      </li>
+      <li>
+        <p>Reduce方法，则把所有的单词都聚合在一起，使用<code class="highlighter-rouge">-</code>相连。reduce 方法会自动依次取出上一次的reduce结果和接下来的元素，再调用reduce处理。</p>
+      </li>
+    </ul>
+
+  </blockquote>
+</blockquote>
+
+<p><em>filter 函数</em></p>
+
+<p>filter 函数用来按照我们的要求，过滤队列。我们首先，给出一个过滤条件来依次判断列表的元素是否满足，根据返回的<code class="highlighter-rouge">True</code>或则<code class="highlighter-rouge">False</code>来决定去留。</p>
+
+<p>看看示例代码：</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+
+<span class="k">def</span> <span class="nf">contains</span><span class="p">(</span><span class="n">ss</span><span class="p">,</span> <span class="n">subStr</span><span class="o">=</span><span class="s">'z'</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">ss</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">subStr</span><span class="p">)</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span>
+<span class="c"># ['zfc', 'Azc']</span>
+<span class="n">ff</span> <span class="o">=</span> <span class="nb">filter</span><span class="p">(</span><span class="n">contains</span><span class="p">,</span> <span class="p">[</span><span class="s">'abc'</span><span class="p">,</span> <span class="s">'zfc'</span><span class="p">,</span> <span class="s">'Azc'</span><span class="p">])</span>
+<span class="k">print</span> <span class="n">ff</span>
+
+</code></pre></div></div>
+
+<p><em>sorted 函数</em></p>
+
+<p>排序方法，对列表按照比较函数的返回结果，进行排序，返回排序完之后的列表。</p>
+
+<p>看看示例代码：</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="c"># ['Azc', 'abc', 'zfc']</span>
+<span class="n">sl</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">([</span><span class="s">'abc'</span><span class="p">,</span> <span class="s">'zfc'</span><span class="p">,</span> <span class="s">'Azc'</span><span class="p">])</span>
+<span class="k">print</span> <span class="n">sl</span>
+
+
+<span class="k">def</span> <span class="nf">revertSortCmp</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">x</span> <span class="o">&gt;</span> <span class="n">y</span><span class="p">:</span>
+        <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="k">elif</span> <span class="n">x</span> <span class="o">==</span> <span class="n">y</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">0</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">1</span>
+
+<span class="c"># ['zfc', 'abc', 'Azc']</span>
+<span class="n">rsl</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">([</span><span class="s">'abc'</span><span class="p">,</span> <span class="s">'zfc'</span><span class="p">,</span> <span class="s">'Azc'</span><span class="p">],</span> <span class="n">revertSortCmp</span><span class="p">)</span>
+<span class="k">print</span> <span class="n">rsl</span>
+
+</code></pre></div></div>
+
+<h3 id="返回函数">返回函数</h3>
+
+<p>所谓返回函数，其实这也是函数式编程的核心之一。因为有了返回函数，我们可以确保函数式编程方法在获取结果的时候，才会执行；而不是，赋值函数的时候，立即执行。</p>
+
+<p>这种延迟计算的特性，使得很多时候，可以获得更好的计算性能。</p>
+
+<p>看看示例代码：</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="k">def</span> <span class="nf">lazy_tranform</span><span class="p">(</span><span class="n">ll</span><span class="p">):</span>
+    <span class="n">resTotal</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span> <span class="nf">tranform</span><span class="p">():</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">ll</span><span class="p">:</span>
+            <span class="n">xf</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="s">'-tranform'</span>
+            <span class="n">res</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">xf</span><span class="p">)</span>
+            <span class="n">resTotal</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">xf</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">res</span><span class="p">,</span> <span class="n">resTotal</span>
+    <span class="k">return</span> <span class="n">tranform</span>
+
+<span class="n">lf</span> <span class="o">=</span> <span class="n">lazy_tranform</span><span class="p">([</span><span class="s">'abc'</span><span class="p">,</span> <span class="s">'zfc'</span><span class="p">,</span> <span class="s">'Azc'</span><span class="p">])</span>
+<span class="c">#&lt;function tranform at 0x1006309b0&gt;</span>
+<span class="k">print</span> <span class="n">lf</span>
+<span class="c">#(['abc-tranform', 'zfc-tranform', 'Azc-tranform'], ['abc-tranform', 'zfc-tranform', 'Azc-tranform'])</span>
+<span class="k">print</span> <span class="n">lf</span><span class="p">()</span>
+<span class="c">#(['abc-tranform', 'zfc-tranform', 'Azc-tranform'], ['abc-tranform', 'zfc-tranform', 'Azc-tranform', 'abc-tranform', 'zfc-tranform', 'Azc-tranform'])</span>
+<span class="k">print</span> <span class="n">lf</span><span class="p">()</span>
+
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Notes ：可以看到上面，对于<code class="highlighter-rouge">resTotal</code>变量，当函数多次运行，结果会重复 append 到列表中。 也就是说，对于返回函数，这种变量<code class="highlighter-rouge">resTotal</code>定义相对于是全局的，所有使用该函数的地方，都会这个变量进行变更。</p>
+
+    <p>上面的代码，如果不了解，是很难定位到错误的。下面的代码，告诉你，如果你非要这样子写，应该如何处理这种涉及到<code class="highlighter-rouge">闭包</code>的问题。</p>
+
+  </blockquote>
+</blockquote>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="k">def</span> <span class="nf">closure_tranform</span><span class="p">(</span><span class="n">ll</span><span class="p">):</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">ll</span><span class="p">:</span>
+        <span class="k">def</span> <span class="nf">tranform</span><span class="p">():</span>
+            <span class="n">xf</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="s">'-tranform'</span>
+            <span class="k">return</span> <span class="n">xf</span>
+        <span class="n">res</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tranform</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">res</span>
+
+<span class="c"># &lt;function tranform at 0x100630aa0&gt; &lt;function tranform at 0x100630b18&gt; &lt;function tranform at 0x100630b90&gt;</span>
+<span class="c"># Azc-tranform Azc-tranform Azc-tranform</span>
+<span class="n">lf1</span><span class="p">,</span> <span class="n">lf2</span><span class="p">,</span> <span class="n">lf3</span> <span class="o">=</span> <span class="n">closure_tranform</span><span class="p">([</span><span class="s">'abc'</span><span class="p">,</span> <span class="s">'zfc'</span><span class="p">,</span> <span class="s">'Azc'</span><span class="p">])</span>
+<span class="k">print</span> <span class="n">lf1</span><span class="p">,</span> <span class="n">lf2</span><span class="p">,</span> <span class="n">lf3</span>
+<span class="k">print</span> <span class="n">lf1</span><span class="p">(),</span> <span class="n">lf2</span><span class="p">(),</span> <span class="n">lf3</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">closure_tranform_opz</span><span class="p">(</span><span class="n">ll</span><span class="p">):</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">ll</span><span class="p">:</span>
+        <span class="k">def</span> <span class="nf">tranform</span><span class="p">(</span><span class="n">y</span><span class="p">):</span>
+            <span class="k">def</span> <span class="nf">tranform_closure</span><span class="p">():</span>
+                <span class="n">xf</span> <span class="o">=</span> <span class="n">y</span> <span class="o">+</span> <span class="s">'-tranform'</span>
+                <span class="k">return</span> <span class="n">xf</span>
+            <span class="k">return</span> <span class="n">tranform_closure</span>
+        <span class="n">res</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tranform</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">res</span>
+<span class="c"># &lt;function tranform_closure at 0x100630cf8&gt; &lt;function tranform_closure at 0x100630c80&gt; &lt;function tranform_closure at 0x100630d70&gt;</span>
+<span class="c"># abc-tranform zfc-tranform Azc-tranform</span>
+<span class="n">lfo1</span><span class="p">,</span> <span class="n">lfo2</span><span class="p">,</span> <span class="n">lfo3</span> <span class="o">=</span> <span class="n">closure_tranform_opz</span><span class="p">([</span><span class="s">'abc'</span><span class="p">,</span> <span class="s">'zfc'</span><span class="p">,</span> <span class="s">'Azc'</span><span class="p">])</span>
+<span class="k">print</span> <span class="n">lfo1</span><span class="p">,</span> <span class="n">lfo2</span><span class="p">,</span> <span class="n">lfo3</span>
+<span class="k">print</span> <span class="n">lfo1</span><span class="p">(),</span> <span class="n">lfo2</span><span class="p">(),</span> <span class="n">lfo3</span><span class="p">()</span>
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Notes ：出现这种现象，就是因为我们的方法都是延迟加载，也就是说，最后的变量已经变更了，上面的代码中<code class="highlighter-rouge">i</code>就像<code class="highlighter-rouge">resTotal</code> 一样，是个全局变量，所以会在多次调用函数中彼此影响。</p>
+
+  </blockquote>
+</blockquote>
+
+<h2 id="python-装饰器"><a id="Decorator">Python 装饰器</a></h2>
+
+<p>熟悉 AOP 面向方面编程的同学，都了解切点，切面等概念。重要的是，使用 AOP 编程，可以让核心的业务代码和运维调试等代码切分开，也可以让老代码在一定程度上更容易升级。比如最通用的场景：日志记录，事务管理，权限拦截，自定义数据管理等。</p>
+
+<p>在 Python 中，完成 AOP 编码范式的就是<code class="highlighter-rouge">Python 装饰器</code>。使用 <code class="highlighter-rouge">@</code>标记，就可以完成 AOP 简单功能了。</p>
+
+<p>看看示例代码：</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="k">def</span> <span class="nf">logger</span><span class="p">(</span><span class="n">user_name</span><span class="o">=</span><span class="s">'ketao1989'</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">log</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+        <span class="nd">@functools.wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kv</span><span class="p">):</span>
+            <span class="k">print</span> <span class="s">'Welcome,'</span><span class="p">,</span> <span class="n">user_name</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="n">__name__</span>
+            <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kv</span><span class="p">)</span>
+            <span class="k">print</span> <span class="s">'Goodbye,'</span><span class="p">,</span> <span class="n">user_name</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="n">__name__</span>
+        <span class="k">return</span> <span class="n">wrapper</span>
+    <span class="k">return</span> <span class="n">log</span>
+
+
+<span class="k">def</span> <span class="nf">log</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">logger</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+
+    <span class="nd">@functools.wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kv</span><span class="p">):</span>
+        <span class="k">print</span> <span class="s">'Welcome,'</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="n">__name__</span>
+        <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kv</span><span class="p">)</span>
+        <span class="k">print</span> <span class="s">'Goodbye,'</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="n">__name__</span>
+    <span class="k">return</span> <span class="n">wrapper</span>
+
+
+<span class="c">#@log('ketao1989')</span>
+<span class="nd">@log</span>
+<span class="k">def</span> <span class="nf">logger_test</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+    <span class="k">print</span> <span class="s">'execute core function (</span><span class="si">%</span><span class="s">s) ......'</span> <span class="o">%</span> <span class="n">params</span>
+
+<span class="n">logger_test</span><span class="p">([</span><span class="s">'test_param1'</span><span class="p">,</span> <span class="s">'test_param2'</span><span class="p">])</span>
+
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Notes：代码示例中，标记<code class="highlighter-rouge">@functools.wraps(func)</code>，是因为在装饰器中可能原始的函数的<code class="highlighter-rouge">__name__</code>等被覆盖，而该标注，可以保证原始携带的func的内置属性依然保持。</p>
+
+    <p>此外，在代码的开始，需要<code class="highlighter-rouge">import functools</code>引入模块。</p>
+
+  </blockquote>
+</blockquote>
+
+<p>关于 Python 装饰器参考：<a href="http://www.cnblogs.com/huxi/archive/2011/03/01/1967600.html">http://www.cnblogs.com/huxi/archive/2011/03/01/1967600.html</a></p>
+
+        </article>
+        <hr>
+
+        
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+        
+
+        <div class="post-recent">
+    <div class="pre">
+        
+        <p><strong>上一篇</strong> <a href="/2015/02/15/Python-Tutoril-Python-Function-And-Advances/">Python 教程学习之 Python 函数和高级特性</a></p>
+        
+    </div>
+    <div class="nex">
+
+        
+        <p><strong>下一篇</strong> <a href="/2015/02/26/Python-Tutoril-Python-Object-Oriented-Programming/">Python 教程学习之 Python 面向对象编程</a></p>
+        
+    </div>
+</div>
+
+
+        <h2 id="comments">Comments</h2>
+        
+
+
+<div id="disqus_thread"></div>
+<script>
+    /**
+     * RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     * LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+
+    var disqus_config = function() {
+        this.page.url = 'http://localhost:4000/2015/02/17/Python-Tutoril-Python-Functional-Programing/'; // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = 'http://localhost:4000/2015/02/17/Python-Tutoril-Python-Functional-Programing/'; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+
+    (function() { // DON'T EDIT BELOW THIS LINE
+        var d = document,
+            s = d.createElement('script');
+
+        s.src = '//taocoder.disqus.com/embed.js';
+
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+
+
+
+    </div>
+    <button class="anchor"><i class="fa fa-anchor"></i></button>
+    <div class="right">
+        <div class="wrap">
+
+            <!-- Content -->
+            <div class="side content">
+                <div>
+                    Content
+                </div>
+                <ul id="content-side" class="content-ul">
+                    
+                    <li><a href="#comments">Comments</a></li>
+                </ul>
+            </div>
+            <!-- 其他div框放到这里 -->
+            <!-- <div class="side">bbbb</div> -->
+        </div>
+    </div>
+</div>
+<script>
+/**
+ * target _blank
+ */
+(function() {
+    var aTags = document.querySelectorAll('article a:not([id])')
+    for (var i = 0; i < aTags.length; i++) {
+        aTags[i].setAttribute('target', '_blank')
+    }
+}());
+</script>
+<script src="/js/pageContent.js " charset="utf-8"></script>
+
+
+    <footer class="site-footer">
+
+
+    <div class="wrapper">
+
+        <p class="description">
+             本站保留着一点点技术积蓄！ 
+        </p>
+        <p class="contact">
+            Contact me at: 
+            <a href="https://github.com/ketao1989" title="GitHub"><i class="fa fa-github" aria-hidden="true"></i></a>  
+            <a href="mailto:ketao1989@126.com" title="email"><i class="fa fa-envelope-o" aria-hidden="true"></i></a>  
+            <a href="http://weibo.com/柯小小西" title="Weibo"><i class="fa fa-weibo" aria-hidden="true"></i></a>       
+        </p>
+        <p>
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次，本站访客数<span id="busuanzi_value_site_uv"></span>人次，本文总阅读量<span id="busuanzi_value_page_pv"></span>次
+        </p>
+        <p class="power">
+            <span>
+                Site powered by <a href="https://jekyllrb.com/">Jekyll</a> & <a href="https://pages.github.com/">Github Pages</a>.
+            </span>
+            <span>
+                Theme designed by <a href="https://github.com/Gaohaoyang">HyG</a>.
+            </span>
+        </p>
+    </div>
+</footer>
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+    <div class="back-to-top">
+    <a href="#top" data-scroll>
+        <i class="fa fa-arrow-up" aria-hidden="true"></i>
+    </a>
+</div>
+
+    <script src=" /js/main.js " charset="utf-8"></script>
+    <script src=" /js/smooth-scroll.min.js " charset="utf-8"></script>
+    <script type="text/javascript">
+      smoothScroll.init({
+        speed: 500, // Integer. How fast to complete the scroll in milliseconds
+        easing: 'easeInOutCubic', // Easing pattern to use
+        offset: 20, // Integer. How far to offset the scrolling anchor location in pixels
+      });
+    </script>
+    <!-- <script src=" /js/scroll.min.js " charset="utf-8"></script> -->
+  </body>
+
+</html>

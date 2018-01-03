@@ -1,0 +1,2264 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>柯小小西</title>
+    <meta name="description" content="">
+
+    <link rel="shortcut icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://at.alicdn.com/t/font_8v3czwksspqlg14i.css">
+    <link rel="stylesheet" href="/css/main.css ">
+    <link rel="canonical" href="http://localhost:4000/page2/">
+    <link rel="alternate" type="application/rss+xml" title="柯小小西" href="http://localhost:4000/feed.xml ">
+
+
+    <script>
+    // 百度统计代码
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?a9b0f47a0e50b02dafb8a7088436a9bc";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+    </script>
+
+
+
+
+</head>
+
+
+  <body>
+
+    <header id="top">
+    <div class="wrapper">
+        <a href="/" class="brand">柯小小西</a>
+        <small>留着一点点技术积蓄</small>
+        <button id="headerMenu" class="menu"><i class="fa fa-bars"></i></button>
+        <nav id="headerNav">
+            <ul>
+                <li>
+                    
+                    <a href="/">
+                    
+                        <i class="fa fa-home"></i>Home
+                    </a>
+                </li>
+
+                
+                    
+                    <li>
+                        
+                        <a href="/archive/">
+                        
+                            <i class="fa fa-archive"></i>Archives
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/category/">
+                        
+                            <i class="fa fa-th-list"></i>Categories
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/tag/">
+                        
+                            <i class="fa fa-tags"></i>Tags
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/about/">
+                        
+                            <i class="fa fa-heart"></i>About
+                        </a>
+                    </li>
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+        <div class="page clearfix" index>
+    <div class="left">
+        <h1>Welcome to 柯小小西's Blog!</h1>
+        <small>留着一点点技术积蓄</small>
+        <hr>
+        <ul>
+            
+              <li>
+                <h2>
+                  <a class="post-link" href="/2015/09/05/zookeeper-programmer-guide/">Zookeeper 编程指南</a>
+                </h2>
+                <div class="label">
+                    <div class="label-card">
+                        <i class="fa fa-calendar"></i>2015-09-05
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+
+                    <div class="label-card">
+                    
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Zookeeper" title="Category: Zookeeper" rel="category">Zookeeper</a>&nbsp;
+    
+        <a href="/category/#Translation" title="Category: Translation" rel="category">Translation</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+                    </div>
+
+                    <div class="label-card">
+                    
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+                    </div>
+                </div>
+                <div class="excerpt">
+                    <h2 id="前言"><a id="Introduction">前言</a></h2>
+
+<p>该文档是提供给期望使用 <code class="highlighter-rouge">Zookeeper</code>协作服务功能的开发者创建分布式应用的。文档内部包含了一些概念上和实践应用上的资料信息。</p>
+
+<p>在指南的前四节主要讨论了 <code class="highlighter-rouge">Zookeeper</code> 各方面的概念。这些东西对于理解 <code class="highlighter-rouge">Zookeeper</code>如何工作以及如何去使用 <code class="highlighter-rouge">Zookeeper</code> 是非常必要的。它虽然没有包含源代码，但是它是假设读者对于分布式计算相关的问题是很熟悉的。它们主要如下介绍：</p>
+
+<ul>
+  <li><a href="#The_ZooKeeper_Data_Model">Zookeeper 数据模型</a></li>
+  <li><a href="#ZooKeeper_Sessions">Zookeeper 会话</a></li>
+  <li><a href="#ZooKeeper_Watches">Zookeeper 监听</a></li>
+  <li><a href="#Consistency_Guarantees">Zookeeper 一致性保证</a></li>
+</ul>
+
+<p>后面四节主要提供了一些实践编程相关的资料。主要是：</p>
+
+<ul>
+  <li><a href="#A_Guide_to_ZooKeeper_Operations">Zookeeper 操作指南</a></li>
+  <li><a href="#Bindings">Zookeeper Bindings</a></li>
+  <li><a href="#Program_Structure">Zookeeper 程序结构简单示例（待定）</a></li>
+  <li><a href="#Gotchas">Zookeeper 性能和可伸缩性</a></li>
+</ul>
+
+<p>文档最后的附录部分包含了一些有用的，Zookeeper 相关的链接。</p>
+
+<p>虽然，该指南中的很多资料在其他一些独立的文章博客中都已经存在了，但是对于开始第一个 <code class="highlighter-rouge">Zookeeper</code> 应用的你来说，还是最后阅读完<code class="highlighter-rouge">Zookeeper 数据模型</code> 和 <code class="highlighter-rouge">Zookeeper 操作指南</code>。</p>
+
+<h2 id="--zookeeper-数据模型"><a id="The_ZooKeeper_Data_Model">  Zookeeper 数据模型</a></h2>
+
+<p><code class="highlighter-rouge">Zookeeper</code> 有一个分级的命名空间，类似于一个分布式的文件系统。唯一不同的是命名空间中每个节点可以有对应的数据关联它，就像孩子一样。这一点类似于文件系统中允许一个文件也可以成为目录一样。到节点的路径常常表示成正则的，绝对的，斜线分隔的路径；它们没有相对的引用。在路径上使用的任何编码需要满足以下限制：</p>
+
+<ul>
+  <li><code class="highlighter-rouge">null</code>字符不可以成为路径名字的一部分。</li>
+  <li>由于显示的问题，如下字符不能使用：<code class="highlighter-rouge">\u0001</code>-<code class="highlighter-rouge">\u001F</code> 和 <code class="highlighter-rouge">\u007F</code>-<code class="highlighter-rouge">\u009F</code>.</li>
+  <li>下面字符同样不被允许：<code class="highlighter-rouge">\ud800</code>-<code class="highlighter-rouge">\u0F8FF</code> 和 <code class="highlighter-rouge">\uFFF0</code>-<code class="highlighter-rouge">\uFFFF</code>.</li>
+  <li><code class="highlighter-rouge">.</code>字符可以作为路径名字中某块名的一部分，但是<code class="highlighter-rouge">.</code>和<code class="highlighter-rouge">..</code>不能单独作为路径的一块，因为在 Zookeeper 中不允许相对路径。因此，如下是非法的：<code class="highlighter-rouge">/a/b/./c</code>或者<code class="highlighter-rouge">/a/b/../c</code>.</li>
+  <li><code class="highlighter-rouge">zookeeper</code>字符串保留。</li>
+</ul>
+
+<!-- more -->
+
+<h3 id="znodes">ZNodes</h3>
+
+<p>ZooKeeper 树上的每一个节点都称之为<code class="highlighter-rouge">znode</code>。Znodes 维护了一个包含数据变化和acl变化版本号的状态结构体。这个结构体也包含时间戳。因此，版本号和时间戳一起确保Zookeeper验证缓存和协调更新。每一次znode的数据变化，版本号也会对应增长。例如，当一个客户端检索数据时，它也会获得该数据的版本号，然后当一个客户端执行更新或者删除时，它必须提供对应变化的znode的数据版本。如果它提供的版本不能够匹配到实际的数据版本时，更新将会失败。</p>
+
+<blockquote>
+  <blockquote>
+    <p>Note:
+在分布式应用工程中，<code class="highlighter-rouge">node</code>常常被看做一个主机，一台服务器，一组中的一个成员等等。在Zookeeper文档中，<code class="highlighter-rouge">znodes</code>称为数据节点；<code class="highlighter-rouge">Servers</code>则是标记为Zookeeper服务的机器；<code class="highlighter-rouge">quorum peers</code>是标记为一个集群的所有服务器；<code class="highlighter-rouge">client</code>是任何使用Zookeeper服务的机器或者进程。</p>
+
+  </blockquote>
+</blockquote>
+
+<p>Znodes是开发者访问的最主要的实体。它们有一些值得去关注的特征：</p>
+
+<h4 id="watches">Watches</h4>
+
+<p>客户端可以在 znodes 上设置监听。znode 的改变将会触发监听器，然后清理监听。当一个监听器被触发时，Zookeeper 会发送对应客户端一个通知。更新的信息可以参考 <a href="#ZooKeeper_Watches">Zookeeper 监听</a>。</p>
+
+<h4 id="数据访问">数据访问</h4>
+
+<p>保存在一个命名空间里的每个节点上的数据都可以被原子的读和写。读，获取对应znode上所有的数据字节；然后一个写，替换所有的数据。每个节点上的ACL(访问控制列表)可以限制<code class="highlighter-rouge">who can do what</code>。</p>
+
+<p>Zookeeper 不是被设计用来作为一个通用的数据库或者大对象的存储。相反，它是用来管理协调数据的。这个数据来源于配置，状态信息，集结地点等形式中。一般，协调的数据相对来说是很小的：几千字节计算。Zookeeper 客户端和服务器实现的时候会确保znode的数据小于1M，但是通常数据会比那个小得多。操作相对大的数据将会导致一些操作会花费更对的时间，从而一些操作的延迟性，这主要是因为一些额外的时间需要被用来在网络上移动更多的数据，存储起来。如果一定需要大数据的存储，通常的处理方式是将数据存储在大容量存储系统上，比如 NFS 或者 HDFS ，然后再Zookeeper里保持存储位置的指针。</p>
+
+<h4 id="短暂节点">短暂节点</h4>
+
+<p>Zookeeper 也有短暂节点的概念。在会话创建时，znode存活；当会话结束时，znode删除。由于这个特性，所以其不允许有孩子。</p>
+
+<h4 id="顺序节点-唯一命名">顺序节点-唯一命名</h4>
+
+<p>当创建一个znode时，你也可以请求Zookeeper在路径的末尾增加一个单调递增的计算器。这个计算器对父节点来说是唯一的。计算器有一个<code class="highlighter-rouge">%010d</code>格式化–表示10个数字0补全。比如：<code class="highlighter-rouge">&lt;path&gt;0000000001</code>。Notes：计数器用来保存下一个顺序数字是一个有符号整形，由父节点保存，当增长到<code class="highlighter-rouge">2147483647</code>将会溢出。</p>
+
+<h3 id="zookeeper-中的-time">Zookeeper 中的 Time</h3>
+
+<p>Zookeeper 追踪 time的多种方式如下：</p>
+
+<ul>
+  <li>
+    <p>Zxid<br />
+Zookeeper状态的每次改变，在<code class="highlighter-rouge">zxid</code>(ZooKeeper Transaction Id)里都会获取到一个时间戳。这意味着在ZooKeeper中所有都变化都是有序的。每次改变都将会有一个<code class="highlighter-rouge">zxid</code>，如果 zxid1 小于 zxid2，则 zxid1 一定在 zxid2 之前发生。</p>
+  </li>
+  <li>
+    <p>版本号<br />
+一个节点的每次改变都会导致对应节点的其中一个版本号递增。节点对应的三个版本号是：version(znode 数据改变对应的编号)；cversion(znode 的孩子改变对应的编号)；aversion(znode 的ACL改变对应的编号)。</p>
+  </li>
+  <li>
+    <p>Ticks<br />
+当使用多服务器的 ZooKeeper 时，服务器使用 <code class="highlighter-rouge">ticks</code> 来定义事件的时间，比如，状态上传，会话超时，连接超时等。tick 时间只能间接地表示最小的会话超时（每tick时间内2次）；如果一个客户端请求的会话超时小于最小的会话超时，则服务器将会告诉客户端它请求的会话超时实际上是最小的会话超时。</p>
+  </li>
+  <li>
+    <p>真实时间<br />
+ZooKeeper 不使用真实时间或者时钟时间，即使在所有我们期望把时间戳放入znode创建和修改的状态结构体里面。</p>
+  </li>
+</ul>
+
+<h3 id="zookeeper-状态结构体">ZooKeeper 状态结构体</h3>
+
+<p>ZooKeeper 里每个 znode 的状态结构体都包括下面这些字段：</p>
+
+<ul>
+  <li>czxid<br />
+导致znode被创建的zxid。</li>
+  <li>mzxid<br />
+对应znode最后一次改变的zxid。</li>
+  <li>ctime<br />
+当该znode创建开始的毫秒数。</li>
+  <li>mtime<br />
+当该znode最后一次更改开始的毫秒数。</li>
+  <li>version<br />
+znode数据改变的编号。</li>
+  <li>cversion</li>
+  <li>aversion</li>
+  <li>ephemeralOwner<br />
+如果该znode是临时节点，则为该节点owner的 会话id；如果不是临时节点，则为0。</li>
+  <li>dataLength<br />
+znode 数据字段的长度。</li>
+  <li>numChildren<br />
+znode对应孩子的个数。</li>
+</ul>
+
+<h2 id="--zookeeper-会话"><a id="ZooKeeper_Sessions">  Zookeeper 会话</a></h2>
+
+<p>ZooKeeper 客户端通过绑定的编程语言创建一个 <code class="highlighter-rouge">handle</code>从而和ZooKeeper服务建立会话。一旦创建完成，<code class="highlighter-rouge">handle</code>开始处在  <code class="highlighter-rouge">CONNECTING</code> 状态，然后客户端将会和ZooKeeper服务中某个服务器连接上，然后其会切换到 <code class="highlighter-rouge">CONNECTED</code>状态。在通常的操作过程中，会处在这两张状态中的一种。如果发生了一个不可恢复的错误，比如会话过期或者认证失败，再或者如果应用显示地关闭 <code class="highlighter-rouge">handle</code>，则该 <code class="highlighter-rouge">handle</code> 将会转变为 <code class="highlighter-rouge">CLOSE</code> 状态。</p>
+
+<p>下面的图展示了一个 ZooKeeper 客户端可能的状态流转情形：</p>
+
+<p><img src="/images/2015/09/zookeeper_stat.png" /></p>
+
+<p>为了创建一个客户端会话，应用代码必须提供一个连接字符串，包含一个以逗号分隔的 <code class="highlighter-rouge">host:pair</code>列表, 每个<code class="highlighter-rouge">host:pair</code> 对应的是一台 ZooKeeper服务器（比如，”127.0.0.1:4545” 或者 “127.0.0.1:3000,127.0.0.1:3001,127.0.0.1:3002”）。ZooKeeper 客户端会挑选任务的服务器，然后尝试去连接它。如果这个连接失败，或者这个客户端因为任何原因导致和这个服务器断开连接，客户端都将会自动尝试列表中的下一台服务器，知道一个连接被(重新)建立起来。</p>
+
+<p><em>3.2.0 新特性</em>：一个可选择的”chroot”后缀也可能会添加到连接字符串中。和linux中的<code class="highlighter-rouge">chroot</code>命令相似，运行客户端的所有命令中的路径都是相对这个root来确定的。比如我们如果使用：”127.0.0.1:4545/app/a” 或者 “127.0.0.1:3000,127.0.0.1:3001,127.0.0.1:3002/app/a”，则客户端将会以”/app/a” 为root，然后所有路径都是相对这个root而言的–例如，我们获取 “/foo/bar” 下面的文件，则实际上将会在 “app/a/foo/bar” 下面执行。这个特性对于多租户环境下是很有用的，这样每个用户在 ZooKeeper服务上其root都可以不同。因此，对于每个用户如果编码他们的应用中以”/”为root情况下，重复使用ZooKeeper服务将非常简单。</p>
+
+<p>当一个客户端获取到ZooKeeper服务的一个<code class="highlighter-rouge">handle</code>，ZooKeeper 创建一个ZooKeeper 会话，以 64位数字表示。如果客户端连接到一台不同的 ZooKeeper服务器，它将会发送一个会话id作为连接握手的一部分。作为一个安全手段，服务器为该会话id创建一个任何ZooKeeper服务器都可以验证的password。当客户端建立完会话之后，password 将会和会话id一起发送给客户端。当客户端需要和新的服务器重新建立连接时，则发送该password 和 会话id。</p>
+
+<p>ZooKeeper 客户端库调用创建一个ZooKeeper会话时，其中有一个参数是毫秒数的会话超时。客户端发送一个请求超时，服务器将响应从客户端获取的超时。当前的时候要求超时时间最小为 2 个 tckTime，并且最大为 20 个 tickTime。ZooKeeper 客户端API 运行访问协商的超时。</p>
+
+<p>当一个客户端（会话）从ZK服务集群里分隔开，它将会开始搜素我们在创建会话时候指定的服务器列表。最后，当客户端和至少服务器中的一台重新建立连接后，会话将会要么转化为 <code class="highlighter-rouge">connected</code>状态（如果会话重连接在超时值之内），要么转化为<code class="highlighter-rouge">expired</code>状态（如果重连在会话超时之后）。为断开连接的客户端创建一个新的会话对象是不明智的。ZK 客户端库将会为你处理重连。在实践中，我们在客户端库中会有一些启发式的算法构建来处理像”羊群效应”等事情。只有在收到会话过期通过时，才会去创建一个新的会话。</p>
+
+<p>会话过期由ZooKeeper集群自己管理，而不是客户端。当ZK客户端和集群建立会话时，其提供一个超时值。集群使用这个值来决定客户端会话是否超时。当集群没有在超时时间内收到返回，则发送会话过期。在会话过期的时候，集群将会删除该会话拥有的所有的临时节点，然后立即通知监听该变化的所有连接状态的客户端。在这个时间点，超时会话的客户端仍然和集群断开连接，在重新和集群建立连接之前，它将不会收到会话超时的通知。客户端将会一直带着断开连接的状态，知道TCP连接被重新建立起来，然后 超时会话的<code class="highlighter-rouge">watcher</code>将会接收到”会话超时”的通知。</p>
+
+<p>一个超时的会话状态流转的过程示例：</p>
+
+<ol>
+  <li>connected：会话建立连接，客户端和集群处于通信中。</li>
+  <li>客户端从集群中分割开…</li>
+  <li>disconnected：客户端丢失和集群之间的连接</li>
+  <li>… 时间过去了，在 超时区间之后，集群过期了会话，客户端由于和集群断开了所以看不到任何东西。</li>
+  <li>… 时间进行走着，客户端恢复了和集群的网络层连接、</li>
+  <li>expired：最终，客户端重新连接上集群，然后被通知过期。</li>
+</ol>
+
+<p>ZooKeeper 建立会话调用的另一个蚕食是默认的 <code class="highlighter-rouge">watcher</code>。当在客户端上的状态发送变更，watcher 将会被通知到。例如，如果一个客户端丢失了和服务器之间的连接，则客户端将会收到通知，或者如果客户端会话过期了。watcher 应该认为初始状态是 断开连接的。在一个新连接的case里面，发送给 watcher 的第一个通知就是会话连接事件。</p>
+
+<p>会话通过客户端发送请求保持alive。如果会话空闲了会话超时时间段时，客户端将会发送 <code class="highlighter-rouge">PING</code>请求来保持会话alive。<code class="highlighter-rouge">PING</code>请求不仅允许 ZooKeeper服务器知道 客户端仍然活跃，也允许客户端通过连接验证 ZooKeeper服务器仍然活跃。<code class="highlighter-rouge">PING</code>的时间很充足，从而确保有在检测到死连接，然后重新连接到新的server的操作有足够的时间。</p>
+
+<p>一旦一个到服务器的连接成功的建立了，客户端 lib 有两个基本的case 导致 连接丢失，当执行一个同步或者异步操作，然后出现如下情况：</p>
+
+<ol>
+  <li>在一个不再活跃/有效的会话上调用一个操作。</li>
+  <li>当ZooKeeper客户端挂起一个操作时，断开和服务器之间的连接。</li>
+</ol>
+
+<p><em>3.2.0 新特性–SessionMovedException</em>：这是一个内部的异常。这个异常一般发生在一个会话和不同的服务器重新建立连接后接收到请求的时候。正常导致这个错误的原因是一个哭护短发生一个请求给一个服务器，但是网络包延迟，所以客户端超时，然后和新的服务器建立间接。当延迟的包被第一台服务器收到时，老的服务器检测到会话已经被移开，然后关闭客户端连接。客户端正常下不会看着这个错误，因为他不会从老的连接中读数据。出现这种情况的一个条件是当两个客户端尝试使用 password 和 会话id 重新建立相同的连接，其中一个客户端将重新建立连接，第二个客户端将会断开连接。</p>
+
+<p><em>更新服务器列表</em>：我们允许客户端通过提供一组新的逗号分隔的<code class="highlighter-rouge">host:port</code>对列表来更新连接字符串。这个函数调用一个基于概率的负载均衡算法导致客户端断开和当前host的连接，从而达到服务器列表中连接的平均数。万一当前客户端连接的host不在新的列表中，这个调用将会导致连接被丢弃。另外，决定服务器数量的增加或者减少以及多少。</p>
+
+<p>例如：如果前面的连接字符串包含 3 host，然后现在列表包含这 3 个 host和 2 个新加的 host，40%的客户端原来对应的连接将会迁移到新的hosts中的一个来确保均衡负载。这个方案将会导致客户端丢弃他的连接，然后0.4的概率连接到其他2台机器，在这种情况下，导致客户端随机选择连接 2 个新的host中的一台。</p>
+
+<p>另一个例子–假设我们有5 台host，现在我们更新服务器列表移走 2 台host，然后客户端连接剩下 3 台host的依然连接，然后 移除的2台 host上的连接将被移动到剩下 3 台host的其中一台。如果连接丢弃，客户端移动到指定的模式，其可以选择一个新的服务器去根据概率算法连接服务器，而不是 RR。</p>
+
+<p>在第一个例子中，每个客户端决定以0.4的概率来断开连接，但是一旦做完决定，它将尝试随机连接到一个新的服务器，仅仅在不能连接到新的服务器中的任何一台时，它才会尝试连接老的服务器。在找到一个服务器，或者尝试列表中所有的服务器，仍然连接失败的时候，客户端回退到正常的操作模式(从概率模式回到轮询RR模式)，即从连接字符串中选择任意的服务器，然后尝试连接它。如果失败，它将以RR模式尝试不同随机服务器。</p>
+
+<h2 id="--zookeeper-监听"><a id="ZooKeeper_Watches">  Zookeeper 监听</a></h2>
+
+<p>在 ZooKeeper 里所有的读操作（getData()，getChildren()和 exists()）都可以将设置一个 <code class="highlighter-rouge">watch</code> 作为附加功能。ZooKeeper 对 <code class="highlighter-rouge">watch</code>的定义是：一个监听事件是一次性的 <code class="highlighter-rouge">trigger</code>，当监听的数据发送变化的时候，发送给设置监听的客户端们。对于这个定义，有三个关键点：</p>
+
+<ul>
+  <li>
+    <p>One-time trigger<br />
+当监听数据发送变化的时候，一个监听事件将会发送给客户端。例如，一个客户端使用 <code class="highlighter-rouge">getData("/znode1", true)</code>，然后<code class="highlighter-rouge">/znode1</code>的数据发送变化或者删除，客户端将会获得一个对应 <code class="highlighter-rouge">/znode1</code>的监听事件。<em>但是，如果<code class="highlighter-rouge">/znode1</code>再次改变，就不会再有监听事件发送出去，除非客户端通过另一个读操作来设置监听watch</em></p>
+  </li>
+  <li>
+    <p>Sent to client<br />
+这意味着一个正发送给客户端的事件，可能在发送修改操作的客户端完成操作返回成功 code 之前不会到达客户端。监听事件是异步发送给监听客户端的。ZooKeeper 提供一个有序的保证：一个客户端永远只有在看到一个watch事件之后才会看到这个watch对应的改变。网络延迟或者其他原因可能导致不同的客户端看到watch和更新返回code的时间不同。其关键之处在于不同客户端看到的所有事情都是有一致性的顺序的。</p>
+  </li>
+  <li>
+    <p>The data for which the watch was set<br />
+这指的是节点改变的不同方式。你可以认为 ZooKeeper 维护 watch的两个列表：数据watch 和 孩子watch。<code class="highlighter-rouge">getData()</code>和<code class="highlighter-rouge">exists()</code>设置数据watch；<code class="highlighter-rouge">getChildren()</code> 设置child监听。此外，你也可以认为 watch 可以根据数据返回的类型来设置。<code class="highlighter-rouge">getData()</code>和<code class="highlighter-rouge">exists()</code> 返回节点数据的信息，然而<code class="highlighter-rouge">getChildren()</code> 返回 孩子列表。因此，<code class="highlighter-rouge">setData()</code>将触发节点的数据watch 设置。一个成功的<code class="highlighter-rouge">create()</code>将会触发znode的数据watch 以及 父节点的child watch。一个成功的 <code class="highlighter-rouge">delete()</code>将会触发节点的数据watch和child watch（因为将不会再有children了）。</p>
+  </li>
+</ul>
+
+<p>watch 由与对应client连接的ZooKeeper服务器负责维护。因此，这可以使得 watch 可以轻量级地设置，维护和分发。当一个客户端连接到一个新的server，watch将会出现会话时间。当和server断开连接后，将不会收到watch。当一个客户端重新连接，任务先前注册的watch将会被重新注册，然后当需要的时候触发。一般情况下，这都是显示地发生的。有一个case就是一个watch可能被丢失：一个人还未创建的znode的 existence watch 将会被丢失，如果这个znode 创建，然后当断开连接的时候又被删除了。</p>
+
+<h3 id="watch-语义">watch 语义</h3>
+
+<p>我们可以通过读ZooKeeper的三种状态来设置 watch：exists, getData, 和
+getChildren。下面的列表展示了一个watch 触发和调用激活的方式：</p>
+
+<ul>
+  <li>Created event:<br />
+通过 exist调用激活。</li>
+  <li>Deleted event:<br />
+通过调用 exists, getData, 和 getChildren 激活</li>
+  <li>Changed event:<br />
+通过调用 exists, getData 激活。</li>
+  <li>Child event:<br />
+通过调用 getChildren 激活。</li>
+</ul>
+
+<h3 id="watch-移除">watch 移除</h3>
+
+<p>我们可以调用 removeWatches 方法移除在 znode 注册的 watch。一个客户端可以本地移除watch操作，即使没有连接ZooKeeper服务器，只是本地设置标识为true。下面的列表详细说明了在成功移除watch 之后会触发什么事件：</p>
+
+<ul>
+  <li>Child Remove event:<br />
+在调用getChildren的时候添加 watcher。</li>
+  <li>Data Remove event:<br />
+在调用 exists 或者 getData 的时候添加 watcher。</li>
+</ul>
+
+<h3 id="关于-watch-需要记住的事情">关于 watch 需要记住的事情</h3>
+
+<ul>
+  <li>Watches 是一次性触发器。如果你获取了一个 watch 事件，然后你还想在未来更改的时候也获得通知，则你必须要设置另外的watch。</li>
+  <li>由于watch是一次性的触发器，并且在获取时间和发送新的请求去获取watch 这段之间的延迟，所看到的发生在 ZooKeeper Znode 上的所有改变都是不可信的。需要准备好处理在获取事件和设置watch之间znode改变多次的case。</li>
+  <li>一个watch对象，或者 function/context对，对于给定的通知只会被触发一次。例如，如果一个相同的watch对象被一个<code class="highlighter-rouge">exists 或者 getData</code> 文件file调用操作注册，然后这个文件file被删除了，这个watch对象将和这个文件file的删除通知一起，仅仅被调用一次。</li>
+  <li>当你从服务器上断开连接，你将不能获得任何watch 直到连接被重新建立起来。基于这个原因，会话事件将被发生给所有突出的watch处理器。使用会话事件会进入一个安全模式：你将不能接收事件指导断开连接，所以你的处理处理这种模式下需要谨慎。</li>
+</ul>
+
+
+                </div>
+                <div class="read-all">
+                    <a  href="/2015/09/05/zookeeper-programmer-guide/"><i class="fa fa-newspaper-o"></i>Read All</a>
+                </div>
+                <hr>
+              </li>
+            
+              <li>
+                <h2>
+                  <a class="post-link" href="/2015/08/30/nginx-proxy-configure-and-sduty/">Nginx 反向代理配置和工作原理</a>
+                </h2>
+                <div class="label">
+                    <div class="label-card">
+                        <i class="fa fa-calendar"></i>2015-08-30
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+
+                    <div class="label-card">
+                    
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Nginx" title="Category: Nginx" rel="category">Nginx</a>&nbsp;
+    
+        <a href="/category/#Script" title="Category: Script" rel="category">Script</a>&nbsp;
+    
+        <a href="/category/#Linux" title="Category: Linux" rel="category">Linux</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+                    </div>
+
+                    <div class="label-card">
+                    
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+                    </div>
+                </div>
+                <div class="excerpt">
+                    <h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p><code class="highlighter-rouge">Nginx</code>是一款面向性能设计的HTTP服务器,其性能相对于其他服务器表现优异。内部使用异步的事件处理模型，比如linux平台的<code class="highlighter-rouge">epoll</code>事件模型，unix平台的<code class="highlighter-rouge">kqueue</code>事件模型等。在Nginx源码的<code class="highlighter-rouge">src/event/modules</code>目录下，其对各个平台不同的异步模型进行了二次封装。此外，Nginx在代码实现的时候，会考虑到众多细节优化。比如：根据CPU亲缘性来分配进程和事件，避免CPU级的缓存失效；比如字符串比较时，四字节转换为整数来进行快速指令级比较，等等。</p>
+
+<p>本博文主要目的不是Nginx源码分析，所以，对源码及其独特优秀的代码设计不会去详细介绍。</p>
+
+<p>在最近的一些项目中，涉及到nginx的反向代理配置，然后花了一些时间了解下关于Nginx的整体请求处理流程和返现代理的实现机制。</p>
+
+<p>Nginx虽然代码整洁，模块清晰，但是代码量毕竟还是很多，而且注释实在是太少，所以把一些学习的资料和心得整理一下，以便以后查看。</p>
+
+<h2 id="nginx-反向代理配置说明"><a id="Proxy">Nginx 反向代理配置说明</a></h2>
+
+<p>反向代理指以代理服务器来接受Internet上的连接请求，然后将请求转发给内部网络上的服务器，并将从服务器上得到的结果返回给Internet上请求连接到客户端，此时代理服务器对外就表现为一个服务器，而此种工作模式类似于LVS-NET模型。</p>
+
+<p>反向代理也可以理解为web服务器加速，它是一种通过在繁忙的web服务器和外部网络之间增加的 一个高速web缓冲服务器，用来降低实际的web服务器的负载的一种技术。反向代理是针对web服务器提高加速功能，所有外部网络要访问服务器时的所有请求都要通过它，这样反向代理服务器负责接收客户端的请求，然后到源服务器上获取内容，把内容返回给用户，并把内容保存在本地，以便日后再收到同样的信息请求时，它会将本地缓存里的内容直接发给用户，已减少后端web服务器的压力，提高响应速度。因此Nginx还具有缓存功能。</p>
+
+<!-- more -->
+
+<p>了解nginx的反向代理如何实现之前，先看看我们一般配置nginx反向代理的设置：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+    upstream cc_001 {
+        server 192.168.1.101:80;
+        server 192.168.1.102:80;
+
+        healthcheck_enabled;
+        healthcheck_delay 3000;
+        healthcheck_timeout 1000;
+        healthcheck_failcount 2;
+        healthcheck_send 'GET /healthcheck.html HTTP/1.0' 'Host: local.com' 'Connection: close';
+    }
+
+    server {
+
+        listen       192.168.1.100:80;
+        server_name  cc.local.com;
+
+        proxy_buffers 64 4k;
+
+        location = / {
+            proxy_pass http://cc_001/bm/index.htm;
+            proxy_set_header   Host             $host;
+            proxy_set_header   X-Real-IP        $remote_addr;
+            proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
+        }
+
+        location / {
+            proxy_pass http://cc_001;
+            proxy_set_header   Host             $host;
+            proxy_set_header   X-Real-IP        $remote_addr;
+            proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
+        }
+    }
+
+</code></pre></div></div>
+
+<p>上面的code主要列出来nginx 反向代理基本配置。</p>
+
+<blockquote>
+  <blockquote>
+    <p>Tips：上面的配置选项都是最最基本的，一般涉及到反向代理都会使用到这些配置。对于其中的设置项，理解起来也很简单。</p>
+  </blockquote>
+</blockquote>
+
+<p><em>upstream配置块</em></p>
+
+<p>其实在nginx中，<code class="highlighter-rouge">upstream</code>是一个非常重要的配置。nginx所有对于动态请求的处理，基本上都需要使用<code class="highlighter-rouge">upstream</code>配置模块。nginx的两个很重要的功能，反向代理和负载均衡，都需要通过配置对应的<code class="highlighter-rouge">upstream</code>来完成。</p>
+
+<blockquote>
+  <blockquote>
+    <p>其实在nginx中，有一个基础模块叫handler，这个模块可以接受来自客户端/用户端的请求，然后处理并产生对应的响应内容返回过去。因此，我们那些静态资源，前端页面什么的，都是使用handler模块来完成响应的。但是，众所知周，一般的核心服务都是后台动态产生的，这些资源就不可以方便使用handler去完成内容的生成和响应动作（当然也是可以使用开发自定义handler来完成的，比如各种xxxcgi之流，但是一般还是用来处理静态资源）。</p>
+
+    <p>那么，upstream就出现了。其接收到用户的请求，然后转发到后端服务器拿到对应的响应资源，再返回给请求端。在整个处理过程中，其本身不会产生自己的响应内容，这是和<code class="highlighter-rouge">handler</code>模块唯一的区别。</p>
+
+    <p>upstream的特性，决定了在其配置块中，设置一些后端服务器的地址和端口，就ok了。</p>
+
+  </blockquote>
+</blockquote>
+
+<p>配置项说明：</p>
+
+<ul>
+  <li>
+    <p>upstream中的server项：表明后台的一台服务器地址和端口。当客户端有请求到<code class="highlighter-rouge">nginx</code>服务器的时候，upstream模块根据这里配置的server，该对应的请求转发到这些server服务上，由这些server来处理请求，然后把响应结果告知upstream模块。</p>
+  </li>
+  <li>
+    <p>healthcheck_enabled项：healthcheck健康监控功能，并不是原生nginx自带的。所以如果使用这个功能，必须要安装第三方插件：<code class="highlighter-rouge">ngx_http_healthcheck_module</code>。healthcheck_enabled表示启动健康检查模块功能。</p>
+  </li>
+  <li>
+    <p>healthcheck_delay项：对同一台后端服务器两次检测之间的时间间隔，单位毫秒，默认为1000。</p>
+  </li>
+  <li>
+    <p>healthcheck_timeout项：进行一次健康检测的超时时间，单位为毫秒，默认值2000。</p>
+  </li>
+  <li>
+    <p>healthcheck_failcount项：对一台后端服务器检测成功或失败多少次之后方才确定其为成功或失败，并实现启用或禁用此服务器。</p>
+  </li>
+  <li>
+    <p>healthcheck_send项：为了检测后端服务器的健康状态所发送的检测请求。然后根据各个服务器的响应情况来判断服务器是否存活。上面的配置表面，各个后台服务器上都存在<code class="highlighter-rouge">healthcheck.html</code>静态页面，然后nginx会get这个页面，根据是否status为200来判断是否服务器存活。</p>
+  </li>
+</ul>
+
+<p><em>server配置块</em></p>
+
+<p>在nginx中，不管怎么样的配置，都会有一个server配置块。http服务上支持若干虚拟主机。每个虚拟主机会有一个对应的server配置项，配置项里面包含该虚拟主机相关的配置。在提供mail服务的代理时，也可以建立若干server.每个server通过监听的地址来区分。</p>
+
+<blockquote>
+  <blockquote>
+    <p>Server其实就是一个虚拟主机。因为在nginx中可以配置多个server，这样就使得nginx可以在一台服务器上配置多个域名。</p>
+
+    <p>在nginx的Server虚拟主机中，它只会处理与之对应的域名请求。并且，如果在listen中设置了ip地址，则该虚拟主机只会处理从该服务器的指定ip端口进来的请求，才会去处理。关于一台服务器设置多个别名ip地址的方式，可以参考博客<a href="http://www.cnblogs.com/mchina/archive/2012/05/21/2511824.html">在Nginx中部署基于IP的虚拟主机</a></p>
+  </blockquote>
+</blockquote>
+
+<p>配置项说明：</p>
+
+<ul>
+  <li>
+    <p>listen项：监听ip和端口。当nginx服务器的该ip端口有请求访问，则调用该server的配置来处理该请求。</p>
+  </li>
+  <li>
+    <p>server_name项：域名。nginx对进入该虚拟主机的请求，检查其请求Host头是否匹配设置的server_name，如果是，则继续处理该请求。</p>
+  </li>
+  <li>
+    <p>location块选项：Location在nginx中是一个非常重要的指令。对于HTTP请求，其被用来详细匹配URI和设置的location path。一般这个uri path会是字符串或者正则表达式形式。</p>
+  </li>
+</ul>
+
+<blockquote>
+  <blockquote>
+    <p>: 关于location匹配，存在一些语法规则，如下：</p>
+
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  location [=|~|~*|^~|@] /uri/ { ... }
+   =：表示精确匹配，如果找到，立即停止搜索并立即处理此请求。
+   ~：表示区分大小写匹配。
+   ~*：表示不区分大小写匹配。
+   ^~：表示只匹配字符，串不查询正则表达式。
+   @：指定一个命名的location，一般只用于内部重定向请求。
+</code></pre></div>    </div>
+  </blockquote>
+</blockquote>
+
+<ul>
+  <li>
+    <p>location中proxy_pass项：代理转发。配置了该项，当匹配location path的请求进来后，会根据upstream设置，请求后台服务器上的proxy_pass的请求。例如，上面的配置，当有请求<code class="highlighter-rouge">cc.local.com</code>时，由于精确匹配<code class="highlighter-rouge">=/</code>，则根据proxy_pass配置，则会反向代理，请求<code class="highlighter-rouge">192.168.1.101:80/bm/index.htm</code>。</p>
+  </li>
+  <li>
+    <p>location中proxy_set_header项：设置代理请求头。由于经过了反向代理服务器，所以后台服务器不能获取真正的客户端请求地址等信息，这样，就需要把这些ip地址，设置回请求头部中。然后，我们在后台服务上，可以使用<code class="highlighter-rouge">request.get("X-Real-IP")</code>或者<code class="highlighter-rouge">request.get("X-Forwarded-For")</code>获取真实的请求ip地址。获取host也是如此。具体可以参考博文：<a href="http://gong1208.iteye.com/blog/1559835"> 使用nginx后如何在web应用中获取用户ip及原理解释</a>.</p>
+  </li>
+</ul>
+
+<h2 id="nginx-架构和请求处理流程"><a id="ProcessRequest">Nginx 架构和请求处理流程</a></h2>
+
+<p>Nginx架构，在taobao的<a href="http://tengine.taobao.org/book/chapter_02.html">《Nginx开发从入门到精通》</a>电子书中，写的比较详细。这里记录一些核心的细节。</p>
+
+<p>Nginx在启动会以daemon形式在后台运行，采用<code class="highlighter-rouge">多进程+异步非阻塞IO事件模型</code>来处理各种连接请求。</p>
+
+<p>Nginx主要包含一个master进行和多个worker进行，一般worker进程个数是根据服务器CPU核数来决定的。如下图：</p>
+
+<p><img src="/images/2015/08/nginx_process.png" /></p>
+
+<blockquote>
+  <blockquote>
+    <p>Notes：从上图中可以很明显地看到，4个worker进程的父进程都是master进程，表明worker进程都是从父进程fork出来的，并且父进程的ppid为1，表示其为daemon进程。</p>
+
+    <p>需要说明的是，在nginx多进程中，每个worker都是平等的，因此每个进程处理外部请求的机会权重都是一致的。</p>
+
+  </blockquote>
+</blockquote>
+
+<p>下面来介绍一个请求进来，进程模型的处理方式。</p>
+
+<p><em>首先</em>，master进程一开始就会根据我们的配置，来建立需要listen的网络socket fd，然后fork出多个worker进程。</p>
+
+<p><em>其次</em>，根据进程的特性，新建立的worker进程，也会和master进程一样，具有相同的设置。因此，其也会去监听相同ip端口的套接字socket fd。</p>
+
+<p><em>然后</em>，这个时候有多个worker进程都在监听同样设置的socket fd，意味着当有一个请求进来的时候，所有的worker都会感知到。这样就会产生所谓的<code class="highlighter-rouge">惊群现象</code>。为了保证只会有一个进程成功注册到listenfd的读事件，nginx中实现了一个<code class="highlighter-rouge">accept_mutex</code>类似互斥锁，只有获取到这个锁的进程，才可以去注册读事件。其他进程全部accept 失败。</p>
+
+<p><em>最后</em>，注册成功的worker进程，读取请求，解析处理，响应数据返回给客户端，断开连接，结束。因此，一个request请求，只需要worker进程就可以完成。</p>
+
+<blockquote>
+  <blockquote>
+    <p>进程模型的处理方式带来的一些好处就是：进程之间是独立的，也就是一个worker进程出现异常退出，其他worker进程是不会受到影响的；此外，独立进程也会避免一些不需要的锁操作，这样子会提高处理效率，并且开发调试也更容易。</p>
+
+    <p>如前文所述，<code class="highlighter-rouge">多进程模型+异步非阻塞模型</code>才是胜出的方案。单纯的多进程模型会导致连接并发数量的降低，而采用异步非阻塞IO模型很好的解决了这个问题；并且还因此避免的多线程的上下文切换导致的性能损失。</p>
+
+    <p>关于异步非阻塞IO模型：linux的epoll介绍，可以参考：<a href="http://www.cppblog.com/deane/articles/165218.html">深入了解epoll </a></p>
+  </blockquote>
+</blockquote>
+
+<h3 id="nginx-连接和请求处理">Nginx 连接和请求处理</h3>
+
+<p>上一节介绍了，worker进程会竞争客户端的连接请求，这种方式可能会带来一个问题，就是可能所有的请求都被一个worker进程给竞争获取了，导致其他进程都比较空闲，而某一个进程会处于忙碌的状态，这种状态可能还会导致无法及时响应连接而丢弃discard掉本有能力处理的请求。这种不公平的现象，是需要避免的，尤其是在高可靠web服务器环境下。</p>
+
+<p>针对这种现象，Nginx采用了一个是否打开accept_mutex选项的值<code class="highlighter-rouge">ngx_accept_disabled</code>。标识控制一个worker进程是否需要去竞争获取accept_mutex选项，进而获取accept事件。</p>
+
+<blockquote>
+  <blockquote>
+    <p>ngx_accept_disabled值，nginx单进程的所有连接总数的八分之一，减去剩下的空闲连接数量，得到的这个ngx_accept_disabled。</p>
+
+    <p>当ngx_accept_disabled大于0时，不会去尝试获取accept_mutex锁，并且将ngx_accept_disabled减1，于是，每次执行到此处时，都会去减1，直到小于0。不去获取accept_mutex锁，就是等于让出获取连接的机会，很显然可以看出，当空余连接越少时，ngx_accept_disable越大，于是让出的机会就越多，这样其它进程获取锁的机会也就越大。不去accept，自己的连接就控制下来了，其它进程的连接池就会得到利用，这样，nginx就控制了多进程间连接的平衡了。</p>
+  </blockquote>
+</blockquote>
+
+<p>接下来，看看连接处理流程（来自tengine.taobao.org）：</p>
+
+<p><img src="/images/2015/08/request_process.png" /></p>
+
+<blockquote>
+  <blockquote>
+    <p>关于处理流程的说明，参考: <a href="http://tengine.taobao.org/book/chapter_02.html">http://tengine.taobao.org/book/chapter_02.html</a></p>
+
+  </blockquote>
+</blockquote>
+
+<h2 id="nginx-upstream模块和location配置"><a id="ImplementationStudy">Nginx Upstream模块和Location配置</a></h2>
+
+<p><em>Nginx Upstream</em></p>
+
+<p>upstream模块实现反向代理的功能，将真正的请求转发到后端服务器上，并从后端服务器上读取响应，发回客户端。</p>
+
+<p>从本质上说，upstream属于handler，只是他不产生自己的内容，而是通过请求后端服务器得到内容，所以才称为upstream（上游）。请求并取得响应内容的整个过程已经被封装到nginx内部，所以upstream模块只需要开发若干回调函数，完成构造请求和解析响应等具体的工作。</p>
+
+<p><code class="highlighter-rouge">upstream</code>模块逻辑实现的十分复杂，对于其具体实现，不分析。</p>
+
+<p><code class="highlighter-rouge">upstream</code>模块主要做两件事情：</p>
+
+<ul>
+  <li>
+    <p>当外部的客户端发送一个http请求后，如果涉及更后台服务，则会创建一个到后端服务的request请求；</p>
+  </li>
+  <li>
+    <p>请求到达后端，然后处理完成后，则upstream会将返回的数据接收过来，然后发送给外部请求的客户端。</p>
+  </li>
+</ul>
+
+<p><em>Nginx Location</em></p>
+
+<p>首先，介绍下存在的几种Location配置方式：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+location  = / {
+  # matches the query / only.
+  [ configuration A ] 
+}
+location  / {
+  # matches any query, since all queries begin with /, but regular
+  # expressions and any longer conventional blocks will be
+  # matched first.
+  [ configuration B ] 
+}
+location /documents/ {
+  # matches any query beginning with /documents/ and continues searching,
+  # so regular expressions will be checked. This will be matched only if
+  # regular expressions don't find a match.
+  [ configuration C ] 
+}
+location ^~ /images/ {
+  # matches any query beginning with /images/ and halts searching,
+  # so regular expressions will not be checked.
+  [ configuration D ] 
+}
+location ~* \.(gif|jpg|jpeg)$ {
+  # matches any request ending in gif, jpg, or jpeg. However, all
+  # requests to the /images/ directory will be handled by
+  # Configuration D.   
+  [ configuration E ] 
+}
+
+</code></pre></div></div>
+
+<p>示例请求：</p>
+
+<ul>
+  <li>/ -&gt; configuration A</li>
+  <li>/index.html -&gt; configuration B</li>
+  <li>/documents/document.html -&gt; configuration C</li>
+  <li>/images/1.gif -&gt; configuration D</li>
+  <li>/documents/1.jpg -&gt; configuration E</li>
+</ul>
+
+<p>解析匹配规则为：</p>
+
+<ol>
+  <li>
+    <p>字符串精确匹配到一个带 “=” 号前缀的location，则停止，且使用这个location的配置；</p>
+  </li>
+  <li>
+    <p>字符串匹配剩下的非正则和非特殊location，如果匹配到某个带 “^~” 前缀的location，则停止；</p>
+  </li>
+  <li>
+    <p>正则匹配，匹配顺序为location在配置文件中出现的顺序。如果匹配到某个正则location，则停止，并使用这个location的配置；否则，使用步骤2中得到的具有最大字符串匹配的location配置。</p>
+  </li>
+</ol>
+
+<blockquote>
+  <blockquote>
+    <p>Notes：需要注意的是：<code class="highlighter-rouge">~ 开头</code>表示区分大小写的正则匹配；而<code class="highlighter-rouge">~*  开头</code>表示不区分大小写的正则匹配。<code class="highlighter-rouge">!~和!~*</code>分别为区分大小写不匹配及不区分大小写不匹配的正则</p>
+  </blockquote>
+</blockquote>
+
+<h2 id="后记"><a id="End">后记</a></h2>
+
+<p>Nginx 是一个十分优秀的服务器软件，其内部相当多的设计和实现都非常巧妙和高效。</p>
+
+<p>关于Nginx的一些好的站点有：</p>
+
+<ul>
+  <li><a href="http://tengine.taobao.org/book/">http://tengine.taobao.org/book/</a></li>
+  <li><a href="http://www.pagefault.info/?cat=7">http://www.pagefault.info/?cat=7</a></li>
+  <li><a href="http://nginx.org/en/docs/">http://nginx.org/en/docs/</a></li>
+  <li><a href="http://kxcoder.github.io/images/2015/08/nginx_stream.png">http://kxcoder.github.io/images/2015/08/nginx_stream.png</a></li>
+</ul>
+
+                </div>
+                <div class="read-all">
+                    <a  href="/2015/08/30/nginx-proxy-configure-and-sduty/"><i class="fa fa-newspaper-o"></i>Read All</a>
+                </div>
+                <hr>
+              </li>
+            
+              <li>
+                <h2>
+                  <a class="post-link" href="/2015/04/29/LogBack-Implemention-And-Slf4j-Mdc/">Slf4j MDC 使用和 基于 Logback 的实现分析</a>
+                </h2>
+                <div class="label">
+                    <div class="label-card">
+                        <i class="fa fa-calendar"></i>2015-04-29
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+
+                    <div class="label-card">
+                    
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Log" title="Category: Log" rel="category">Log</a>&nbsp;
+    
+        <a href="/category/#Java" title="Category: Java" rel="category">Java</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+                    </div>
+
+                    <div class="label-card">
+                    
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+                    </div>
+                </div>
+                <div class="excerpt">
+                    <h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p>如今,在 Java 开发中，日志的打印输出是必不可少的，<code class="highlighter-rouge">Slf4j + LogBack</code> 的组合是最通用的方式。</p>
+
+<p>关于 <code class="highlighter-rouge">Slf4j</code> 的介绍,请参考本博客<a href="http://ketao1989.github.io/posts/Java-slf4j-Introduce.html">http://ketao1989.github.io/posts/Java-slf4j-Introduce.html</a></p>
+
+<p>有了日志之后，我们就可以追踪各种线上问题。但是，在分布式系统中，各种无关日志穿行其中，导致我们可能无法直接定位整个操作流程。因此，我们可能需要对一个用户的操作流程进行归类标记，比如使用<code class="highlighter-rouge">线程+时间戳</code>，或者用户身份标识等；如此，我们可以从大量日志信息中grep出某个用户的操作流程，或者某个时间的流转记录。</p>
+
+<p>因此，这就有了 <code class="highlighter-rouge">Slf4j MDC</code> 方法。</p>
+
+<h2 id="slf4j-mdc-介绍"><a id="MdcIntroduce">Slf4j MDC 介绍</a></h2>
+
+<p>MDC ( Mapped Diagnostic Contexts )，顾名思义，其目的是为了便于我们诊断线上问题而出现的方法工具类。虽然，Slf4j 是用来适配其他的日志具体实现包的，但是针对 MDC功能，目前只有logback 以及 log4j 支持，或者说由于该功能的重要性，slf4j 专门为logback系列包装接口提供外部调用(玩笑～：）)。</p>
+
+<blockquote>
+  <blockquote>
+    <p>logback 和 log4j 的作者为同一人，所以这里统称logback系列。</p>
+  </blockquote>
+</blockquote>
+
+<p>先来看看 MDC 对外提高的接口：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">MDC</span> <span class="o">{</span>
+  <span class="c1">//Put a context value as identified by key</span>
+  <span class="c1">//into the current thread's context map.</span>
+  <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">put</span><span class="o">(</span><span class="n">String</span> <span class="n">key</span><span class="o">,</span> <span class="n">String</span> <span class="n">val</span><span class="o">);</span>
+
+  <span class="c1">//Get the context identified by the key parameter.</span>
+  <span class="kd">public</span> <span class="kd">static</span> <span class="n">String</span> <span class="nf">get</span><span class="o">(</span><span class="n">String</span> <span class="n">key</span><span class="o">);</span>
+
+  <span class="c1">//Remove the context identified by the key parameter.</span>
+  <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">remove</span><span class="o">(</span><span class="n">String</span> <span class="n">key</span><span class="o">);</span>
+
+  <span class="c1">//Clear all entries in the MDC.</span>
+  <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">clear</span><span class="o">();</span>
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>接口定义非常简单，此外，其使用也非常简单。</p>
+
+  </blockquote>
+</blockquote>
+
+<!-- more -->
+
+<p>如上代码所示，一般，我们在代码中，只需要将指定的值put到线程上下文的Map中，然后，在对应的地方使用 get方法获取对应的值。此外，对于一些线程池使用的应用场景，可能我们在最后使用结束时，需要调用clear方法来清洗将要丢弃的数据。</p>
+
+<p>然后，看看一个MDC使用的简单示例。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">LogTest</span> <span class="o">{</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">Logger</span> <span class="n">logger</span> <span class="o">=</span> <span class="n">LoggerFactory</span><span class="o">.</span><span class="na">getLogger</span><span class="o">(</span><span class="n">LogTest</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+
+        <span class="n">MDC</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">"THREAD_ID"</span><span class="o">,</span> <span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">Thread</span><span class="o">.</span><span class="na">currentThread</span><span class="o">().</span><span class="na">getId</span><span class="o">()));</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">"纯字符串信息的info级别日志"</span><span class="o">);</span>
+
+    <span class="o">}</span>
+
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>然后看看logback的输出模板配置：</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="cp">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
+<span class="nt">&lt;configuration&gt;</span>
+
+    <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">"log.base"</span> <span class="na">value=</span><span class="s">"${catalina.base}/logs"</span> <span class="nt">/&gt;</span>
+
+    <span class="nt">&lt;contextListener</span> <span class="na">class=</span><span class="s">"ch.qos.logback.classic.jul.LevelChangePropagator"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;resetJUL&gt;</span>true<span class="nt">&lt;/resetJUL&gt;</span>
+    <span class="nt">&lt;/contextListener&gt;</span>
+
+    <span class="nt">&lt;appender</span> <span class="na">name=</span><span class="s">"console"</span> <span class="na">class=</span><span class="s">"ch.qos.logback.core.ConsoleAppender"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;encoder</span> <span class="na">charset=</span><span class="s">"UTF-8"</span><span class="nt">&gt;</span>
+            <span class="nt">&lt;pattern&gt;</span>[%d{yyyy-MM-dd HH:mm:ss} %highlight(%-5p) %logger.%M\(%F:%L\)] %X{THREAD_ID} %msg%n<span class="nt">&lt;/pattern&gt;</span>
+        <span class="nt">&lt;/encoder&gt;</span>
+    <span class="nt">&lt;/appender&gt;</span>
+    <span class="nt">&lt;root</span> <span class="na">level=</span><span class="s">"INFO"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;appender-ref</span> <span class="na">ref=</span><span class="s">"console"</span> <span class="nt">/&gt;</span>
+    <span class="nt">&lt;/root&gt;</span>
+<span class="nt">&lt;/configuration&gt;</span>
+</code></pre></div></div>
+
+<p>于是，就有了输出：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[2015-04-30 15:34:35 INFO  io.github.ketao1989.log4j.LogTest.main(LogTest.java:29)] 1 纯字符串信息的info级别日志
+</code></pre></div></div>
+
+
+                </div>
+                <div class="read-all">
+                    <a  href="/2015/04/29/LogBack-Implemention-And-Slf4j-Mdc/"><i class="fa fa-newspaper-o"></i>Read All</a>
+                </div>
+                <hr>
+              </li>
+            
+              <li>
+                <h2>
+                  <a class="post-link" href="/2015/02/26/Python-Tutoril-Python-Object-Oriented-Programming/">Python 教程学习之 Python 面向对象编程</a>
+                </h2>
+                <div class="label">
+                    <div class="label-card">
+                        <i class="fa fa-calendar"></i>2015-02-26
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+
+                    <div class="label-card">
+                    
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Python" title="Category: Python" rel="category">Python</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+                    </div>
+
+                    <div class="label-card">
+                    
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+                    </div>
+                </div>
+                <div class="excerpt">
+                    <h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p>在之前的学习中,基本上都是使用类似于面对过程的方式来写代码,学习各种 Python 的基础知识，接下来，我们需要继续学习面向对象的Python，也就是类对象继承等概念。</p>
+
+<p>对象和属性，这些概念在任务编程语言中，其定义都是一致的。我们通过一个对象来表示一个物体，而这个物体的一些特征，就是对象中的属性。比如，一个人，作为一个对象 Person，则会有<code class="highlighter-rouge">姓名，身高，体重，性别，出生日期</code>等属性，这些属性就是这个人的对外特性了。</p>
+
+<h2 id="python-面向对象编程介绍"><a id="BasicGuide">Python 面向对象编程介绍</a></h2>
+
+<p>类，就是对一类物体进行抽象的表示，比如上面的 Person；而实例，则是具体化了每一个类的属性值，其可以决定某一个物体特征的对象。</p>
+
+<p>在 Python 中，可以如下来定义一个类：</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="k">class</span> <span class="nc">Person</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="s">"""docstring for Person"""</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Person</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__name</span> <span class="o">=</span> <span class="n">name</span>
+
+</code></pre></div></div>
+
+<!-- more -->
+
+<p><code class="highlighter-rouge">class</code> 用来表示这是一个类，<code class="highlighter-rouge">object</code> 表示该类继承的父类，默认是 object，但是推荐是写上父类，即使其继承 <code class="highlighter-rouge">object</code>类。</p>
+
+<blockquote>
+  <blockquote>
+    <p>Tips：Python 中，默认规定，类下面的第一行注释，是该类的 doc 说明。</p>
+
+    <p>此外，<code class="highlighter-rouge">__xx__</code>形式的属性和方法，在Python中都是有特殊用途的，比如 <strong>len</strong> 方法返回长度，再比如 <strong>init</strong> 方法是类对象初始化时调用的，<strong>new</strong> 方法则是构造对象的时候调用的，即在 <code class="highlighter-rouge">__init__</code> 之前调用。</p>
+
+  </blockquote>
+</blockquote>
+
+<p>接下来，需要说明的是，Python 的权限控制。</p>
+
+<p>和 Java 完全不一样，Python 没有关键字来说明该变量属性或者方法是 私有的 还是受保护的，亦或者是公共的。</p>
+
+<p>Python 使用一种约定的方式来，声明访问限制的粒度。</p>
+
+<ul>
+  <li>
+    <p>xx ：这种方式命名的变量或者方法，都是 <code class="highlighter-rouge">public</code>粒度的；</p>
+  </li>
+  <li>
+    <p>_xx ：这种方式命名的变量或者方法，都是 <code class="highlighter-rouge">protected</code>粒度的；</p>
+  </li>
+  <li>
+    <p>__xx ：私有属性的变量或者方法，外部调用会报错的。</p>
+  </li>
+</ul>
+
+<p>Python 中拥有的一些特殊功能的方法：</p>
+
+<ul>
+  <li>
+    <p>type() ：获取对象的类型，比如，type(‘abc’)会返回 <code class="highlighter-rouge">&lt;type 'str'&gt;</code> .</p>
+  </li>
+  <li>
+    <p>isinstance()：type 方法不能很好的判断拥有继承关系的对象，而 <code class="highlighter-rouge">isinstance</code> 则可以。例如：<code class="highlighter-rouge">isinstance(person,object) #person是Person的实例</code>.</p>
+  </li>
+  <li>
+    <p>dir()：想要获取一个类下面所有的方法吗？使用 dir 就可以了，比如<code class="highlighter-rouge">dir('abc')</code></p>
+  </li>
+  <li>
+    <p>hasattr/getattr/setattr()：依次是判断一个对象是否有指定属性，获取该属性，设置某个属性</p>
+  </li>
+</ul>
+
+<h2 id="python-面向对象编程技巧"><a id="AdvancedTech">Python 面向对象编程技巧</a></h2>
+
+<p>Python 中还有一些比较高大上的技巧。</p>
+
+<p><em><code class="highlighter-rouge">@property</code>装饰器</em></p>
+
+<p>装饰器概念，在 <code class="highlighter-rouge">Python 函数式编程</code> 中已经介绍了。我们在类的代码 coding 中，有一些可能想要把方法使用如同属性使用般方便，则可以使用<code class="highlighter-rouge">@property</code>装饰器。</p>
+
+<p>注解方式，如下所示：</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">age</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__age</span>
+        <span class="k">except</span> <span class="nb">Exception</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+
+    <span class="nd">@age.setter</span>
+    <span class="k">def</span> <span class="nf">age</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__age</span> <span class="o">=</span> <span class="n">value</span>
+
+</code></pre></div></div>
+
+<p><em>metaclass 元类</em></p>
+
+<p>Python 中，元类是一个很神奇的东西，由于其涉及到了底层的类结构构造，所以全部深入理解起来，可能会比较复杂。</p>
+
+<p>关于元类的资料，可以参考<a href="http://stackoverflow.com/questions/100003/what-is-a-metaclass-in-python">http://stackoverflow.com/questions/100003/what-is-a-metaclass-in-python</a>，第一个 answer 回答的特别棒。</p>
+
+<p>当我们定义了类以后，就可以根据这个类创建出实例，所以：先定义类，然后创建实例。</p>
+
+<p>但是如果我们想创建出类呢？那就必须根据metaclass创建出类，所以：先定义metaclass，然后创建类。</p>
+
+<p>连接起来就是：先定义metaclass，就可以创建类，最后创建实例。</p>
+
+<p>所以，metaclass允许你创建类或者修改类。换句话说，你可以把类看成是metaclass创建出来的“实例”。</p>
+
+<p>现在，一个简单的示例，就是，对于该类所有的自定义属性，其name都大写。</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="k">class</span> <span class="nc">Female</span><span class="p">(</span><span class="n">Person</span><span class="o">.</span><span class="n">Person</span><span class="p">):</span>
+
+    <span class="s">"""docstring for Female"""</span>
+
+    <span class="k">def</span> <span class="nf">log_construct</span><span class="p">(</span><span class="n">class_name</span><span class="p">,</span> <span class="n">class_parent</span><span class="p">,</span> <span class="n">class_attr</span><span class="p">):</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">'==----==---contruct---===---'</span><span class="p">)</span>
+        <span class="n">upper_attr</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">class_attr</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">key</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">'__'</span><span class="p">):</span>  <span class="c"># 不能改变class自带的属性</span>
+                <span class="n">upper_attr</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">upper_attr</span><span class="p">[</span><span class="n">key</span><span class="o">.</span><span class="n">upper</span><span class="p">()]</span> <span class="o">=</span> <span class="n">value</span>
+
+        <span class="k">return</span> <span class="nb">type</span><span class="p">(</span><span class="n">class_name</span><span class="p">,</span> <span class="n">class_parent</span><span class="p">,</span> <span class="n">upper_attr</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">married</span><span class="p">):</span>
+        <span class="n">Person</span><span class="o">.</span><span class="n">Person</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__married</span> <span class="o">=</span> <span class="n">married</span>
+
+    <span class="n">__metaclass__</span> <span class="o">=</span> <span class="n">log_construct</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">'__main__'</span><span class="p">:</span>
+    <span class="n">felame</span> <span class="o">=</span> <span class="n">Female</span><span class="p">(</span><span class="s">'ketao1989'</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+    <span class="n">felame</span><span class="o">.</span><span class="n">age</span> <span class="o">=</span> <span class="mi">100</span>
+    <span class="k">print</span> <span class="n">felame</span>
+
+    <span class="k">print</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">Female</span><span class="p">,</span> <span class="s">'MARRIED'</span><span class="p">)</span> <span class="c"># 返回Ture</span>
+
+</code></pre></div></div>
+
+<h2 id="python-面向对象编程代码示例"><a id="SourceCode">Python 面向对象编程代码示例</a></h2>
+
+<p>这里主要是两个类，涉及到继承，和一些面向对象的使用方法。</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="c">#!/usr/bin/env python</span>
+<span class="c"># -*- coding: utf-8 -*-</span>
+<span class="c"># @Date    : 2015-02-22 19:49:20</span>
+<span class="c"># @Author  : ketao1989</span>
+<span class="c"># @Version : $Id$</span>
+
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">json</span>
+
+<span class="nb">reload</span><span class="p">(</span><span class="n">sys</span><span class="p">)</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">setdefaultencoding</span><span class="p">(</span><span class="s">'utf8'</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">Person</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="s">"""docstring for Person"""</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Person</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__name</span> <span class="o">=</span> <span class="n">name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__name</span>
+
+    <span class="nd">@name.setter</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__name</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">get_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__tranform_name</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__tranform_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">name</span> <span class="o">+</span> <span class="s">"_test"</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">age</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__age</span>
+        <span class="k">except</span> <span class="nb">Exception</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+
+    <span class="nd">@age.setter</span>
+    <span class="k">def</span> <span class="nf">age</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__age</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">"</span><span class="si">%</span><span class="s">s 's age is : </span><span class="si">%</span><span class="s">s"</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_name</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">age</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">'__main__'</span><span class="p">:</span>
+    <span class="n">person</span> <span class="o">=</span> <span class="n">Person</span><span class="p">(</span><span class="s">'ketao1989'</span><span class="p">)</span>
+    <span class="n">person</span><span class="o">.</span><span class="n">age</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="k">print</span> <span class="n">person</span><span class="o">.</span><span class="n">name</span>
+    <span class="k">print</span> <span class="n">person</span>
+    <span class="k">print</span> <span class="n">os</span><span class="o">.</span><span class="n">uname</span><span class="p">()</span>
+    <span class="k">print</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s">'PATH'</span><span class="p">)</span>
+    <span class="k">print</span> <span class="nb">dir</span><span class="p">(</span><span class="s">'abc'</span><span class="p">)</span>
+
+<span class="c">#!/usr/bin/env python</span>
+<span class="c"># -*- coding: utf-8 -*-</span>
+<span class="c"># @Date    : 2015-02-22 20:34:46</span>
+<span class="c"># @Author  : ketao1989</span>
+<span class="c"># @Version : $Id$</span>
+
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">Person</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">json</span>
+
+<span class="nb">reload</span><span class="p">(</span><span class="n">sys</span><span class="p">)</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">setdefaultencoding</span><span class="p">(</span><span class="s">'utf8'</span><span class="p">)</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">Female</span><span class="p">(</span><span class="n">Person</span><span class="o">.</span><span class="n">Person</span><span class="p">):</span>
+
+    <span class="s">"""docstring for Female"""</span>
+
+    <span class="k">def</span> <span class="nf">log_construct</span><span class="p">(</span><span class="n">class_name</span><span class="p">,</span> <span class="n">class_parent</span><span class="p">,</span> <span class="n">class_attr</span><span class="p">):</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">'==----==---contruct---===---'</span><span class="p">)</span>
+        <span class="n">upper_attr</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">class_attr</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">key</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">'__'</span><span class="p">):</span>  <span class="c"># 不能改变class自带的属性</span>
+                <span class="n">upper_attr</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">upper_attr</span><span class="p">[</span><span class="n">key</span><span class="o">.</span><span class="n">upper</span><span class="p">()]</span> <span class="o">=</span> <span class="n">value</span>
+
+        <span class="k">return</span> <span class="nb">type</span><span class="p">(</span><span class="n">class_name</span><span class="p">,</span> <span class="n">class_parent</span><span class="p">,</span> <span class="n">upper_attr</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">married</span><span class="p">):</span>
+        <span class="n">Person</span><span class="o">.</span><span class="n">Person</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__married</span> <span class="o">=</span> <span class="n">married</span>
+
+    <span class="n">__metaclass__</span> <span class="o">=</span> <span class="n">log_construct</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">married</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__married</span>
+
+    <span class="nd">@married.setter</span>
+    <span class="k">def</span> <span class="nf">married</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__married</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">get_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s">"_Female____"</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">prefix</span> <span class="o">=</span> <span class="n">Person</span><span class="o">.</span><span class="n">Person</span><span class="o">.</span><span class="n">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">prefix</span> <span class="o">+</span> <span class="s">",married is : </span><span class="si">%</span><span class="s">s"</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MARRIED</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">'__main__'</span><span class="p">:</span>
+    <span class="n">felame</span> <span class="o">=</span> <span class="n">Female</span><span class="p">(</span><span class="s">'ketao1989'</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+    <span class="n">felame</span><span class="o">.</span><span class="n">age</span> <span class="o">=</span> <span class="mi">100</span>
+    <span class="k">print</span> <span class="n">felame</span>
+
+    <span class="k">print</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">Female</span><span class="p">,</span> <span class="s">'MARRIED'</span><span class="p">)</span>
+
+    <span class="k">print</span> <span class="n">Female</span>
+    <span class="k">print</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">Female</span><span class="p">,</span> <span class="s">'job'</span><span class="p">)</span>
+    <span class="n">felame</span><span class="o">.</span><span class="n">job</span> <span class="o">=</span> <span class="s">'dev'</span>
+    <span class="k">print</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">felame</span><span class="p">,</span> <span class="s">'job'</span><span class="p">)</span>
+    <span class="k">print</span> <span class="n">felame</span><span class="o">.</span><span class="n">name</span>
+
+    <span class="n">felame1</span> <span class="o">=</span> <span class="n">Female</span><span class="p">(</span><span class="s">'ketao'</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
+    <span class="k">print</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">Female</span><span class="p">,</span> <span class="s">'job'</span><span class="p">)</span>
+    <span class="k">print</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">felame1</span><span class="p">,</span> <span class="s">'job'</span><span class="p">)</span>
+    <span class="k">print</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">felame</span><span class="p">,</span> <span class="s">'job'</span><span class="p">)</span>
+    <span class="k">print</span> <span class="n">felame</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__class__</span>
+    <span class="k">print</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">felame</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="k">lambda</span> <span class="n">obj</span><span class="p">:</span> <span class="n">obj</span><span class="o">.</span><span class="n">__dict__</span><span class="p">)</span>
+    <span class="n">json_str</span> <span class="o">=</span> <span class="s">'{"_Person__name": "ketao1989", "_Person__age": 100, "job": "dev", "_Female__married": false}'</span>
+    <span class="n">felame2</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json_str</span><span class="p">)</span>
+    <span class="k">print</span> <span class="n">felame2</span>
+
+
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Notes : 在Female类中，继承需要写成<code class="highlighter-rouge">Person.Person</code>的形式，前面的<code class="highlighter-rouge">Person</code>是module,后面的 <code class="highlighter-rouge">Person</code>才是类。</p>
+
+    <p>此外，使用metaClass方式更改属性时，只会修改该类自己的属性，而不会更改其继承的父类的属性名。</p>
+  </blockquote>
+</blockquote>
+
+                </div>
+                <div class="read-all">
+                    <a  href="/2015/02/26/Python-Tutoril-Python-Object-Oriented-Programming/"><i class="fa fa-newspaper-o"></i>Read All</a>
+                </div>
+                <hr>
+              </li>
+            
+              <li>
+                <h2>
+                  <a class="post-link" href="/2015/02/17/Python-Tutoril-Python-Functional-Programing/">Python 教程学习之 Python 函数式编程</a>
+                </h2>
+                <div class="label">
+                    <div class="label-card">
+                        <i class="fa fa-calendar"></i>2015-02-17
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+
+                    <div class="label-card">
+                    
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Python" title="Category: Python" rel="category">Python</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+                    </div>
+
+                    <div class="label-card">
+                    
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+                    </div>
+                </div>
+                <div class="excerpt">
+                    <h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p>函数式编程是一种比较抽象的编程范式,其将各种指令计算运行作为数学中函数计算一样,尽量避免状态和变量的概念,因此函数式编程,一大特点就是无副作用,这对于并发编程大行其道的今天,是非常优良的特点.</p>
+
+<p>Python 作为一个动态脚本语言，其很早就支持了函数式编程范式。</p>
+
+<h2 id="python-函数式编程"><a id="FunctionalProgram">Python 函数式编程</a></h2>
+
+<p>Python 函数式编程，涉及太多的内容。简单介绍几个点。</p>
+
+<h3 id="高阶函数">高阶函数</h3>
+
+<p>所谓高阶函数，和数学上的高阶函数定义基本一样，就是对函数进行计算处理的函数。其处理对象是另一个函数。</p>
+
+<p><em>Map 和 Reduce 函数</em></p>
+
+<p>云计算中，关于 MapReduce 的并行计算框架，在其他很多编程语言中，都会提供 API 方法。即使在Java这种笨重的语言中，也已经提供了相关的方法给开发者使用。</p>
+
+<p>Python 的 map 方法，表示分别对列表中的元素独立处理；Reduce 方法，则表示对map处理完的结果，按照指定的方式进行聚合处理。</p>
+
+<!-- more -->
+
+<p>看看示例代码：</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+
+<span class="k">def</span> <span class="nf">lowerLetter</span><span class="p">(</span><span class="n">c</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">c</span> <span class="o">&gt;=</span> <span class="s">'a'</span> <span class="ow">and</span> <span class="n">c</span> <span class="o">&lt;=</span> <span class="s">'z'</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">True</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+
+<span class="k">def</span> <span class="nf">firstUpper</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="n">ss</span> <span class="o">=</span> <span class="s">''</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">lowerLetter</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="n">i</span><span class="p">]):</span>
+                <span class="n">ss</span> <span class="o">=</span> <span class="n">ss</span> <span class="o">+</span> <span class="nb">chr</span><span class="p">(</span><span class="nb">ord</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">+</span> <span class="nb">ord</span><span class="p">(</span><span class="s">'A'</span><span class="p">)</span> <span class="o">-</span> <span class="nb">ord</span><span class="p">(</span><span class="s">'a'</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ss</span> <span class="o">=</span> <span class="n">ss</span> <span class="o">+</span> <span class="n">s</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">lowerLetter</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="n">i</span><span class="p">]):</span>
+                <span class="n">ss</span> <span class="o">=</span> <span class="n">ss</span> <span class="o">+</span> <span class="n">s</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ss</span> <span class="o">=</span> <span class="n">ss</span> <span class="o">+</span> <span class="nb">chr</span><span class="p">(</span><span class="nb">ord</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">+</span> <span class="nb">ord</span><span class="p">(</span><span class="s">'a'</span><span class="p">)</span> <span class="o">-</span> <span class="nb">ord</span><span class="p">(</span><span class="s">'A'</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">ss</span>
+
+
+<span class="k">def</span> <span class="nf">mergeWords</span><span class="p">(</span><span class="n">strA</span><span class="p">,</span> <span class="n">strB</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">strA</span> <span class="o">+</span> <span class="s">'-'</span> <span class="o">+</span> <span class="n">strB</span>
+
+<span class="n">mm</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="n">firstUpper</span><span class="p">,</span> <span class="p">[</span><span class="s">'abc'</span><span class="p">,</span> <span class="s">'zfc'</span><span class="p">,</span> <span class="s">'Azc'</span><span class="p">])</span>
+<span class="k">print</span> <span class="n">mm</span>
+
+<span class="n">rr</span> <span class="o">=</span> <span class="nb">reduce</span><span class="p">(</span><span class="n">mergeWords</span><span class="p">,</span> <span class="n">mm</span><span class="p">)</span>
+<span class="k">print</span> <span class="n">rr</span>
+
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Notes ：</p>
+    <ul>
+      <li>
+        <p>map 方法，对每个列表的元素处理，开头字符大写，其他字母都小写。代码中使用了最简单的原始字符处理方式处理，主要是学习下python的字节操作方法。</p>
+      </li>
+      <li>
+        <p>Reduce方法，则把所有的单词都聚合在一起，使用<code class="highlighter-rouge">-</code>相连。reduce 方法会自动依次取出上一次的reduce结果和接下来的元素，再调用reduce处理。</p>
+      </li>
+    </ul>
+
+  </blockquote>
+</blockquote>
+
+<p><em>filter 函数</em></p>
+
+<p>filter 函数用来按照我们的要求，过滤队列。我们首先，给出一个过滤条件来依次判断列表的元素是否满足，根据返回的<code class="highlighter-rouge">True</code>或则<code class="highlighter-rouge">False</code>来决定去留。</p>
+
+<p>看看示例代码：</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+
+<span class="k">def</span> <span class="nf">contains</span><span class="p">(</span><span class="n">ss</span><span class="p">,</span> <span class="n">subStr</span><span class="o">=</span><span class="s">'z'</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">ss</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">subStr</span><span class="p">)</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span>
+<span class="c"># ['zfc', 'Azc']</span>
+<span class="n">ff</span> <span class="o">=</span> <span class="nb">filter</span><span class="p">(</span><span class="n">contains</span><span class="p">,</span> <span class="p">[</span><span class="s">'abc'</span><span class="p">,</span> <span class="s">'zfc'</span><span class="p">,</span> <span class="s">'Azc'</span><span class="p">])</span>
+<span class="k">print</span> <span class="n">ff</span>
+
+</code></pre></div></div>
+
+<p><em>sorted 函数</em></p>
+
+<p>排序方法，对列表按照比较函数的返回结果，进行排序，返回排序完之后的列表。</p>
+
+<p>看看示例代码：</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="c"># ['Azc', 'abc', 'zfc']</span>
+<span class="n">sl</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">([</span><span class="s">'abc'</span><span class="p">,</span> <span class="s">'zfc'</span><span class="p">,</span> <span class="s">'Azc'</span><span class="p">])</span>
+<span class="k">print</span> <span class="n">sl</span>
+
+
+<span class="k">def</span> <span class="nf">revertSortCmp</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">x</span> <span class="o">&gt;</span> <span class="n">y</span><span class="p">:</span>
+        <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="k">elif</span> <span class="n">x</span> <span class="o">==</span> <span class="n">y</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">0</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">1</span>
+
+<span class="c"># ['zfc', 'abc', 'Azc']</span>
+<span class="n">rsl</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">([</span><span class="s">'abc'</span><span class="p">,</span> <span class="s">'zfc'</span><span class="p">,</span> <span class="s">'Azc'</span><span class="p">],</span> <span class="n">revertSortCmp</span><span class="p">)</span>
+<span class="k">print</span> <span class="n">rsl</span>
+
+</code></pre></div></div>
+
+<h3 id="返回函数">返回函数</h3>
+
+<p>所谓返回函数，其实这也是函数式编程的核心之一。因为有了返回函数，我们可以确保函数式编程方法在获取结果的时候，才会执行；而不是，赋值函数的时候，立即执行。</p>
+
+<p>这种延迟计算的特性，使得很多时候，可以获得更好的计算性能。</p>
+
+<p>看看示例代码：</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="k">def</span> <span class="nf">lazy_tranform</span><span class="p">(</span><span class="n">ll</span><span class="p">):</span>
+    <span class="n">resTotal</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span> <span class="nf">tranform</span><span class="p">():</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">ll</span><span class="p">:</span>
+            <span class="n">xf</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="s">'-tranform'</span>
+            <span class="n">res</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">xf</span><span class="p">)</span>
+            <span class="n">resTotal</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">xf</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">res</span><span class="p">,</span> <span class="n">resTotal</span>
+    <span class="k">return</span> <span class="n">tranform</span>
+
+<span class="n">lf</span> <span class="o">=</span> <span class="n">lazy_tranform</span><span class="p">([</span><span class="s">'abc'</span><span class="p">,</span> <span class="s">'zfc'</span><span class="p">,</span> <span class="s">'Azc'</span><span class="p">])</span>
+<span class="c">#&lt;function tranform at 0x1006309b0&gt;</span>
+<span class="k">print</span> <span class="n">lf</span>
+<span class="c">#(['abc-tranform', 'zfc-tranform', 'Azc-tranform'], ['abc-tranform', 'zfc-tranform', 'Azc-tranform'])</span>
+<span class="k">print</span> <span class="n">lf</span><span class="p">()</span>
+<span class="c">#(['abc-tranform', 'zfc-tranform', 'Azc-tranform'], ['abc-tranform', 'zfc-tranform', 'Azc-tranform', 'abc-tranform', 'zfc-tranform', 'Azc-tranform'])</span>
+<span class="k">print</span> <span class="n">lf</span><span class="p">()</span>
+
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Notes ：可以看到上面，对于<code class="highlighter-rouge">resTotal</code>变量，当函数多次运行，结果会重复 append 到列表中。 也就是说，对于返回函数，这种变量<code class="highlighter-rouge">resTotal</code>定义相对于是全局的，所有使用该函数的地方，都会这个变量进行变更。</p>
+
+    <p>上面的代码，如果不了解，是很难定位到错误的。下面的代码，告诉你，如果你非要这样子写，应该如何处理这种涉及到<code class="highlighter-rouge">闭包</code>的问题。</p>
+
+  </blockquote>
+</blockquote>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="k">def</span> <span class="nf">closure_tranform</span><span class="p">(</span><span class="n">ll</span><span class="p">):</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">ll</span><span class="p">:</span>
+        <span class="k">def</span> <span class="nf">tranform</span><span class="p">():</span>
+            <span class="n">xf</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="s">'-tranform'</span>
+            <span class="k">return</span> <span class="n">xf</span>
+        <span class="n">res</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tranform</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">res</span>
+
+<span class="c"># &lt;function tranform at 0x100630aa0&gt; &lt;function tranform at 0x100630b18&gt; &lt;function tranform at 0x100630b90&gt;</span>
+<span class="c"># Azc-tranform Azc-tranform Azc-tranform</span>
+<span class="n">lf1</span><span class="p">,</span> <span class="n">lf2</span><span class="p">,</span> <span class="n">lf3</span> <span class="o">=</span> <span class="n">closure_tranform</span><span class="p">([</span><span class="s">'abc'</span><span class="p">,</span> <span class="s">'zfc'</span><span class="p">,</span> <span class="s">'Azc'</span><span class="p">])</span>
+<span class="k">print</span> <span class="n">lf1</span><span class="p">,</span> <span class="n">lf2</span><span class="p">,</span> <span class="n">lf3</span>
+<span class="k">print</span> <span class="n">lf1</span><span class="p">(),</span> <span class="n">lf2</span><span class="p">(),</span> <span class="n">lf3</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">closure_tranform_opz</span><span class="p">(</span><span class="n">ll</span><span class="p">):</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">ll</span><span class="p">:</span>
+        <span class="k">def</span> <span class="nf">tranform</span><span class="p">(</span><span class="n">y</span><span class="p">):</span>
+            <span class="k">def</span> <span class="nf">tranform_closure</span><span class="p">():</span>
+                <span class="n">xf</span> <span class="o">=</span> <span class="n">y</span> <span class="o">+</span> <span class="s">'-tranform'</span>
+                <span class="k">return</span> <span class="n">xf</span>
+            <span class="k">return</span> <span class="n">tranform_closure</span>
+        <span class="n">res</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tranform</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">res</span>
+<span class="c"># &lt;function tranform_closure at 0x100630cf8&gt; &lt;function tranform_closure at 0x100630c80&gt; &lt;function tranform_closure at 0x100630d70&gt;</span>
+<span class="c"># abc-tranform zfc-tranform Azc-tranform</span>
+<span class="n">lfo1</span><span class="p">,</span> <span class="n">lfo2</span><span class="p">,</span> <span class="n">lfo3</span> <span class="o">=</span> <span class="n">closure_tranform_opz</span><span class="p">([</span><span class="s">'abc'</span><span class="p">,</span> <span class="s">'zfc'</span><span class="p">,</span> <span class="s">'Azc'</span><span class="p">])</span>
+<span class="k">print</span> <span class="n">lfo1</span><span class="p">,</span> <span class="n">lfo2</span><span class="p">,</span> <span class="n">lfo3</span>
+<span class="k">print</span> <span class="n">lfo1</span><span class="p">(),</span> <span class="n">lfo2</span><span class="p">(),</span> <span class="n">lfo3</span><span class="p">()</span>
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Notes ：出现这种现象，就是因为我们的方法都是延迟加载，也就是说，最后的变量已经变更了，上面的代码中<code class="highlighter-rouge">i</code>就像<code class="highlighter-rouge">resTotal</code> 一样，是个全局变量，所以会在多次调用函数中彼此影响。</p>
+
+  </blockquote>
+</blockquote>
+
+<h2 id="python-装饰器"><a id="Decorator">Python 装饰器</a></h2>
+
+<p>熟悉 AOP 面向方面编程的同学，都了解切点，切面等概念。重要的是，使用 AOP 编程，可以让核心的业务代码和运维调试等代码切分开，也可以让老代码在一定程度上更容易升级。比如最通用的场景：日志记录，事务管理，权限拦截，自定义数据管理等。</p>
+
+<p>在 Python 中，完成 AOP 编码范式的就是<code class="highlighter-rouge">Python 装饰器</code>。使用 <code class="highlighter-rouge">@</code>标记，就可以完成 AOP 简单功能了。</p>
+
+<p>看看示例代码：</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="k">def</span> <span class="nf">logger</span><span class="p">(</span><span class="n">user_name</span><span class="o">=</span><span class="s">'ketao1989'</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">log</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+        <span class="nd">@functools.wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kv</span><span class="p">):</span>
+            <span class="k">print</span> <span class="s">'Welcome,'</span><span class="p">,</span> <span class="n">user_name</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="n">__name__</span>
+            <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kv</span><span class="p">)</span>
+            <span class="k">print</span> <span class="s">'Goodbye,'</span><span class="p">,</span> <span class="n">user_name</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="n">__name__</span>
+        <span class="k">return</span> <span class="n">wrapper</span>
+    <span class="k">return</span> <span class="n">log</span>
+
+
+<span class="k">def</span> <span class="nf">log</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">logger</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+
+    <span class="nd">@functools.wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kv</span><span class="p">):</span>
+        <span class="k">print</span> <span class="s">'Welcome,'</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="n">__name__</span>
+        <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kv</span><span class="p">)</span>
+        <span class="k">print</span> <span class="s">'Goodbye,'</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="n">__name__</span>
+    <span class="k">return</span> <span class="n">wrapper</span>
+
+
+<span class="c">#@log('ketao1989')</span>
+<span class="nd">@log</span>
+<span class="k">def</span> <span class="nf">logger_test</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+    <span class="k">print</span> <span class="s">'execute core function (</span><span class="si">%</span><span class="s">s) ......'</span> <span class="o">%</span> <span class="n">params</span>
+
+<span class="n">logger_test</span><span class="p">([</span><span class="s">'test_param1'</span><span class="p">,</span> <span class="s">'test_param2'</span><span class="p">])</span>
+
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Notes：代码示例中，标记<code class="highlighter-rouge">@functools.wraps(func)</code>，是因为在装饰器中可能原始的函数的<code class="highlighter-rouge">__name__</code>等被覆盖，而该标注，可以保证原始携带的func的内置属性依然保持。</p>
+
+    <p>此外，在代码的开始，需要<code class="highlighter-rouge">import functools</code>引入模块。</p>
+
+  </blockquote>
+</blockquote>
+
+<p>关于 Python 装饰器参考：<a href="http://www.cnblogs.com/huxi/archive/2011/03/01/1967600.html">http://www.cnblogs.com/huxi/archive/2011/03/01/1967600.html</a></p>
+
+                </div>
+                <div class="read-all">
+                    <a  href="/2015/02/17/Python-Tutoril-Python-Functional-Programing/"><i class="fa fa-newspaper-o"></i>Read All</a>
+                </div>
+                <hr>
+              </li>
+            
+              <li>
+                <h2>
+                  <a class="post-link" href="/2015/02/15/Python-Tutoril-Python-Function-And-Advances/">Python 教程学习之 Python 函数和高级特性</a>
+                </h2>
+                <div class="label">
+                    <div class="label-card">
+                        <i class="fa fa-calendar"></i>2015-02-15
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+
+                    <div class="label-card">
+                    
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Python" title="Category: Python" rel="category">Python</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+                    </div>
+
+                    <div class="label-card">
+                    
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+                    </div>
+                </div>
+                <div class="excerpt">
+                    <h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p>上一篇博客简单介绍了 Python 基本的概念和操作方法。但是，和其他编程语言一样，是缺少不了函数的。有了函数，代码才会被多次复用，程序才会简洁和易读。</p>
+
+<p>同样，也是为了开发的简洁，Python 还为提供了 Slice切片等高级特性。切片可让我们更方便的操作列表数据结构，也使得代码更易开发和阅读。</p>
+
+<h2 id="python-函数"><a id="Function">Python 函数</a></h2>
+
+<p>Python 函数和数学中函数的概念是一致的，都是对逻辑的一种抽象表示。在 Python 中，我们通过def来定义一个函数方法。</p>
+
+<!-- more -->
+
+<p>Python 的一些函数方法使用，如下所示：</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="c">#!/usr/bin/env python</span>
+<span class="c"># -*- coding: utf-8 -*-</span>
+<span class="c"># @Date    : 2015-02-14 11:08:03</span>
+<span class="c"># @Author  : ketao1989</span>
+<span class="c"># @Version : $Id$</span>
+
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="nb">reload</span><span class="p">(</span><span class="n">sys</span><span class="p">)</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">setdefaultencoding</span><span class="p">(</span><span class="s">'utf8'</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">funTypeCheck</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="nb">TypeError</span><span class="p">(</span><span class="s">'类型不一致'</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="mi">10</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">'x is my number'</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">'x is not my number'</span>
+
+
+<span class="k">def</span> <span class="nf">moreReturns</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">x</span> <span class="o">&gt;</span> <span class="n">y</span><span class="p">:</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="mi">101</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="mi">101</span>
+    <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span>
+
+
+<span class="k">def</span> <span class="nf">defaultParams</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="n">multiply</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">while</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">n</span> <span class="o">-=</span> <span class="mi">1</span>
+        <span class="n">multiply</span> <span class="o">=</span> <span class="n">multiply</span> <span class="o">*</span> <span class="n">x</span>
+    <span class="k">return</span> <span class="n">multiply</span> <span class="o">+</span> <span class="n">extra</span>
+
+
+<span class="k">def</span> <span class="nf">variableParams</span><span class="p">(</span><span class="o">*</span><span class="n">numbers</span><span class="p">):</span>
+    <span class="n">sum1</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">num</span> <span class="ow">in</span> <span class="n">numbers</span><span class="p">:</span>
+        <span class="n">sum1</span> <span class="o">+=</span> <span class="n">num</span>
+    <span class="k">return</span> <span class="n">sum1</span>
+
+
+<span class="k">def</span> <span class="nf">variableDictParams</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="k">print</span> <span class="s">'----'</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="s">'----'</span>
+    <span class="k">print</span> <span class="n">kw</span>
+
+<span class="c"># @tail_call_optimized</span>
+<span class="k">def</span> <span class="nf">factFunction</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+
+    <span class="k">if</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">s</span>
+    <span class="k">return</span> <span class="n">factFunction</span><span class="p">(</span><span class="n">s</span> <span class="o">*</span> <span class="n">n</span><span class="p">,</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">'__main__'</span><span class="p">:</span>
+    <span class="n">funTypeCheck</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">moreReturns</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+    <span class="k">print</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span>
+
+    <span class="n">multiply</span> <span class="o">=</span> <span class="n">defaultParams</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+    <span class="k">print</span> <span class="n">multiply</span>
+    <span class="n">multiply</span> <span class="o">=</span> <span class="n">defaultParams</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="k">print</span> <span class="n">multiply</span>
+    <span class="n">multiply</span> <span class="o">=</span> <span class="n">defaultParams</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">print</span> <span class="n">multiply</span>
+
+    <span class="n">sum1</span> <span class="o">=</span> <span class="n">variableParams</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+    <span class="k">print</span> <span class="n">sum1</span>
+
+    <span class="n">variableDictParams</span><span class="p">(</span><span class="s">'ketao1989'</span><span class="p">,</span> <span class="n">web</span><span class="o">=</span><span class="s">'ketao1989.github.com'</span><span class="p">)</span>
+
+    <span class="k">print</span> <span class="n">factFunction</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">100</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">'-------------'</span><span class="p">)</span>
+    <span class="n">funTypeCheck</span><span class="p">(</span><span class="s">'error'</span><span class="p">)</span>
+
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Notes：<code class="highlighter-rouge">isinstance</code> 方法判断是否是指定类型。</p>
+
+    <ul>
+      <li>
+        <p><code class="highlighter-rouge">moreReturns(x, y)</code> 函数，返回多个结果。其本质上，就是返回一个tuple.</p>
+      </li>
+      <li>
+        <p><code class="highlighter-rouge">defaultParams(x, n=2, extra=0)</code> 函数，设置默认的参数值。在调用的时候，我们可以替换任意一个默认的参数，比如extra，可以：<code class="highlighter-rouge">defaultParams(5, extra=2)</code></p>
+      </li>
+      <li>
+        <p><code class="highlighter-rouge">variableParams(*numbers)</code> 函数，设置可变个值。</p>
+      </li>
+      <li>
+        <p><code class="highlighter-rouge">variableDictParams(name, **kv)</code>函数，设置可变你的参数。其实，其类似Map来根据调用方确定参数。</p>
+      </li>
+    </ul>
+
+  </blockquote>
+</blockquote>
+
+<h2 id="python-高级特性"><a id="Advanced">Python 高级特性</a></h2>
+
+<h3 id="切片">切片</h3>
+
+<p>切片，很简单。就是我们日常对列表进行sub操作的时候，一般需要<code class="highlighter-rouge">for</code>循环操作，而 Python 提供了一个更简单的方法来处理这些问题，就是切片。其，表示形式为:<code class="highlighter-rouge">[i:j:k]</code>，其中，i表示列表的开始位置索引，j表示列表的结束位置索引（不包含该文章）,k表示循环步长。</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="n">ll</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">8</span><span class="p">]</span>
+
+<span class="c"># [4, 6],开始:结束:步长</span>
+<span class="k">print</span> <span class="n">ll</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">:</span><span class="mi">1</span><span class="p">]</span>
+
+<span class="c"># (1, 3, 5)</span>
+<span class="k">print</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">,)[</span><span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span>
+
+</code></pre></div></div>
+
+<h3 id="迭代">迭代</h3>
+
+<p>Python 的迭代，相对于 C 语言的迭代语法，有了很大的进步。使用 <code class="highlighter-rouge">for ... in</code> 方式来遍历一个集合或者 Map 数据，方便快捷。</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="n">ll</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">24</span><span class="p">,</span> <span class="mi">23</span><span class="p">,</span> <span class="mi">56</span><span class="p">]</span>
+<span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">ll</span><span class="p">:</span>
+    <span class="k">print</span> <span class="n">x</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ll</span><span class="p">):</span>
+    <span class="k">print</span> <span class="n">i</span><span class="p">,</span> <span class="n">value</span>
+
+<span class="n">lt</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">)]</span>
+<span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">lt</span><span class="p">:</span>
+    <span class="k">print</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span>
+
+<span class="n">dd</span> <span class="o">=</span> <span class="p">{</span><span class="s">'a'</span><span class="p">:</span> <span class="s">'A'</span><span class="p">,</span> <span class="s">'b'</span><span class="p">:</span> <span class="s">'B'</span><span class="p">,</span> <span class="s">'c'</span><span class="p">:</span> <span class="s">'C'</span><span class="p">,</span> <span class="s">'d'</span><span class="p">:</span> <span class="s">'D'</span><span class="p">}</span>
+
+<span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">dd</span><span class="p">:</span>
+    <span class="k">print</span> <span class="n">key</span>
+<span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">dd</span><span class="o">.</span><span class="n">itervalues</span><span class="p">():</span>
+    <span class="k">print</span> <span class="n">value</span>
+<span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">dd</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+    <span class="k">print</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span>
+
+</code></pre></div></div>
+
+<h3 id="列表生成器">列表生成器</h3>
+
+<p>迭代对于列表的优化还不够，Python 还提供了更牛逼的特性：让我们一行代码生成一个列表。</p>
+
+<p>比如，生成一个 1 到 10 数字的平方数，组成一个列表，使用列表生成器，可以如下：</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="n">lg</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="o">*</span> <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">)]</span>
+<span class="k">print</span> <span class="n">lg</span>
+
+<span class="c"># 产生偶数的平方数</span>
+<span class="n">lo</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="o">*</span> <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">11</span><span class="p">)</span> <span class="k">if</span> <span class="n">x</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span>
+<span class="k">print</span> <span class="n">lo</span>
+
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Notes ：由于列表生成器，是一次生成所有的列表元素，对于很大的列表，如果一次生成完成，然后全部放在内存里，肯定是不好的，因此，Python 还提供了 <code class="highlighter-rouge">生成器</code>。</p>
+
+  </blockquote>
+</blockquote>
+
+<p>生成器，可以根据生成规则，在使用的时候，才会构造元素。构造简单的生成器，和列表生成器一样，只需要把<code class="highlighter-rouge">[ ]</code> 替换成<code class="highlighter-rouge">( )</code>即可。例如：</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="c"># &lt;generator object &lt;genexpr&gt; at 0x107de44b0&gt;</span>
+<span class="n">lg</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="o">*</span> <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">)]</span>
+<span class="k">print</span> <span class="n">lg</span>
+
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Tips：如果需要打印，可以使用for，单个使用.next()方法依次调用，直到出现异常。</p>
+  </blockquote>
+</blockquote>
+
+<p>对于复杂一点的生成器，则需要使用 <code class="highlighter-rouge">yield</code> 关键字来完成。比如，在我们的一些函数中，某一个变量连续产生的数组，可以使用<code class="highlighter-rouge">yield x</code>来完成生成器设置。</p>
+
+<p>例如，构造一个通俗的生成器，如下：</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="k">def</span> <span class="nf">generateFun</span><span class="p">():</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="n">x</span> <span class="o">*</span> <span class="n">x</span>
+<span class="c"># &lt;generator object generateFun at 0x102f5a5a0&gt;</span>
+<span class="n">gf</span> <span class="o">=</span> <span class="n">generateFun</span><span class="p">()</span>
+<span class="k">print</span> <span class="n">gf</span>
+
+<span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">gf</span><span class="p">:</span>
+    <span class="k">print</span> <span class="n">x</span>
+
+</code></pre></div></div>
+
+                </div>
+                <div class="read-all">
+                    <a  href="/2015/02/15/Python-Tutoril-Python-Function-And-Advances/"><i class="fa fa-newspaper-o"></i>Read All</a>
+                </div>
+                <hr>
+              </li>
+            
+        </ul>
+
+
+
+        <!-- Pagination links -->
+        <div class="pagination">
+          
+            <a href="/index.html" class="previous"><i class="fa fa-angle-double-left"></i></a>
+            <a href="/" class="previous"><i class="fa fa-angle-left"></i></a>
+          
+          <span class="page_number ">2/8</span>
+          
+            <a href="/page3" class="next"><i class="fa fa-angle-right"></i></a>
+            <a href="/page8" class="next"><i class="fa fa-angle-double-right"></i></a>
+          
+        </div>
+    </div>
+    <!-- <button class="anchor"><i class="fa fa-anchor"></i></button> -->
+    <div class="right">
+        <div class="wrap">
+            <div class="side">
+                <div>
+                    <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
+                    Recent Posts
+                </div>
+                <ul class="content-ul" recent>
+                    
+                        <li><a href="/2017/03/29/java-server-in-action/">深入浅出Java服务端原理之基础篇</a></li>
+                    
+                        <li><a href="/2016/12/10/rpc-theory-in-action/">深入浅出RPC原理</a></li>
+                    
+                        <li><a href="/2016/05/29/talk-about-java-gc/">聊聊 Java GC</a></li>
+                    
+                        <li><a href="/2016/04/29/thrift-service-discory-using-zookeeper-ourea/">Ourea-基于Zookeeper的Thrift服务发现框架实现</a></li>
+                    
+                        <li><a href="/2016/03/10/junit-mockito-guice-in-action-and-junit-test-mechanism/">基于JUnit Mockito Guice测试实践及JUnit运行机制浅析</a></li>
+                    
+                        <li><a href="/2016/01/02/delayed-message-consume-service-use-kafka/">基于kafka的定时消息/任务服务</a></li>
+                    
+                        <li><a href="/2015/09/05/zookeeper-programmer-guide/">Zookeeper 编程指南</a></li>
+                    
+                        <li><a href="/2015/08/30/nginx-proxy-configure-and-sduty/">Nginx 反向代理配置和工作原理</a></li>
+                    
+                        <li><a href="/2015/04/29/LogBack-Implemention-And-Slf4j-Mdc/">Slf4j MDC 使用和 基于 Logback 的实现分析</a></li>
+                    
+                        <li><a href="/2015/02/26/Python-Tutoril-Python-Object-Oriented-Programming/">Python 教程学习之 Python 面向对象编程</a></li>
+                    
+                </ul>
+            </div>
+
+            <!-- Content -->
+            <div class="side ">
+                <div>
+                    <i class="fa fa-th-list"></i>
+                    Categories
+                </div>
+                <ul class="content-ul" cate>
+                    
+                    <li>
+                        <a href="/category/#Java" class="categories-list-item" cate="Java">
+                            <span class="name">
+                                Java
+                            </span>
+                            <span class="badge">19</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#IDE" class="categories-list-item" cate="IDE">
+                            <span class="name">
+                                IDE
+                            </span>
+                            <span class="badge">2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Log" class="categories-list-item" cate="Log">
+                            <span class="name">
+                                Log
+                            </span>
+                            <span class="badge">2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Thread" class="categories-list-item" cate="Thread">
+                            <span class="name">
+                                Thread
+                            </span>
+                            <span class="badge">2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Spring" class="categories-list-item" cate="Spring">
+                            <span class="name">
+                                Spring
+                            </span>
+                            <span class="badge">2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#GC" class="categories-list-item" cate="GC">
+                            <span class="name">
+                                GC
+                            </span>
+                            <span class="badge">2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Mysql" class="categories-list-item" cate="Mysql">
+                            <span class="name">
+                                Mysql
+                            </span>
+                            <span class="badge">2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Script" class="categories-list-item" cate="Script">
+                            <span class="name">
+                                Script
+                            </span>
+                            <span class="badge">3</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Linux" class="categories-list-item" cate="Linux">
+                            <span class="name">
+                                Linux
+                            </span>
+                            <span class="badge">5</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Python" class="categories-list-item" cate="Python">
+                            <span class="name">
+                                Python
+                            </span>
+                            <span class="badge">5</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Redis" class="categories-list-item" cate="Redis">
+                            <span class="name">
+                                Redis
+                            </span>
+                            <span class="badge">6</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Redis Cookbook" class="categories-list-item" cate="Redis Cookbook">
+                            <span class="name">
+                                Redis Cookbook
+                            </span>
+                            <span class="badge">6</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#tools" class="categories-list-item" cate="tools">
+                            <span class="name">
+                                tools
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Json" class="categories-list-item" cate="Json">
+                            <span class="name">
+                                Json
+                            </span>
+                            <span class="badge">3</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Dubbo" class="categories-list-item" cate="Dubbo">
+                            <span class="name">
+                                Dubbo
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Git" class="categories-list-item" cate="Git">
+                            <span class="name">
+                                Git
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Nginx" class="categories-list-item" cate="Nginx">
+                            <span class="name">
+                                Nginx
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Zookeeper" class="categories-list-item" cate="Zookeeper">
+                            <span class="name">
+                                Zookeeper
+                            </span>
+                            <span class="badge">2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Translation" class="categories-list-item" cate="Translation">
+                            <span class="name">
+                                Translation
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Kafka" class="categories-list-item" cate="Kafka">
+                            <span class="name">
+                                Kafka
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#JUnit" class="categories-list-item" cate="JUnit">
+                            <span class="name">
+                                JUnit
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Guice" class="categories-list-item" cate="Guice">
+                            <span class="name">
+                                Guice
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Thrift" class="categories-list-item" cate="Thrift">
+                            <span class="name">
+                                Thrift
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#rpc" class="categories-list-item" cate="rpc">
+                            <span class="name">
+                                rpc
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#dubbo" class="categories-list-item" cate="dubbo">
+                            <span class="name">
+                                dubbo
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#thrift" class="categories-list-item" cate="thrift">
+                            <span class="name">
+                                thrift
+                            </span>
+                            <span class="badge">2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#java" class="categories-list-item" cate="java">
+                            <span class="name">
+                                java
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#socket" class="categories-list-item" cate="socket">
+                            <span class="name">
+                                socket
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                </ul>
+            </div>
+            <!-- 其他div框放到这里 -->
+            <div class="side">
+                <div>
+                    <i class="fa fa-tags"></i>
+                    Tags
+                </div>
+                <div class="tags-cloud">
+                    
+                    
+                    
+                    
+
+                    
+
+                    
+                </div>
+            </div>
+
+            <!-- <div class="side">
+                <div>
+                    <i class="fa fa-external-link"></i>
+                    Links
+                </div>
+                <ul  class="content-ul">
+
+                </ul>
+            </div> -->
+        </div>
+    </div>
+</div>
+<!-- <script src="/js/scroll.min.js " charset="utf-8"></script> -->
+<!-- <script src="/js/pageContent.js " charset="utf-8"></script> -->
+
+
+    <footer class="site-footer">
+
+
+    <div class="wrapper">
+
+        <p class="description">
+             本站保留着一点点技术积蓄！ 
+        </p>
+        <p class="contact">
+            Contact me at: 
+            <a href="https://github.com/ketao1989" title="GitHub"><i class="fa fa-github" aria-hidden="true"></i></a>  
+            <a href="mailto:ketao1989@126.com" title="email"><i class="fa fa-envelope-o" aria-hidden="true"></i></a>  
+            <a href="http://weibo.com/柯小小西" title="Weibo"><i class="fa fa-weibo" aria-hidden="true"></i></a>       
+        </p>
+        <p>
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次，本站访客数<span id="busuanzi_value_site_uv"></span>人次，本文总阅读量<span id="busuanzi_value_page_pv"></span>次
+        </p>
+        <p class="power">
+            <span>
+                Site powered by <a href="https://jekyllrb.com/">Jekyll</a> & <a href="https://pages.github.com/">Github Pages</a>.
+            </span>
+            <span>
+                Theme designed by <a href="https://github.com/Gaohaoyang">HyG</a>.
+            </span>
+        </p>
+    </div>
+</footer>
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+    <div class="back-to-top">
+    <a href="#top" data-scroll>
+        <i class="fa fa-arrow-up" aria-hidden="true"></i>
+    </a>
+</div>
+
+    <script src=" /js/main.js " charset="utf-8"></script>
+    <script src=" /js/smooth-scroll.min.js " charset="utf-8"></script>
+    <script type="text/javascript">
+      smoothScroll.init({
+        speed: 500, // Integer. How fast to complete the scroll in milliseconds
+        easing: 'easeInOutCubic', // Easing pattern to use
+        offset: 20, // Integer. How far to offset the scrolling anchor location in pixels
+      });
+    </script>
+    <!-- <script src=" /js/scroll.min.js " charset="utf-8"></script> -->
+  </body>
+
+</html>

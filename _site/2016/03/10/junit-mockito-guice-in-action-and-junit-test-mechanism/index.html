@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>基于JUnit Mockito Guice测试实践及JUnit运行机制浅析</title>
+    <meta name="description" content="前言对于一个合格的项目来说,单元测试是必不可少的一部分。尤其是，如果对于TDD思想来说，单元测试则是整个项目开发的基石。对于Javaer来说,Junit 是一个基础的单元测试框架.对于Spring框架来说, 其实现了JUnit的接口来直接支持单元测试, 但是对于Guice来说, 其定位为一个轻量级的依赖注入框架,...">
+
+    <link rel="shortcut icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://at.alicdn.com/t/font_8v3czwksspqlg14i.css">
+    <link rel="stylesheet" href="/css/main.css ">
+    <link rel="canonical" href="http://localhost:4000/2016/03/10/junit-mockito-guice-in-action-and-junit-test-mechanism/">
+    <link rel="alternate" type="application/rss+xml" title="柯小小西" href="http://localhost:4000/feed.xml ">
+
+
+    <script>
+    // 百度统计代码
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?a9b0f47a0e50b02dafb8a7088436a9bc";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+    </script>
+
+
+
+
+</head>
+
+
+  <body>
+
+    <header id="top">
+    <div class="wrapper">
+        <a href="/" class="brand">柯小小西</a>
+        <small>留着一点点技术积蓄</small>
+        <button id="headerMenu" class="menu"><i class="fa fa-bars"></i></button>
+        <nav id="headerNav">
+            <ul>
+                <li>
+                    
+                    <a href="/">
+                    
+                        <i class="fa fa-home"></i>Home
+                    </a>
+                </li>
+
+                
+                    
+                    <li>
+                        
+                        <a href="/archive/">
+                        
+                            <i class="fa fa-archive"></i>Archives
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/category/">
+                        
+                            <i class="fa fa-th-list"></i>Categories
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/tag/">
+                        
+                            <i class="fa fa-tags"></i>Tags
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/about/">
+                        
+                            <i class="fa fa-heart"></i>About
+                        </a>
+                    </li>
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+        <div class="page clearfix" post>
+    <div class="left">
+        <h1>基于JUnit Mockito Guice测试实践及JUnit运行机制浅析</h1>
+        <div class="label">
+
+            <div class="label-card">
+                <i class="fa fa-calendar"></i>2016-03-10
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+            
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#JUnit" title="Category: JUnit" rel="category">JUnit</a>&nbsp;
+    
+        <a href="/category/#Guice" title="Category: Guice" rel="category">Guice</a>&nbsp;
+    
+        <a href="/category/#Java" title="Category: Java" rel="category">Java</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+            </div>
+
+            <div class="label-card">
+            
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+            </div>
+
+        </div>
+        <hr>
+        <article itemscope itemtype="http://schema.org/BlogPosting">
+        <h2 id="前言"><a id="Introduction">前言</a></h2>
+
+<p>对于一个合格的项目来说,单元测试是必不可少的一部分。尤其是，如果对于TDD思想来说，单元测试则是整个项目开发的基石。对于Javaer来说,Junit 是一个基础的单元测试框架.对于Spring框架来说, 其实现了JUnit的接口来直接支持单元测试, 但是对于Guice来说, 其定位为一个轻量级的依赖注入框架, 所以这些就需要自己来实现. 此外, 对于依赖外部的接口服务的应用, 我们在测试的时候, 是不希望其服务的不稳定导致我们单测失败; 此外, 对外部接口进行屏蔽, 也可以达到对每一个外部服务返回逻辑分支的覆盖.</p>
+
+<p>因此，本文基于<code class="highlighter-rouge">JUnit + Mockito + Guice</code>框架说，然后基于简单地实例来说明JUnit的运行机制。</p>
+
+<h2 id="-单元测试实践"><a id="Action"> 单元测试实践</a></h2>
+
+<p>Guice 作为一个注入框架，和Spring相比，并没有什么特别的。使用Guice介绍单元测试，其一是项目开发中使用Guice，其二由于我们需要去自己实现JUnit接口来支持Guice，能够更深入地了解JUnit结构。Mockito 是java中我比较喜欢的mock工具，当然，我也没有用过其他的。O(∩_∩)O~</p>
+
+<p>首先，需要引入两个实现：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="cm">/**
+ * @author tao.ke Date: 16/3/9 Time: 下午4:24
+ */</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">GuiceJUnitRunner</span> <span class="kd">extends</span> <span class="n">BlockJUnit4ClassRunner</span> <span class="o">{</span>
+
+    <span class="kd">private</span> <span class="n">Injector</span> <span class="n">injector</span><span class="o">;</span>
+
+    <span class="nd">@Target</span><span class="o">(</span><span class="n">ElementType</span><span class="o">.</span><span class="na">TYPE</span><span class="o">)</span>
+    <span class="nd">@Retention</span><span class="o">(</span><span class="n">RetentionPolicy</span><span class="o">.</span><span class="na">RUNTIME</span><span class="o">)</span>
+    <span class="nd">@Inherited</span>
+    <span class="kd">public</span> <span class="nd">@interface</span> <span class="n">GuiceModules</span> <span class="o">{</span>
+        <span class="n">Class</span><span class="o">&lt;?&gt;[]</span> <span class="n">value</span><span class="o">();</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="n">Object</span> <span class="nf">createTest</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+        <span class="n">Object</span> <span class="n">obj</span> <span class="o">=</span> <span class="kd">super</span><span class="o">.</span><span class="na">createTest</span><span class="o">();</span>
+        <span class="n">injector</span><span class="o">.</span><span class="na">injectMembers</span><span class="o">(</span><span class="n">obj</span><span class="o">);</span>
+        <span class="k">return</span> <span class="n">obj</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="nf">GuiceJUnitRunner</span><span class="o">(</span><span class="n">Class</span><span class="o">&lt;?&gt;</span> <span class="n">klass</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">InitializationError</span> <span class="o">{</span>
+        <span class="kd">super</span><span class="o">(</span><span class="n">klass</span><span class="o">);</span>
+        <span class="n">Class</span><span class="o">&lt;?&gt;[]</span> <span class="n">classes</span> <span class="o">=</span> <span class="n">getModulesFor</span><span class="o">(</span><span class="n">klass</span><span class="o">);</span>
+        <span class="n">injector</span> <span class="o">=</span> <span class="n">createInjectorFor</span><span class="o">(</span><span class="n">classes</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">private</span> <span class="n">Injector</span> <span class="nf">createInjectorFor</span><span class="o">(</span><span class="n">Class</span><span class="o">&lt;?&gt;[]</span> <span class="n">classes</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">InitializationError</span> <span class="o">{</span>
+        <span class="n">Module</span><span class="o">[]</span> <span class="n">modules</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Module</span><span class="o">[</span><span class="n">classes</span><span class="o">.</span><span class="na">length</span><span class="o">];</span>
+        <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">classes</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+            <span class="k">try</span> <span class="o">{</span>
+                <span class="n">modules</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="o">(</span><span class="n">Module</span><span class="o">)</span> <span class="o">(</span><span class="n">classes</span><span class="o">[</span><span class="n">i</span><span class="o">]).</span><span class="na">newInstance</span><span class="o">();</span>
+            <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">InstantiationException</span> <span class="o">|</span> <span class="n">IllegalAccessException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+                <span class="k">throw</span> <span class="k">new</span> <span class="nf">InitializationError</span><span class="o">(</span><span class="n">e</span><span class="o">);</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+        <span class="k">return</span> <span class="n">Guice</span><span class="o">.</span><span class="na">createInjector</span><span class="o">(</span><span class="n">modules</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">private</span> <span class="n">Class</span><span class="o">&lt;?&gt;[]</span> <span class="n">getModulesFor</span><span class="o">(</span><span class="n">Class</span><span class="o">&lt;?&gt;</span> <span class="n">klass</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">InitializationError</span> <span class="o">{</span>
+        <span class="n">GuiceModules</span> <span class="n">annotation</span> <span class="o">=</span> <span class="n">klass</span><span class="o">.</span><span class="na">getAnnotation</span><span class="o">(</span><span class="n">GuiceModules</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">annotation</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">return</span> <span class="k">new</span> <span class="n">Class</span><span class="o">[</span><span class="mi">0</span><span class="o">];</span>
+        <span class="o">}</span>
+        <span class="k">return</span> <span class="n">annotation</span><span class="o">.</span><span class="na">value</span><span class="o">();</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>GuiceJUnitRunner 实现了JUnit框架<code class="highlighter-rouge">BlockJUnit4ClassRunner</code>接口，Runner是JUnit的核心，所有测试的运行，最后都是Runner来衔接运作起来的。在<code class="highlighter-rouge">JuiceJUnitRunner</code>中，我们根据annotation来初始化Guice环境需要的一些初始化配置，拦截器等；此外，熟悉Guice的同学知道，其有一个非常不好的体验，就是需要在最外层手动注入实例调用服务，这里我们希望可以直接注入service实例，因此在Runner初始化时完成这一动作。</p>
+
+<!-- more -->
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="cm">/**
+ * @author tao.ke Date: 16/3/9 Time: 下午4:30
+ */</span>
+<span class="nd">@RunWith</span><span class="o">(</span><span class="n">GuiceJUnitRunner</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+<span class="nd">@GuiceJUnitRunner</span><span class="o">.</span><span class="na">GuiceModules</span><span class="o">({</span> <span class="n">GuiceModule</span><span class="o">.</span><span class="na">class</span><span class="o">})</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">BaseTest</span> <span class="o">{</span>
+
+    <span class="nd">@Before</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">init</span><span class="o">()</span> <span class="o">{</span>
+        <span class="n">MockitoAnnotations</span><span class="o">.</span><span class="na">initMocks</span><span class="o">(</span><span class="k">this</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="c1">// 全局初始化，加载数据库配置，注入拦截器等</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">GuiceModule</span> <span class="kd">implements</span> <span class="n">Module</span> <span class="o">{</span>
+
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">configure</span><span class="o">(</span><span class="n">Binder</span> <span class="n">binder</span><span class="o">)</span> <span class="o">{</span>
+
+       <span class="c1">//binder.bind(GuiceBiz.class);</span>
+
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p><code class="highlighter-rouge">BaseTest</code>是一个基础的测试类，完成所有测试共同的工作。各个测试类可以继承该基类，然后就可以最简单的关注业务逻辑的测试。比如，下面这个测试类：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">GuiceUnitSampleTest</span> <span class="kd">extends</span> <span class="n">BaseTest</span> <span class="o">{</span>
+
+    <span class="nd">@Inject</span>
+    <span class="kd">private</span> <span class="n">GuiceBiz</span> <span class="n">guiceBiz</span><span class="o">;</span>
+
+    <span class="nd">@Test</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">testConcatString</span><span class="o">(){</span>
+        <span class="c1">//就是一个简单地测试而已</span>
+        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">guiceBiz</span><span class="o">.</span><span class="na">concatString</span><span class="o">(</span><span class="s">"ktcoder"</span><span class="o">,</span><span class="s">"hello,"</span><span class="o">));</span>
+        <span class="n">Assert</span><span class="o">.</span><span class="na">assertEquals</span><span class="o">(</span><span class="s">"hello,ktcoder"</span><span class="o">,</span><span class="n">guiceBiz</span><span class="o">.</span><span class="na">concatString</span><span class="o">(</span><span class="s">"ktcoder"</span><span class="o">,</span><span class="s">"hello,"</span><span class="o">));</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>接下来，来一个复杂的测试case，这里，我们调用的外部的服务，比如数据库查询，或者其他RPC服务等等，但是我们只想测试自己的业务分支是否运行正常。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">GuiceUnitMockSampleTest</span> <span class="kd">extends</span> <span class="n">BaseTest</span><span class="o">{</span>
+
+    <span class="nd">@InjectMocks</span>
+    <span class="nd">@Inject</span>
+    <span class="kd">private</span> <span class="n">GuiceBiz</span> <span class="n">guiceBiz</span><span class="o">;</span>
+
+    <span class="nd">@Mock</span>
+    <span class="kd">private</span> <span class="n">GuiceServiceImpl</span> <span class="n">guiceServiceImpl</span><span class="o">;</span>
+
+
+    <span class="nd">@Test</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">testGetRoleAdmin</span><span class="o">(){</span>
+
+        <span class="n">Mockito</span><span class="o">.</span><span class="na">when</span><span class="o">(</span><span class="n">guiceServiceImpl</span><span class="o">.</span><span class="na">getRole</span><span class="o">(</span><span class="n">Matchers</span><span class="o">.</span><span class="na">anyString</span><span class="o">())).</span><span class="na">thenReturn</span><span class="o">(</span><span class="s">"admin"</span><span class="o">);</span>
+
+        <span class="n">Assert</span><span class="o">.</span><span class="na">assertEquals</span><span class="o">(</span><span class="s">"hello Admin"</span><span class="o">,</span><span class="n">guiceBiz</span><span class="o">.</span><span class="na">helloRole</span><span class="o">(</span><span class="s">"test"</span><span class="o">));</span>
+
+    <span class="o">}</span>
+
+    <span class="nd">@Test</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">testGetRoleGuest</span><span class="o">(){</span>
+
+        <span class="n">Mockito</span><span class="o">.</span><span class="na">when</span><span class="o">(</span><span class="n">guiceServiceImpl</span><span class="o">.</span><span class="na">getRole</span><span class="o">(</span><span class="n">Matchers</span><span class="o">.</span><span class="na">anyString</span><span class="o">())).</span><span class="na">thenReturn</span><span class="o">(</span><span class="s">""</span><span class="o">);</span>
+
+        <span class="n">Assert</span><span class="o">.</span><span class="na">assertEquals</span><span class="o">(</span><span class="s">"hello Guest"</span><span class="o">,</span><span class="n">guiceBiz</span><span class="o">.</span><span class="na">helloRole</span><span class="o">(</span><span class="s">"test"</span><span class="o">));</span>
+
+    <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="nd">@Singleton</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">GuiceBiz</span> <span class="o">{</span>
+
+    <span class="nd">@Inject</span>
+    <span class="kd">private</span> <span class="n">GuiceServiceImpl</span> <span class="n">guiceServiceImpl</span><span class="o">;</span>
+
+    <span class="kd">public</span> <span class="n">String</span> <span class="nf">helloRole</span><span class="o">(</span><span class="n">String</span> <span class="n">name</span><span class="o">){</span>
+
+        <span class="n">String</span> <span class="n">res</span> <span class="o">=</span> <span class="n">guiceServiceImpl</span><span class="o">.</span><span class="na">getRole</span><span class="o">(</span><span class="n">name</span><span class="o">);</span>
+
+        <span class="k">if</span> <span class="o">(</span><span class="n">StringUtils</span><span class="o">.</span><span class="na">isBlank</span><span class="o">(</span><span class="n">res</span><span class="o">)){</span>
+            <span class="k">return</span> <span class="s">"hello "</span> <span class="o">+</span> <span class="s">"Guest"</span><span class="o">;</span>
+        <span class="o">}</span>
+
+        <span class="k">return</span> <span class="s">"hello "</span> <span class="o">+</span> <span class="s">"Admin"</span><span class="o">;</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>从上面的case可以看到，不管外部的GuiceServiceImpl是如何处理的，是否服务可靠都无所谓。我们只需要关注自己的业务逻辑，然后mock掉外部的接口，这样就可以更好地覆盖各个逻辑分支了。</p>
+
+<h2 id="-junit-运行浅析"><a id="Flow"> JUnit 运行浅析</a></h2>
+
+<p>一般在开发的时候，我们都使用idea 或者 eclipse 来运行测试用例，那么对于可运行的java代码，必然有一个main方法入口。</p>
+
+<h3 id="idea-junit-主方法入口">idea JUnit 主方法入口</h3>
+
+<p>在 idea 中存在一个<code class="highlighter-rouge">JUnitStarter</code>类，该类就有一个main方法，也就是说，当我们在idea ide工具中点击执行test方法时，实际上执行的就是这个类的入口方法。</p>
+
+<p>main 方法很简单，就是准备输入输出流，一些参数准备，然后调用<code class="highlighter-rouge">prepareStreamsAndStart</code> 方法：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">private</span> <span class="kd">static</span> <span class="kt">int</span> <span class="nf">prepareStreamsAndStart</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">,</span> <span class="kd">final</span> <span class="kt">boolean</span> <span class="n">isJUnit4</span><span class="o">,</span> <span class="n">ArrayList</span> <span class="n">listeners</span><span class="o">,</span> <span class="n">SegmentedOutputStream</span> <span class="n">out</span><span class="o">,</span> <span class="n">SegmentedOutputStream</span> <span class="n">err</span><span class="o">)</span> <span class="o">{</span>
+
+    <span class="n">PrintStream</span> <span class="n">oldOut</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">;</span>
+    <span class="n">PrintStream</span> <span class="n">oldErr</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">err</span><span class="o">;</span>
+    <span class="kt">int</span> <span class="n">result</span><span class="o">;</span>
+    <span class="k">try</span> <span class="o">{</span>
+      <span class="n">System</span><span class="o">.</span><span class="na">setOut</span><span class="o">(</span><span class="k">new</span> <span class="n">PrintStream</span><span class="o">(</span><span class="n">out</span><span class="o">));</span>
+      <span class="n">System</span><span class="o">.</span><span class="na">setErr</span><span class="o">(</span><span class="k">new</span> <span class="n">PrintStream</span><span class="o">(</span><span class="n">err</span><span class="o">));</span>
+      <span class="n">IdeaTestRunner</span> <span class="n">testRunner</span> <span class="o">=</span> <span class="o">(</span><span class="n">IdeaTestRunner</span><span class="o">)</span><span class="n">getAgentClass</span><span class="o">(</span><span class="n">isJUnit4</span><span class="o">).</span><span class="na">newInstance</span><span class="o">();</span>
+      <span class="n">testRunner</span><span class="o">.</span><span class="na">setStreams</span><span class="o">(</span><span class="n">out</span><span class="o">,</span> <span class="n">err</span><span class="o">);</span>
+      <span class="n">result</span> <span class="o">=</span> <span class="n">testRunner</span><span class="o">.</span><span class="na">startRunnerWithArgs</span><span class="o">(</span><span class="n">args</span><span class="o">,</span> <span class="n">listeners</span><span class="o">);</span>
+    <span class="o">}</span>
+    <span class="c1">// ......</span>
+    <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
+  <span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>因为我们使用的是JUnit4，所以会接着调用 <code class="highlighter-rouge">JUnit4IdeaTestRunner</code>类，在这个类中将直接和JUnit的相关接口交互，调用相关方法，进入到具体的JUnit测试中。该类首先构造JUnit工具中需要的Request类，通过Request可以获取Runner实例，然后开始运行测试case。
+比如我们这里需要运行的时Test类中得一个方法，所以这里列出对应的处理逻辑代码：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// suiteClassNames[0]="io.github.ketao1989.guice.GuiceUnitSampleTest,testConcatString"</span>
+<span class="kd">public</span> <span class="kd">static</span> <span class="n">Request</span> <span class="nf">buildRequest</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">suiteClassNames</span><span class="o">,</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">name</span><span class="o">,</span> <span class="kt">boolean</span> <span class="n">notForked</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">suiteClassNames</span><span class="o">.</span><span class="na">length</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+    <span class="o">}</span>
+    <span class="n">Vector</span> <span class="n">result</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Vector</span><span class="o">();</span>
+    <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">suiteClassNames</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+        <span class="n">String</span> <span class="n">suiteClassName</span> <span class="o">=</span> <span class="n">suiteClassNames</span><span class="o">[</span><span class="n">i</span><span class="o">];</span>
+        <span class="kt">int</span> <span class="n">index</span> <span class="o">=</span> <span class="n">suiteClassName</span><span class="o">.</span><span class="na">indexOf</span><span class="o">(</span><span class="sc">','</span><span class="o">);</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">index</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
+            <span class="kd">final</span> <span class="n">Class</span> <span class="n">clazz</span> <span class="o">=</span> <span class="n">loadTestClass</span><span class="o">(</span><span class="n">suiteClassName</span><span class="o">.</span><span class="na">substring</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="n">index</span><span class="o">));</span>
+            <span class="kd">final</span> <span class="n">String</span> <span class="n">methodName</span> <span class="o">=</span> <span class="n">suiteClassName</span><span class="o">.</span><span class="na">substring</span><span class="o">(</span><span class="n">index</span> <span class="o">+</span> <span class="mi">1</span><span class="o">);</span>
+            <span class="kd">final</span> <span class="n">RunWith</span> <span class="n">clazzAnnotation</span> <span class="o">=</span> <span class="o">(</span><span class="n">RunWith</span><span class="o">)</span><span class="n">clazz</span><span class="o">.</span><span class="na">getAnnotation</span><span class="o">(</span><span class="n">RunWith</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+            <span class="kd">final</span> <span class="n">Description</span> <span class="n">testMethodDescription</span> <span class="o">=</span> <span class="n">Description</span><span class="o">.</span><span class="na">createTestDescription</span><span class="o">(</span><span class="n">clazz</span><span class="o">,</span> <span class="n">methodName</span><span class="o">);</span>
+            <span class="kd">final</span> <span class="n">Request</span> <span class="n">request</span> <span class="o">=</span> <span class="n">getParameterizedRequest</span><span class="o">(</span><span class="n">name</span><span class="o">,</span> <span class="n">methodName</span><span class="o">,</span> <span class="n">clazz</span><span class="o">,</span> <span class="n">clazzAnnotation</span><span class="o">);/</span><span class="err">反射构造</span><span class="n">runner</span><span class="err">及</span><span class="n">request</span>
+            <span class="nf">if</span> <span class="o">(</span><span class="n">request</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                <span class="k">return</span> <span class="n">request</span><span class="o">;</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>构造完了Request，然后就可以通过new 一个 JUnitCore对象来运行request中得runner了。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="kd">private</span> <span class="n">Result</span> <span class="nf">startRunnerWithArgs</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">,</span> <span class="n">ArrayList</span> <span class="n">listeners</span><span class="o">,</span> <span class="n">String</span> <span class="n">name</span><span class="o">,</span> <span class="kt">boolean</span> <span class="n">sendTree</span><span class="o">){</span>
+
+    <span class="kd">final</span> <span class="n">Request</span> <span class="n">request</span> <span class="o">=</span> <span class="n">JUnit4TestRunnerUtil</span><span class="o">.</span><span class="na">buildRequest</span><span class="o">(</span><span class="n">args</span><span class="o">,</span> <span class="n">name</span><span class="o">,</span> <span class="n">sendTree</span><span class="o">);</span>
+    <span class="kd">final</span> <span class="n">Runner</span> <span class="n">testRunner</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="na">getRunner</span><span class="o">();</span>
+    <span class="n">Description</span> <span class="n">description</span> <span class="o">=</span> <span class="n">getDescription</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="n">testRunner</span><span class="o">);</span>
+    <span class="c1">//.......</span>
+    <span class="kd">final</span> <span class="n">JUnitCore</span> <span class="n">runner</span> <span class="o">=</span> <span class="k">new</span> <span class="n">JUnitCore</span><span class="o">();</span>
+    <span class="k">return</span> <span class="n">runner</span><span class="o">.</span><span class="na">run</span><span class="o">(</span><span class="n">testRunner</span><span class="o">);</span>
+
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>在上面的<code class="highlighter-rouge">startRunnerWithArgs</code>方法中会设置一些监听器负责收集运行成功失败的结果，开始结束运行等，为了了解整个运行流程，就不分析了。</p>
+
+<h3 id="request-构建-runner">Request 构建 Runner</h3>
+
+<p>从上面的代码中看到，idea 是通过buildRequest来获取 Runner的。实际上，Request 就是一个RunnerBuilder构建工具，默认有三种实现：<code class="highlighter-rouge">FilterRequest</code>、<code class="highlighter-rouge">ClassRequest</code>和<code class="highlighter-rouge">SortingRequest</code>，顾名思义了，核心自然是 ClassRequest。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">ClassRequest</span> <span class="kd">extends</span> <span class="n">Request</span> <span class="o">{</span>
+    <span class="kd">private</span> <span class="kd">final</span> <span class="n">Object</span> <span class="n">runnerLock</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Object</span><span class="o">();</span>
+    <span class="kd">private</span> <span class="kd">final</span> <span class="n">Class</span><span class="o">&lt;?&gt;</span> <span class="n">fTestClass</span><span class="o">;</span>
+    <span class="kd">private</span> <span class="kd">final</span> <span class="kt">boolean</span> <span class="n">canUseSuiteMethod</span><span class="o">;</span>
+    <span class="kd">private</span> <span class="kd">volatile</span> <span class="n">Runner</span> <span class="n">runner</span><span class="o">;</span>
+    <span class="c1">// ......</span>
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="n">Runner</span> <span class="nf">getRunner</span><span class="o">()</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">runner</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="kd">synchronized</span> <span class="o">(</span><span class="n">runnerLock</span><span class="o">)</span> <span class="o">{</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">runner</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="n">runner</span> <span class="o">=</span> <span class="k">new</span> <span class="n">AllDefaultPossibilitiesBuilder</span><span class="o">(</span><span class="n">canUseSuiteMethod</span><span class="o">).</span><span class="na">safeRunnerForClass</span><span class="o">(</span><span class="n">fTestClass</span><span class="o">);</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+        <span class="k">return</span> <span class="n">runner</span><span class="o">;</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>从<code class="highlighter-rouge">getRunner</code>方法中可以知道这里根据需要测试的类 fTestClass 来构造runner.</p>
+
+<blockquote>
+  <blockquote>
+    <p>Notes:这里使用fTestClass明明变量，竟然是因为在idea的调用代码中使用<code class="highlighter-rouge">field = ClassRequest.class.getDeclaredField("fTestClass");</code>,所以无法更改成正常的testClass.</p>
+  </blockquote>
+</blockquote>
+
+<p>AllDefaultPossibilitiesBuilder类是一个builder的总入口，其会根据配置选择正确的RunnerBuilder构建Runner对象：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">AllDefaultPossibilitiesBuilder</span> <span class="kd">extends</span> <span class="n">RunnerBuilder</span> <span class="o">{</span>
+    <span class="kd">private</span> <span class="kd">final</span> <span class="kt">boolean</span> <span class="n">canUseSuiteMethod</span><span class="o">;</span>
+
+    <span class="kd">public</span> <span class="nf">AllDefaultPossibilitiesBuilder</span><span class="o">(</span><span class="kt">boolean</span> <span class="n">canUseSuiteMethod</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">canUseSuiteMethod</span> <span class="o">=</span> <span class="n">canUseSuiteMethod</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="c1">// 从这个方法可以看出构造器的优先级，构造器会一个一个尝试，直到找到正确地为止，一般使用注解方式指定Runner</span>
+    <span class="c1">// 所以这里介绍annotatedBuilder.</span>
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="n">Runner</span> <span class="nf">runnerForClass</span><span class="o">(</span><span class="n">Class</span><span class="o">&lt;?&gt;</span> <span class="n">testClass</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Throwable</span> <span class="o">{</span>
+        <span class="n">List</span><span class="o">&lt;</span><span class="n">RunnerBuilder</span><span class="o">&gt;</span> <span class="n">builders</span> <span class="o">=</span> <span class="n">Arrays</span><span class="o">.</span><span class="na">asList</span><span class="o">(</span>
+                <span class="n">ignoredBuilder</span><span class="o">(),</span>
+                <span class="n">annotatedBuilder</span><span class="o">(),</span>
+                <span class="n">suiteMethodBuilder</span><span class="o">(),</span>
+                <span class="n">junit3Builder</span><span class="o">(),</span>
+                <span class="n">junit4Builder</span><span class="o">());</span>
+
+        <span class="k">for</span> <span class="o">(</span><span class="n">RunnerBuilder</span> <span class="n">each</span> <span class="o">:</span> <span class="n">builders</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">Runner</span> <span class="n">runner</span> <span class="o">=</span> <span class="n">each</span><span class="o">.</span><span class="na">safeRunnerForClass</span><span class="o">(</span><span class="n">testClass</span><span class="o">);</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">runner</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                <span class="k">return</span> <span class="n">runner</span><span class="o">;</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+        <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="c1">// 根据RunWith 注解获取Runner类，然后反射实例化一个对象出来，即：</span>
+    <span class="c1">// runnerClass.getConstructor(Class.class).newInstance(testClass);</span>
+    <span class="kd">protected</span> <span class="n">AnnotatedBuilder</span> <span class="nf">annotatedBuilder</span><span class="o">()</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="k">new</span> <span class="nf">AnnotatedBuilder</span><span class="o">(</span><span class="k">this</span><span class="o">);</span>
+    <span class="o">}</span>
+    <span class="c1">// ......</span>
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<h3 id="junitcore-运行-runner">JUnitCore 运行 Runner</h3>
+
+<p>JUnitCore 是对 JUnit的Runner类的一个Fecade，兼容3.x和4.x的不同runner的运行，同时，可以在command中执行命令<code class="highlighter-rouge">java org.junit.runner.JUnitCore TestClass1 TestClass2</code> 运行测试用例。</p>
+
+<p>此外，作为Facade来说，其在调用runner的run方法时，会再方法开始和结束的时候，触发相应地监听器，发布相关通知事件。如下：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="c1">//通过命令运行，这就是入口</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">...</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">Result</span> <span class="n">result</span> <span class="o">=</span> <span class="k">new</span> <span class="n">JUnitCore</span><span class="o">().</span><span class="na">runMain</span><span class="o">(</span><span class="k">new</span> <span class="n">RealSystem</span><span class="o">(),</span> <span class="n">args</span><span class="o">);</span>
+        <span class="n">System</span><span class="o">.</span><span class="na">exit</span><span class="o">(</span><span class="n">result</span><span class="o">.</span><span class="na">wasSuccessful</span><span class="o">()</span> <span class="o">?</span> <span class="mi">0</span> <span class="o">:</span> <span class="mi">1</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="c1">// 测试case真正的运行方法</span>
+    <span class="kd">public</span> <span class="n">Result</span> <span class="nf">run</span><span class="o">(</span><span class="n">Runner</span> <span class="n">runner</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">Result</span> <span class="n">result</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Result</span><span class="o">();</span>
+        <span class="n">RunListener</span> <span class="n">listener</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="na">createListener</span><span class="o">();</span>
+        <span class="n">notifier</span><span class="o">.</span><span class="na">addFirstListener</span><span class="o">(</span><span class="n">listener</span><span class="o">);</span>
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="n">notifier</span><span class="o">.</span><span class="na">fireTestRunStarted</span><span class="o">(</span><span class="n">runner</span><span class="o">.</span><span class="na">getDescription</span><span class="o">());</span>
+            <span class="n">runner</span><span class="o">.</span><span class="na">run</span><span class="o">(</span><span class="n">notifier</span><span class="o">);</span>
+            <span class="n">notifier</span><span class="o">.</span><span class="na">fireTestRunFinished</span><span class="o">(</span><span class="n">result</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+            <span class="n">removeListener</span><span class="o">(</span><span class="n">listener</span><span class="o">);</span>
+        <span class="o">}</span>
+        <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Notes: 这里特别说明下通知notify的实现，代码中创建一个<code class="highlighter-rouge">SafeNotifier</code>类，来发布一个通知，但是我们知道监听器不可能只有一个，因此，对于外部的调用来说，必须调用<code class="highlighter-rouge">SafeNotifier.run</code>方法，这个方法会依次遍历listeneres监听器列表，然后调用对应的方法触发监听事件。</p>
+  </blockquote>
+</blockquote>
+
+<p>在实现中，我们自己自定义了Runner方法为<code class="highlighter-rouge">GuiceJUnitRunner</code>继承了<code class="highlighter-rouge">ParentRunner</code>,所以，我们直接看其run方法的实现：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">(</span><span class="kd">final</span> <span class="n">RunNotifier</span> <span class="n">notifier</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">Statement</span> <span class="n">statement</span> <span class="o">=</span> <span class="n">classBlock</span><span class="o">(</span><span class="n">notifier</span><span class="o">);</span>
+        <span class="n">statement</span><span class="o">.</span><span class="na">evaluate</span><span class="o">();</span>
+    <span class="o">}</span>
+
+    <span class="c1">// 这里只分析最简单的方法调用，before和after是单独实现了Statement子类，执行时根据</span>
+    <span class="c1">// 先后属性来决定先执行test方法还是先运行before class工作</span>
+    <span class="kd">protected</span> <span class="n">Statement</span> <span class="nf">classBlock</span><span class="o">(</span><span class="kd">final</span> <span class="n">RunNotifier</span> <span class="n">notifier</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">Statement</span> <span class="n">statement</span> <span class="o">=</span> <span class="n">childrenInvoker</span><span class="o">(</span><span class="n">notifier</span><span class="o">);</span>
+        <span class="k">if</span> <span class="o">(!</span><span class="n">areAllChildrenIgnored</span><span class="o">())</span> <span class="o">{</span>
+            <span class="n">statement</span> <span class="o">=</span> <span class="n">withBeforeClasses</span><span class="o">(</span><span class="n">statement</span><span class="o">);</span>
+            <span class="n">statement</span> <span class="o">=</span> <span class="n">withAfterClasses</span><span class="o">(</span><span class="n">statement</span><span class="o">);</span>
+            <span class="n">statement</span> <span class="o">=</span> <span class="n">withClassRules</span><span class="o">(</span><span class="n">statement</span><span class="o">);</span>
+        <span class="o">}</span>
+        <span class="k">return</span> <span class="n">statement</span><span class="o">;</span>
+    <span class="o">}</span>    
+
+    <span class="c1">// statement其实就是对需要执行动作的一个封装，其真正的动作就是调用evaluate方法</span>
+    <span class="kd">protected</span> <span class="n">Statement</span> <span class="nf">childrenInvoker</span><span class="o">(</span><span class="kd">final</span> <span class="n">RunNotifier</span> <span class="n">notifier</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="k">new</span> <span class="nf">Statement</span><span class="o">()</span> <span class="o">{</span>
+            <span class="nd">@Override</span>
+            <span class="kd">public</span> <span class="kt">void</span> <span class="nf">evaluate</span><span class="o">()</span> <span class="o">{</span>
+                <span class="n">runChildren</span><span class="o">(</span><span class="n">notifier</span><span class="o">);</span>
+            <span class="o">}</span>
+        <span class="o">};</span>
+    <span class="o">}</span>
+
+
+    <span class="c1">// 下面两个是实现很有意思。对于RunnerScheduler来说，字面意思就是调度，因此，其是针对不同的调用策略，执行动作的接口</span>
+    <span class="c1">// 当然这里，我们直接调用运行，然后执行完所有测试的case方法之后，调用finished动作。</span>
+    <span class="kd">private</span> <span class="kt">void</span> <span class="nf">runChildren</span><span class="o">(</span><span class="kd">final</span> <span class="n">RunNotifier</span> <span class="n">notifier</span><span class="o">)</span> <span class="o">{</span>
+        <span class="kd">final</span> <span class="n">RunnerScheduler</span> <span class="n">currentScheduler</span> <span class="o">=</span> <span class="n">scheduler</span><span class="o">;</span>
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="k">for</span> <span class="o">(</span><span class="kd">final</span> <span class="n">T</span> <span class="n">each</span> <span class="o">:</span> <span class="n">getFilteredChildren</span><span class="o">())</span> <span class="o">{</span>
+                <span class="n">currentScheduler</span><span class="o">.</span><span class="na">schedule</span><span class="o">(</span><span class="k">new</span> <span class="n">Runnable</span><span class="o">()</span> <span class="o">{</span>
+                    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+                        <span class="n">ParentRunner</span><span class="o">.</span><span class="na">this</span><span class="o">.</span><span class="na">runChild</span><span class="o">(</span><span class="n">each</span><span class="o">,</span> <span class="n">notifier</span><span class="o">);</span>
+                    <span class="o">}</span>
+                <span class="o">});</span>
+            <span class="o">}</span>
+        <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+            <span class="n">currentScheduler</span><span class="o">.</span><span class="na">finished</span><span class="o">();</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+
+    <span class="kd">private</span> <span class="kd">volatile</span> <span class="n">RunnerScheduler</span> <span class="n">scheduler</span> <span class="o">=</span> <span class="k">new</span> <span class="n">RunnerScheduler</span><span class="o">()</span> <span class="o">{</span>
+        <span class="kd">public</span> <span class="kt">void</span> <span class="nf">schedule</span><span class="o">(</span><span class="n">Runnable</span> <span class="n">childStatement</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">childStatement</span><span class="o">.</span><span class="na">run</span><span class="o">();</span>
+        <span class="o">}</span>
+
+        <span class="kd">public</span> <span class="kt">void</span> <span class="nf">finished</span><span class="o">()</span> <span class="o">{</span>
+            <span class="c1">// do nothing</span>
+        <span class="o">}</span>
+    <span class="o">};</span>
+
+</code></pre></div></div>
+
+<p>其实，根据 <code class="highlighter-rouge">ParentRunner</code>类的代码，基本上已经能够很清晰的明白了运行测试case的流程。其流程就是：首先，我们拿到测试类中所有需要执行的test方法；然后，把测试类中需要执行的test方法封装为一个执行动作，这个动作就是分别运行各个子方法，这些方法的执行则是根据RunnerScheduler内部的调度执行策略来的。</p>
+
+<p>所以，根据上面的代码，发现其实有两个方法，是需要子类去实现的，其一是怎么获取测试类中需要test的方法，其二就是如果执行这些方法，之所以会如此，是因为<code class="highlighter-rouge">ParentRunner</code>这个类除了针对测试类里地方法，还针对测试包下面各种测试类，所以不同的情形，其处理逻辑是不一样的。针对包Suite，其会继续遍历解析，知道拆分成测试类，对应下面的测试方法FrameworkMethod，然后调用针对测试类的处理逻辑执行。</p>
+
+<h3 id="guicejunitrunner-继承-blockjunit4classrunner">GuiceJUnitRunner 继承 BlockJUnit4ClassRunner</h3>
+
+<p>如上所述，<code class="highlighter-rouge">ParentRunner</code> 关注的两个方法，需要在子类去实现。</p>
+
+<p>获取需要test的方法，这个显然 BlockJUnit4ClassRunner 就可以给出具体实现，即根据<code class="highlighter-rouge">@Test</code>注解来获取测试类中需要执行test的方法，如下：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+    <span class="c1">// getTestClass 获取的就是需要执行的测试类</span>
+    <span class="kd">protected</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">FrameworkMethod</span><span class="o">&gt;</span> <span class="nf">computeTestMethods</span><span class="o">()</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="nf">getTestClass</span><span class="o">().</span><span class="na">getAnnotatedMethods</span><span class="o">(</span><span class="n">Test</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>而，另外一个问题就是如何执行测试方法。其实现也很简单，就是首先构造测试类实例，然后根据具体的测试方法，依次通过menthod.invoke调用执行就可以了。而针对构造类实例，由于Guice获取方式是通过注入，所以是需要覆盖重写的。因此，我们看父类BlockJUnit4ClassRunner代码：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+    <span class="nd">@Override</span>
+    <span class="kd">protected</span> <span class="kt">void</span> <span class="nf">runChild</span><span class="o">(</span><span class="kd">final</span> <span class="n">FrameworkMethod</span> <span class="n">method</span><span class="o">,</span> <span class="n">RunNotifier</span> <span class="n">notifier</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">Description</span> <span class="n">description</span> <span class="o">=</span> <span class="n">describeChild</span><span class="o">(</span><span class="n">method</span><span class="o">);</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">isIgnored</span><span class="o">(</span><span class="n">method</span><span class="o">))</span> <span class="o">{</span>
+            <span class="n">notifier</span><span class="o">.</span><span class="na">fireTestIgnored</span><span class="o">(</span><span class="n">description</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+            <span class="c1">// runLeaf 核心动作就是 statement.evaluate()</span>
+            <span class="n">runLeaf</span><span class="o">(</span><span class="n">methodBlock</span><span class="o">(</span><span class="n">method</span><span class="o">),</span> <span class="n">description</span><span class="o">,</span> <span class="n">notifier</span><span class="o">);</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+
+    <span class="c1">// 下面createTest就是需要实例化一个测试类对象了，然后再构造一个 methodInvoker 对象，methodInvoker</span>
+    <span class="c1">// 从名字就可看出来其作用就是为了反射执行method方法。</span>
+    <span class="kd">protected</span> <span class="n">Statement</span> <span class="nf">methodBlock</span><span class="o">(</span><span class="n">FrameworkMethod</span> <span class="n">method</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">Object</span> <span class="n">test</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ReflectiveCallable</span><span class="o">()</span> <span class="o">{</span>
+                <span class="nd">@Override</span>
+                <span class="kd">protected</span> <span class="n">Object</span> <span class="nf">runReflectiveCall</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Throwable</span> <span class="o">{</span>
+                    <span class="k">return</span> <span class="nf">createTest</span><span class="o">();</span>
+                <span class="o">}</span>
+        <span class="o">}.</span><span class="na">run</span><span class="o">();</span>
+        <span class="c1">// 实际上就是方法执行 method.invoke(test, params)</span>
+        <span class="n">Statement</span> <span class="n">statement</span> <span class="o">=</span> <span class="n">methodInvoker</span><span class="o">(</span><span class="n">method</span><span class="o">,</span> <span class="n">test</span><span class="o">);</span>
+        <span class="c1">// ......</span>
+        <span class="k">return</span> <span class="n">statement</span><span class="o">;</span>
+    <span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>ok，整个流程基本上就已经分析清楚了。此外，需要注意的是，对于继承实现Runner来说，其构造函数是带有一个testClass的参数的。例如：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+    <span class="kd">public</span> <span class="nf">GuiceJUnitRunner</span><span class="o">(</span><span class="n">Class</span><span class="o">&lt;?&gt;</span> <span class="n">klass</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">InitializationError</span> <span class="o">{</span>
+        <span class="kd">super</span><span class="o">(</span><span class="n">klass</span><span class="o">);</span>
+        <span class="n">Class</span><span class="o">&lt;?&gt;[]</span> <span class="n">classes</span> <span class="o">=</span> <span class="n">getModulesFor</span><span class="o">(</span><span class="n">klass</span><span class="o">);</span>
+        <span class="n">injector</span> <span class="o">=</span> <span class="n">createInjectorFor</span><span class="o">(</span><span class="n">classes</span><span class="o">);</span><span class="c1">//创建一个injector，在createTest中，使用该injector来注入类中得各种依赖</span>
+    <span class="o">}</span>
+
+</code></pre></div></div>
+
+<h2 id="遗留问题和总结"><a id="Problem_and_Summary">遗留问题和总结</a></h2>
+
+<p>本文主要是基于Guice+JUnit+Mockito来构建一个单元测试实践，然后简要分析了JUnit的源码运行逻辑，但是并没深入到源码的细节。但是不得不说，JUnit不仅仅是一个非常优秀的测试框架，而且其代码结构和实现也非常的优美和可扩展，非常值得学习和借鉴。</p>
+
+<p>后面有机会，会更深入分析其内部的实现细节，以及一些非常值得借鉴的代码设计思想。</p>
+
+        </article>
+        <hr>
+
+        
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+        
+
+        <div class="post-recent">
+    <div class="pre">
+        
+        <p><strong>上一篇</strong> <a href="/2016/01/02/delayed-message-consume-service-use-kafka/">基于kafka的定时消息/任务服务</a></p>
+        
+    </div>
+    <div class="nex">
+
+        
+        <p><strong>下一篇</strong> <a href="/2016/04/29/thrift-service-discory-using-zookeeper-ourea/">Ourea-基于Zookeeper的Thrift服务发现框架实现</a></p>
+        
+    </div>
+</div>
+
+
+        <h2 id="comments">Comments</h2>
+        
+
+
+<div id="disqus_thread"></div>
+<script>
+    /**
+     * RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     * LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+
+    var disqus_config = function() {
+        this.page.url = 'http://localhost:4000/2016/03/10/junit-mockito-guice-in-action-and-junit-test-mechanism/'; // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = 'http://localhost:4000/2016/03/10/junit-mockito-guice-in-action-and-junit-test-mechanism/'; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+
+    (function() { // DON'T EDIT BELOW THIS LINE
+        var d = document,
+            s = d.createElement('script');
+
+        s.src = '//taocoder.disqus.com/embed.js';
+
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+
+
+
+    </div>
+    <button class="anchor"><i class="fa fa-anchor"></i></button>
+    <div class="right">
+        <div class="wrap">
+
+            <!-- Content -->
+            <div class="side content">
+                <div>
+                    Content
+                </div>
+                <ul id="content-side" class="content-ul">
+                    
+                    <li><a href="#comments">Comments</a></li>
+                </ul>
+            </div>
+            <!-- 其他div框放到这里 -->
+            <!-- <div class="side">bbbb</div> -->
+        </div>
+    </div>
+</div>
+<script>
+/**
+ * target _blank
+ */
+(function() {
+    var aTags = document.querySelectorAll('article a:not([id])')
+    for (var i = 0; i < aTags.length; i++) {
+        aTags[i].setAttribute('target', '_blank')
+    }
+}());
+</script>
+<script src="/js/pageContent.js " charset="utf-8"></script>
+
+
+    <footer class="site-footer">
+
+
+    <div class="wrapper">
+
+        <p class="description">
+             本站保留着一点点技术积蓄！ 
+        </p>
+        <p class="contact">
+            Contact me at: 
+            <a href="https://github.com/ketao1989" title="GitHub"><i class="fa fa-github" aria-hidden="true"></i></a>  
+            <a href="mailto:ketao1989@126.com" title="email"><i class="fa fa-envelope-o" aria-hidden="true"></i></a>  
+            <a href="http://weibo.com/柯小小西" title="Weibo"><i class="fa fa-weibo" aria-hidden="true"></i></a>       
+        </p>
+        <p>
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次，本站访客数<span id="busuanzi_value_site_uv"></span>人次，本文总阅读量<span id="busuanzi_value_page_pv"></span>次
+        </p>
+        <p class="power">
+            <span>
+                Site powered by <a href="https://jekyllrb.com/">Jekyll</a> & <a href="https://pages.github.com/">Github Pages</a>.
+            </span>
+            <span>
+                Theme designed by <a href="https://github.com/Gaohaoyang">HyG</a>.
+            </span>
+        </p>
+    </div>
+</footer>
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+    <div class="back-to-top">
+    <a href="#top" data-scroll>
+        <i class="fa fa-arrow-up" aria-hidden="true"></i>
+    </a>
+</div>
+
+    <script src=" /js/main.js " charset="utf-8"></script>
+    <script src=" /js/smooth-scroll.min.js " charset="utf-8"></script>
+    <script type="text/javascript">
+      smoothScroll.init({
+        speed: 500, // Integer. How fast to complete the scroll in milliseconds
+        easing: 'easeInOutCubic', // Easing pattern to use
+        offset: 20, // Integer. How far to offset the scrolling anchor location in pixels
+      });
+    </script>
+    <!-- <script src=" /js/scroll.min.js " charset="utf-8"></script> -->
+  </body>
+
+</html>

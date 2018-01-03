@@ -1,0 +1,2501 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>柯小小西</title>
+    <meta name="description" content="">
+
+    <link rel="shortcut icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://at.alicdn.com/t/font_8v3czwksspqlg14i.css">
+    <link rel="stylesheet" href="/css/main.css ">
+    <link rel="canonical" href="http://localhost:4000/page5/">
+    <link rel="alternate" type="application/rss+xml" title="柯小小西" href="http://localhost:4000/feed.xml ">
+
+
+    <script>
+    // 百度统计代码
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?a9b0f47a0e50b02dafb8a7088436a9bc";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+    </script>
+
+
+
+
+</head>
+
+
+  <body>
+
+    <header id="top">
+    <div class="wrapper">
+        <a href="/" class="brand">柯小小西</a>
+        <small>留着一点点技术积蓄</small>
+        <button id="headerMenu" class="menu"><i class="fa fa-bars"></i></button>
+        <nav id="headerNav">
+            <ul>
+                <li>
+                    
+                    <a href="/">
+                    
+                        <i class="fa fa-home"></i>Home
+                    </a>
+                </li>
+
+                
+                    
+                    <li>
+                        
+                        <a href="/archive/">
+                        
+                            <i class="fa fa-archive"></i>Archives
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/category/">
+                        
+                            <i class="fa fa-th-list"></i>Categories
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/tag/">
+                        
+                            <i class="fa fa-tags"></i>Tags
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/about/">
+                        
+                            <i class="fa fa-heart"></i>About
+                        </a>
+                    </li>
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+        <div class="page clearfix" index>
+    <div class="left">
+        <h1>Welcome to 柯小小西's Blog!</h1>
+        <small>留着一点点技术积蓄</small>
+        <hr>
+        <ul>
+            
+              <li>
+                <h2>
+                  <a class="post-link" href="/2014/10/09/Mysql-Delete-Insert-Deadlock-Analyse/">线上Mysql Delete 和 Insert 操作导致死锁问题分析</a>
+                </h2>
+                <div class="label">
+                    <div class="label-card">
+                        <i class="fa fa-calendar"></i>2014-10-09
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+
+                    <div class="label-card">
+                    
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Mysql" title="Category: Mysql" rel="category">Mysql</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+                    </div>
+
+                    <div class="label-card">
+                    
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+                    </div>
+                </div>
+                <div class="excerpt">
+                    <h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p>今天项目发布，上线上跟日志的时候，发现一些死锁信息的出现，查询了一下，发现日志里面虽然死锁出现很少，但是都是同一个代码<code class="highlighter-rouge">sql</code>语句产生的，如下图所示：</p>
+
+<p><img src="/images/2014/10/deadlock-log.png" /></p>
+
+<p>并且，一天产生死锁<code class="highlighter-rouge">31</code>次。</p>
+
+<p>从DBA那边拿到了对应死锁的<code class="highlighter-rouge">Mysql</code>日志信息：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">------------------------</span>
+LATEST DETECTED DEADLOCK
+<span class="nt">------------------------</span>
+141009 12:54:59
+<span class="k">***</span> <span class="o">(</span>1<span class="o">)</span> TRANSACTION:
+TRANSACTION AEE50DCB, ACTIVE 0 sec starting index <span class="nb">read
+</span>mysql tables <span class="k">in </span>use 1, locked 1
+LOCK WAIT 2 lock struct<span class="o">(</span>s<span class="o">)</span>, heap size 376, 1 row lock<span class="o">(</span>s<span class="o">)</span>
+MySQL thread <span class="nb">id </span>6055694, OS thread handle 0x7f4345c8d700, query <span class="nb">id </span>2443700084 192.168.249.154 crm_w updating
+DELETE FROM crm_business WHERE serial_number <span class="o">=</span> <span class="s1">'CH01313320'</span>
+<span class="k">***</span> <span class="o">(</span>1<span class="o">)</span> WAITING FOR THIS LOCK TO BE GRANTED:
+RECORD LOCKS space <span class="nb">id </span>244 page no 817 n bits 824 index <span class="sb">`</span>uniq_serial_number_business_type<span class="sb">`</span> of table <span class="sb">`</span>crm<span class="sb">`</span>.<span class="sb">`</span>crm_business<span class="sb">`</span> trx <span class="nb">id </span>AEE50DCB lock_mode X waiting
+<span class="k">***</span> <span class="o">(</span>2<span class="o">)</span> TRANSACTION:
+TRANSACTION AEE50DCA, ACTIVE 0 sec inserting, thread declared inside InnoDB 500
+mysql tables <span class="k">in </span>use 1, locked 1
+3 lock struct<span class="o">(</span>s<span class="o">)</span>, heap size 1248, 3 row lock<span class="o">(</span>s<span class="o">)</span>, undo log entries 1
+MySQL thread <span class="nb">id </span>6055696, OS thread handle 0x7f4344941700, query <span class="nb">id </span>2443700084 192.168.249.154 crm_w update
+INSERT INTO crm_business<span class="o">(</span>serial_number, business_type<span class="o">)</span> values <span class="o">(</span><span class="s1">'CH01313318'</span>, 2<span class="o">)</span>
+<span class="k">***</span> <span class="o">(</span>2<span class="o">)</span> HOLDS THE LOCK<span class="o">(</span>S<span class="o">)</span>:
+RECORD LOCKS space <span class="nb">id </span>244 page no 817 n bits 824 index <span class="sb">`</span>uniq_serial_number_business_type<span class="sb">`</span> of table <span class="sb">`</span>crm<span class="sb">`</span>.<span class="sb">`</span>crm_business<span class="sb">`</span> trx <span class="nb">id </span>AEE50DCA lock mode S
+<span class="k">***</span> <span class="o">(</span>2<span class="o">)</span> WAITING FOR THIS LOCK TO BE GRANTED:
+RECORD LOCKS space <span class="nb">id </span>244 page no 817 n bits 824 index <span class="sb">`</span>uniq_serial_number_business_type<span class="sb">`</span> of table <span class="sb">`</span>crm<span class="sb">`</span>.<span class="sb">`</span>crm_business<span class="sb">`</span> trx <span class="nb">id </span>AEE50DCA lock_mode X locks gap before rec insert intention waiting
+<span class="k">***</span> WE ROLL BACK TRANSACTION <span class="o">(</span>1<span class="o">)</span>
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Note: 数据库中，<code class="highlighter-rouge">CH01313318</code>和<code class="highlighter-rouge">CH01313320</code>序列号是连着的两个记录。</p>
+  </blockquote>
+</blockquote>
+
+<h2 id="死锁问题定位"><a id="Problem">死锁问题定位</a></h2>
+
+<p>之所以需要分析这个问题，主要原因是，这边代码并<em>没有</em>涉及到在一个事务内部sql操作导致死锁等常见的情况。</p>
+
+<!-- more -->
+
+<ul>
+  <li>首先，我们看看设计问题的代码片段：</li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="k">for</span> <span class="o">(</span><span class="kd">final</span> <span class="n">C</span> <span class="n">c</span> <span class="o">:</span> <span class="n">cs</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">threadPool</span><span class="o">.</span><span class="na">execute</span><span class="o">(</span><span class="k">new</span> <span class="n">Runnable</span><span class="o">()</span> <span class="o">{</span>
+                <span class="nd">@Override</span>
+                <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+                    <span class="n">processOneC</span><span class="o">(</span><span class="n">c</span><span class="o">);</span>
+                <span class="o">}</span>
+            <span class="o">});</span>
+        <span class="o">}</span>
+
+
+<span class="kd">private</span> <span class="kt">void</span> <span class="nf">processOneC</span><span class="o">(</span><span class="n">C</span> <span class="n">c</span><span class="o">)</span> <span class="o">{</span>
+
+
+        <span class="k">if</span> <span class="o">(</span><span class="n">Strings</span><span class="o">.</span><span class="na">isNullOrEmpty</span><span class="o">(</span><span class="n">c</span><span class="o">.</span><span class="na">getSeqNumber</span><span class="o">()))</span> <span class="o">{</span>
+            <span class="k">return</span><span class="o">;</span>
+        <span class="o">}</span>
+        <span class="k">try</span> <span class="o">{</span>
+
+            <span class="c1">// 删除原合作业务</span>
+            <span class="n">cBusinessDAO</span><span class="o">.</span><span class="na">deleteBySN</span><span class="o">(</span><span class="n">c</span><span class="o">.</span><span class="na">getSerialNumber</span><span class="o">());</span> <span class="c1">//delete操作</span>
+
+            <span class="c1">//..........</span>
+            
+            <span class="n">setTuanBusiness</span><span class="o">(</span><span class="n">c</span><span class="o">,</span> <span class="n">hotelResult</span><span class="o">);</span> <span class="c1">//insert操作</span>
+            <span class="n">setDirectBusiness</span><span class="o">(</span><span class="n">c</span><span class="o">,</span> <span class="n">hotelResult</span><span class="o">);</span> <span class="c1">//insert操作</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+        
+            <span class="n">logger</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">"CustomerBusinessProcess.processOneCustomer error, Exception"</span><span class="o">,</span> <span class="n">e</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"=========="</span> <span class="o">+</span> <span class="n">co</span><span class="o">.</span><span class="na">addAndGet</span><span class="o">(</span><span class="mi">1</span><span class="o">));</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+
+
+</code></pre></div></div>
+
+<p>上面代码的逻辑很简单，就是对一个列表对象，多线程来分别操作。每个对象的处理，删除原来的记录，然后添加新的记录。</p>
+
+<ul>
+  <li>其次，设计到的SQL语句：</li>
+</ul>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="k">DELETE</span> 
+<span class="k">FROM</span> <span class="n">crm_business</span> 
+<span class="k">WHERE</span> <span class="n">serial_number</span> <span class="o">=</span> <span class="s1">'xxxx'</span>
+
+<span class="k">INSERT</span> 
+<span class="k">INTO</span> <span class="n">crm_business</span><span class="p">(</span>
+<span class="n">serial_number</span><span class="p">,</span> 
+<span class="n">business_type</span>
+<span class="p">)</span> <span class="k">values</span> <span class="p">(</span>
+<span class="s1">'xxxx'</span><span class="p">,</span> 
+<span class="mi">1</span>
+<span class="p">)</span>
+</code></pre></div></div>
+
+<ul>
+  <li>最后，看看相关表的建表sql语句：</li>
+</ul>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="k">CREATE</span> <span class="k">TABLE</span> <span class="nv">`crm_business`</span> <span class="p">(</span>
+  <span class="nv">`id`</span> <span class="n">int</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span> <span class="n">unsigned</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="n">AUTO_INCREMENT</span> <span class="k">COMMENT</span> <span class="s1">'主键ID'</span><span class="p">,</span>
+  <span class="nv">`serial_number`</span> <span class="n">varchar</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">COMMENT</span> <span class="s1">'商户编号'</span><span class="p">,</span>
+  <span class="nv">`business_type`</span> <span class="n">tinyint</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">COMMENT</span> <span class="s1">'业务类型'</span><span class="p">,</span>
+  <span class="k">PRIMARY</span> <span class="k">KEY</span> <span class="p">(</span><span class="nv">`id`</span><span class="p">),</span>
+  <span class="k">UNIQUE</span> <span class="k">KEY</span> <span class="nv">`uniq_serial_number_business_type`</span> <span class="p">(</span><span class="nv">`serial_number`</span><span class="p">,</span><span class="nv">`business_type`</span><span class="p">)</span>
+<span class="p">)</span> <span class="n">ENGINE</span><span class="o">=</span><span class="n">InnoDB</span> <span class="n">AUTO_INCREMENT</span><span class="o">=</span><span class="mi">34856774</span> <span class="k">DEFAULT</span> <span class="n">CHARSET</span><span class="o">=</span><span class="n">utf8</span> <span class="k">COMMENT</span><span class="o">=</span><span class="s1">'合作业务'</span>
+
+</code></pre></div></div>
+
+<p>数据表里面，字段很简单，但是里面涉及一个唯一键索引。</p>
+
+<blockquote>
+  <blockquote>
+    <p>Note: 上面的代码，<code class="highlighter-rouge">delete</code>和<code class="highlighter-rouge">insert</code>操作不在一个事务里面，因为代码上没有添加@transaction 注解，也就是单纯delete<code class="highlighter-rouge">和</code>insert`操作在多线程环境下，竟然会产生死锁。此外，需要注意，操作唯一键相关字段，经常会不注意就产生死锁问题。</p>
+  </blockquote>
+</blockquote>
+
+<h2 id="死锁问题分析"><a id="Analyse">死锁问题分析</a></h2>
+
+<p>首先，给出一篇博客，mysql大神写的<a href="http://hedengcheng.com/?p=844">http://hedengcheng.com/?p=844</a>,一下分析，借鉴使用该博客的分析。</p>
+
+<blockquote>
+  <blockquote>
+    <p>Tips: 有兴趣，请直接阅读该博客的分析。</p>
+  </blockquote>
+</blockquote>
+
+<h3 id="mysql日志分析">Mysql日志分析</h3>
+
+<p>以上Mysql产生的死锁日志，包含两个事务。</p>
+
+<p><em>事务1</em>：当前正在操作一张表（mysql tables in use 1），持有两把锁(2 lock structs，一个表级意向锁，一个行锁(1 row lock))，这个事务，当前正在处理的语句是一条delete语句。同时，这唯一的一个行锁，处于等待状态(WAITING FOR THIS LOCK TO BE GRANTED)。</p>
+
+<p>事务1等待中的行锁，加锁的对象是唯一索引<code class="highlighter-rouge">uniq_serial_number_business_type</code>上页面号为<code class="highlighter-rouge">817</code>页面上的一行(注：具体是哪一行，无法看到。但是能够看到的是，这个行锁，一共有824个bits可以用来锁824个行记录，n bits 824：lock_rec_print()方法)。同时，等待的行锁模式为next key锁(lock_mode X)。简单来说，next key锁有两层含义，一是对当前记录加X锁，防止记录被并发修改，同时锁住记录之前的GAP，防止有新的记录插入到此记录之前。</p>
+
+<p><em>事务2</em>：和事务1一样，事务2上面有三个行锁，三个行锁，<code class="highlighter-rouge">undo log entries 1</code>，两个锁都是唯一索引<code class="highlighter-rouge">uniq_serial_number_business_type</code>上页号<code class="highlighter-rouge">817</code>上的某一条记录。其中，一个锁处于持有状态，锁模式为S mode，即共享锁，同时，另外一把锁处于等待状态，锁模式为X mode，即互斥锁。因此，拥有锁S模式不代表可以获取接下来的X模式的锁。</p>
+
+<p>事务1正在等待事务2释放锁的S模式，从而获取X模式的锁；但是事务2已经获取了S模式，但是其等待继续获取锁的X模型,这个模式事务1优先申请获取，因此就导致死锁。</p>
+
+<blockquote>
+  <blockquote>
+    <p>Note: 事务1优先去等待获取锁的X模式，是因为在Mysql中为了公平竞争，杜绝事务1发生饥饿现象。这样会导致上述死锁出现。</p>
+  </blockquote>
+</blockquote>
+
+<p>那么为什么会出现<code class="highlighter-rouge">delete</code>操作抛出死锁失败，事务回滚。</p>
+
+<p>Mysql实现，会根据死锁冲突的两个事务的权重，事务1的权重会更低，然后被选为抛弃的对象，回滚该操作。</p>
+
+<h3 id="delete操作的加锁逻辑">Delete操作的加锁逻辑</h3>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">DELETE</span> 
+<span class="k">FROM</span> <span class="n">crm_business</span> 
+<span class="k">WHERE</span> <span class="n">serial_number</span> <span class="o">=</span> <span class="s1">'xxxx'</span>
+</code></pre></div></div>
+
+<p><code class="highlighter-rouge"> serial_number</code>是数据表里面的唯一键索引，一个二级索引键值。</p>
+
+<p><code class="highlighter-rouge"> serial_number</code>是unique索引，而主键是id列。因此delete语句会选择走<code class="highlighter-rouge">serial_number</code>列的索引进行where条件的过滤，在找到<code class="highlighter-rouge">serial_number = 'xxxx'</code>的记录后，首先会将unique索引上的<code class="highlighter-rouge">serial_number = 'xxxx'</code>索引记录加上X锁，同时，会根据读取到的<code class="highlighter-rouge">id</code>列，回主键索引(聚簇索引)，然后将聚簇索引上的<code class="highlighter-rouge">id = 10</code> 对应的主键索引项加X锁。为什么聚簇索引上的记录也要加锁？试想一下，如果并发的一个SQL，是通过主键索引来更新：<code class="highlighter-rouge">update crm_business set serial_number = xyy where id = 10</code>; 此时，如果delete语句没有将主键索引上的记录加锁，那么并发的update就会感知不到delete语句的存在，违背了同一记录上的更新/删除需要串行执行的约束。</p>
+
+<blockquote>
+  <blockquote>
+    <p>Note：和delete操作类似的加锁操作，还有：</p>
+  </blockquote>
+</blockquote>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+    <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="k">table</span> <span class="k">where</span> <span class="o">?</span> <span class="k">lock</span> <span class="k">in</span> <span class="k">share</span> <span class="k">mode</span><span class="p">;</span>  
+    <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="k">table</span> <span class="k">where</span> <span class="o">?</span> <span class="k">for</span> <span class="k">update</span><span class="p">;</span>  
+    <span class="k">insert</span> <span class="k">into</span> <span class="k">table</span> <span class="k">values</span> <span class="p">(</span><span class="s1">'xxx'</span><span class="p">);</span>  
+    <span class="k">update</span> <span class="k">table</span> <span class="k">set</span> <span class="o">?</span> <span class="k">where</span> <span class="o">?</span><span class="p">;</span>  
+    <span class="k">delete</span> <span class="k">from</span> <span class="k">table</span> <span class="k">where</span> <span class="o">?</span><span class="p">;</span>  
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>上述操作都是当前读，需要读取记录的最新操作，读取之后，为了保证其他并发事务不能修改当前记录，会对读的记录加锁，可能是S模式锁，或者X模式锁。</p>
+  </blockquote>
+</blockquote>
+
+
+                </div>
+                <div class="read-all">
+                    <a  href="/2014/10/09/Mysql-Delete-Insert-Deadlock-Analyse/"><i class="fa fa-newspaper-o"></i>Read All</a>
+                </div>
+                <hr>
+              </li>
+            
+              <li>
+                <h2>
+                  <a class="post-link" href="/2014/09/09/Jackson-Manual-and-Implementation-Analyzing/">Jackson 工具类使用及配置指南</a>
+                </h2>
+                <div class="label">
+                    <div class="label-card">
+                        <i class="fa fa-calendar"></i>2014-09-09
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+
+                    <div class="label-card">
+                    
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Java" title="Category: Java" rel="category">Java</a>&nbsp;
+    
+        <a href="/category/#Json" title="Category: Json" rel="category">Json</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+                    </div>
+
+                    <div class="label-card">
+                    
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+                    </div>
+                </div>
+                <div class="excerpt">
+                    <h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p>Json数据格式这两年发展的很快，其声称相对XML格式有很对好处:</p>
+
+<ul>
+  <li>容易阅读；</li>
+  <li>解析速度快；</li>
+  <li>占用空间更少。</li>
+</ul>
+
+<p>不过,JSON 和 XML两者纠结谁优谁劣,这里不做讨论,可以参见知乎上<a href="http://www.zhihu.com/question/20738607">为什么XML这么笨重的数据结构仍在广泛应用？</a></p>
+
+<p>最近在项目中，会有各种解析JSON文本的需求，使用第三方<code class="highlighter-rouge">Jackson</code>工具来解析时，又担心当增加会减少字段，会不会出现非预期的情况，因此，研究下<code class="highlighter-rouge">jackson</code>解析json数据格式的代码，很有需要。</p>
+
+<h2 id="jackson使用工具类"><a id="JsonUtils">Jackson使用工具类</a></h2>
+
+<p>通常，我们对json格式的数据，只会进行解析和封装两种，也就是<code class="highlighter-rouge">json字符串---&gt;java对象</code>以及<code class="highlighter-rouge">java对象---&gt; json字符串</code>。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>       
+    <span class="kd">public</span> <span class="kd">class</span> <span class="nc">JsonUtils</span> <span class="o">{</span>
+    <span class="cm">/**
+     * Logger for this class
+     */</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">Logger</span> <span class="n">logger</span> <span class="o">=</span> <span class="n">LoggerFactory</span><span class="o">.</span><span class="na">getLogger</span><span class="o">(</span><span class="n">JsonUtils</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+
+    <span class="kd">private</span> <span class="kd">final</span> <span class="kd">static</span> <span class="n">ObjectMapper</span> <span class="n">objectMapper</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+
+    <span class="kd">static</span> <span class="o">{</span>
+        <span class="n">objectMapper</span><span class="o">.</span><span class="na">configure</span><span class="o">(</span><span class="n">JsonParser</span><span class="o">.</span><span class="na">Feature</span><span class="o">.</span><span class="na">ALLOW_COMMENTS</span><span class="o">,</span> <span class="kc">true</span><span class="o">);</span>
+        <span class="n">objectMapper</span><span class="o">.</span><span class="na">configure</span><span class="o">(</span><span class="n">JsonParser</span><span class="o">.</span><span class="na">Feature</span><span class="o">.</span><span class="na">ALLOW_UNQUOTED_FIELD_NAMES</span><span class="o">,</span> <span class="kc">true</span><span class="o">);</span>
+        <span class="n">objectMapper</span><span class="o">.</span><span class="na">configure</span><span class="o">(</span><span class="n">JsonParser</span><span class="o">.</span><span class="na">Feature</span><span class="o">.</span><span class="na">ALLOW_SINGLE_QUOTES</span><span class="o">,</span> <span class="kc">true</span><span class="o">);</span>
+        <span class="n">objectMapper</span><span class="o">.</span><span class="na">configure</span><span class="o">(</span><span class="n">JsonParser</span><span class="o">.</span><span class="na">Feature</span><span class="o">.</span><span class="na">ALLOW_UNQUOTED_CONTROL_CHARS</span><span class="o">,</span> <span class="kc">true</span><span class="o">);</span>
+        <span class="n">objectMapper</span><span class="o">.</span><span class="na">configure</span><span class="o">(</span><span class="n">JsonParser</span><span class="o">.</span><span class="na">Feature</span><span class="o">.</span><span class="na">INTERN_FIELD_NAMES</span><span class="o">,</span> <span class="kc">true</span><span class="o">);</span>
+        <span class="n">objectMapper</span><span class="o">.</span><span class="na">configure</span><span class="o">(</span><span class="n">JsonParser</span><span class="o">.</span><span class="na">Feature</span><span class="o">.</span><span class="na">CANONICALIZE_FIELD_NAMES</span><span class="o">,</span> <span class="kc">true</span><span class="o">);</span>
+        <span class="n">objectMapper</span><span class="o">.</span><span class="na">configure</span><span class="o">(</span><span class="n">DeserializationConfig</span><span class="o">.</span><span class="na">Feature</span><span class="o">.</span><span class="na">FAIL_ON_UNKNOWN_PROPERTIES</span><span class="o">,</span> <span class="kc">false</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">private</span> <span class="nf">JsonUtils</span><span class="o">()</span> <span class="o">{</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="n">String</span> <span class="nf">encode</span><span class="o">(</span><span class="n">Object</span> <span class="n">obj</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="k">return</span> <span class="n">objectMapper</span><span class="o">.</span><span class="na">writeValueAsString</span><span class="o">(</span><span class="n">obj</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">JsonGenerationException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">logger</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">"encode(Object)"</span><span class="o">,</span> <span class="n">e</span><span class="o">);</span> <span class="c1">//$NON-NLS-1$</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">JsonMappingException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">logger</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">"encode(Object)"</span><span class="o">,</span> <span class="n">e</span><span class="o">);</span> <span class="c1">//$NON-NLS-1$</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">IOException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">logger</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">"encode(Object)"</span><span class="o">,</span> <span class="n">e</span><span class="o">);</span> <span class="c1">//$NON-NLS-1$</span>
+        <span class="o">}</span>
+        <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="cm">/**
+     * 将json string反序列化成对象
+     *
+     * @param json
+     * @param valueType
+     * @return
+     */</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">T</span> <span class="nf">decode</span><span class="o">(</span><span class="n">String</span> <span class="n">json</span><span class="o">,</span> <span class="n">Class</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">valueType</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="k">return</span> <span class="n">objectMapper</span><span class="o">.</span><span class="na">readValue</span><span class="o">(</span><span class="n">json</span><span class="o">,</span> <span class="n">valueType</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">JsonParseException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">logger</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">"decode(String, Class&lt;T&gt;)"</span><span class="o">,</span> <span class="n">e</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">JsonMappingException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">logger</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">"decode(String, Class&lt;T&gt;)"</span><span class="o">,</span> <span class="n">e</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">IOException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">logger</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">"decode(String, Class&lt;T&gt;)"</span><span class="o">,</span> <span class="n">e</span><span class="o">);</span>
+        <span class="o">}</span>
+        <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="cm">/**
+     * 将json array反序列化为对象
+     *
+     * @param json
+     * @param jsonTypeReference
+     * @return
+     */</span>
+    <span class="nd">@SuppressWarnings</span><span class="o">(</span><span class="s">"unchecked"</span><span class="o">)</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">T</span> <span class="nf">decode</span><span class="o">(</span><span class="n">String</span> <span class="n">json</span><span class="o">,</span> <span class="n">TypeReference</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">typeReference</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="k">return</span> <span class="o">(</span><span class="n">T</span><span class="o">)</span> <span class="n">objectMapper</span><span class="o">.</span><span class="na">readValue</span><span class="o">(</span><span class="n">json</span><span class="o">,</span> <span class="n">typeReference</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">JsonParseException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">logger</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">"decode(String, JsonTypeReference&lt;T&gt;)"</span><span class="o">,</span> <span class="n">e</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">JsonMappingException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">logger</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">"decode(String, JsonTypeReference&lt;T&gt;)"</span><span class="o">,</span> <span class="n">e</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">IOException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">logger</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">"decode(String, JsonTypeReference&lt;T&gt;)"</span><span class="o">,</span> <span class="n">e</span><span class="o">);</span>
+        <span class="o">}</span>
+        <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+    <span class="o">}</span>
+
+<span class="o">}</span>
+             
+</code></pre></div></div>
+
+<h2 id="jackson配置属性"><a id="JsonConfig">Jackson配置属性</a></h2>
+
+<p>如果上面的工具类实例，在Jackson中存在一些属性配置，这些配置决定了最后在解析或者编码后数据视图。因此，在分析Jackson之前，先了解下，Jackson具有的一些配置含义。</p>
+
+<!-- more -->
+
+<h3 id="jsonparser解析相关配置属性">JsonParser解析相关配置属性</h3>
+
+<p><code class="highlighter-rouge">JsonParser</code>将JSON 数据格式的String字符串，解析成为Java对象。Jackson在解析的时候，对于一些非JSON官方文档支持的属性，则需要通过一些配置才可以被Jackson工具解析成对象。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+	<span class="cm">/**
+     * Enumeration that defines all togglable features for parsers.
+     */</span>
+    <span class="kd">public</span> <span class="kd">enum</span> <span class="n">Feature</span> <span class="o">{</span>
+
+        <span class="c1">// // // Low-level I/O handling features:</span>
+
+        <span class="cm">/**
+         * 这个特性，决定了解析器是否将自动关闭那些不属于parser自己的输入源。 如果禁止，则调用应用不得不分别去关闭那些被用来创建parser的基础输入流InputStream和reader；
+         * 如果允许，parser只要自己需要获取closed方法（当遇到输入流结束，或者parser自己调用 JsonParder#close方法），就会处理流关闭。
+         *
+         * 注意：这个属性默认是true，即允许自动关闭流
+         *
+         */</span>
+        <span class="n">AUTO_CLOSE_SOURCE</span><span class="o">(</span><span class="kc">true</span><span class="o">),</span>
+
+        <span class="c1">// // // Support for non-standard data format constructs</span>
+
+        <span class="cm">/**
+         * 该特性决定parser将是否允许解析使用Java/C++ 样式的注释（包括'/'+'*' 和'//' 变量）。 由于JSON标准说明书上面没有提到注释是否是合法的组成，所以这是一个非标准的特性；
+         * 尽管如此，这个特性还是被广泛地使用。
+         *
+         * 注意：该属性默认是false，因此必须显式允许，即通过JsonParser.Feature.ALLOW_COMMENTS 配置为true。
+         *
+         */</span>
+        <span class="n">ALLOW_COMMENTS</span><span class="o">(</span><span class="kc">false</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 这个特性决定parser是否将允许使用非双引号属性名字， （这种形式在Javascript中被允许，但是JSON标准说明书中没有）。
+         *
+         * 注意：由于JSON标准上需要为属性名称使用双引号，所以这也是一个非标准特性，默认是false的。
+         * 同样，需要设置JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES为true，打开该特性。
+         *
+         */</span>
+        <span class="n">ALLOW_UNQUOTED_FIELD_NAMES</span><span class="o">(</span><span class="kc">false</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 该特性决定parser是否允许单引号来包住属性名称和字符串值。
+         *
+         * 注意：默认下，该属性也是关闭的。需要设置JsonParser.Feature.ALLOW_SINGLE_QUOTES为true
+         *
+         */</span>
+        <span class="n">ALLOW_SINGLE_QUOTES</span><span class="o">(</span><span class="kc">false</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 该特性决定parser是否允许JSON字符串包含非引号控制字符（值小于32的ASCII字符，包含制表符和换行符）。 如果该属性关闭，则如果遇到这些字符，则会抛出异常。
+         * JSON标准说明书要求所有控制符必须使用引号，因此这是一个非标准的特性。
+         *
+         * 注意：默认时候，该属性关闭的。需要设置：JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS为true。
+         *
+         */</span>
+        <span class="n">ALLOW_UNQUOTED_CONTROL_CHARS</span><span class="o">(</span><span class="kc">false</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 该特性可以允许接受所有引号引起来的字符，使用‘反斜杠\’机制：如果不允许，只有JSON标准说明书中 列出来的字符可以被避开约束。
+         *
+         * 由于JSON标准说明中要求为所有控制字符使用引号，这是一个非标准的特性，所以默认是关闭的。
+         *
+         * 注意：一般在设置ALLOW_SINGLE_QUOTES属性时，也设置了ALLOW_BACKSLASH_ESCAPING_ANY_CHARACTER属性，
+         * 所以，有时候，你会看到不设置ALLOW_BACKSLASH_ESCAPING_ANY_CHARACTER为true，但是依然可以正常运行。
+         *
+         * @since 1.6
+         */</span>
+        <span class="n">ALLOW_BACKSLASH_ESCAPING_ANY_CHARACTER</span><span class="o">(</span><span class="kc">false</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 该特性决定parser是否允许JSON整数以多个0开始(比如，如果000001赋值给json某变量，
+         * 如果不设置该属性，则解析成int会抛异常报错：org.codehaus.jackson.JsonParseException: Invalid numeric value: Leading zeroes not
+         * allowed)
+         *
+         * 注意：该属性默认是关闭的，如果需要打开，则设置JsonParser.Feature.ALLOW_NUMERIC_LEADING_ZEROS为true。
+         *
+         * @since 1.8
+         */</span>
+        <span class="n">ALLOW_NUMERIC_LEADING_ZEROS</span><span class="o">(</span><span class="kc">false</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 该特性允许parser可以识别"Not-a-Number" (NaN)标识集合作为一个合法的浮点数。 例如： allows (tokens are quoted contents, not including
+         * quotes):
+         * &lt;ul&gt;
+         * &lt;li&gt;"INF" (for positive infinity), as well as alias of "Infinity"
+         * &lt;li&gt;"-INF" (for negative infinity), alias "-Infinity"
+         * &lt;li&gt;"NaN" (for other not-a-numbers, like result of division by zero)
+         * &lt;/ul&gt;
+         */</span>
+
+        <span class="n">ALLOW_NON_NUMERIC_NUMBERS</span><span class="o">(</span><span class="kc">false</span><span class="o">),</span>
+
+        <span class="c1">// // // Controlling canonicalization (interning etc)</span>
+
+        <span class="cm">/**
+         * 该特性决定JSON对象属性名称是否可以被String#intern 规范化表示。
+         *
+         * 如果允许，则JSON所有的属性名将会 intern() ；如果不设置，则不会规范化，
+         *
+         * 默认下，该属性是开放的。此外，必须设置CANONICALIZE_FIELD_NAMES为true
+         *
+         * 关于intern方法作用：当调用 intern 方法时，如果池已经包含一个等于此 String 对象的字符串 （该对象由 equals(Object) 方法确定），则返回池中的字符串。否则，将此 String
+         * 对象添加到池中， 并且返回此 String 对象的引用。
+         *
+         * @since 1.3
+         */</span>
+        <span class="n">INTERN_FIELD_NAMES</span><span class="o">(</span><span class="kc">true</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 该特性决定JSON对象的属性名称是否被规范化。
+         *
+         * @since 1.5
+         */</span>
+        <span class="n">CANONICALIZE_FIELD_NAMES</span><span class="o">(</span><span class="kc">true</span><span class="o">),</span>
+
+        <span class="o">;</span>
+
+        <span class="kd">final</span> <span class="kt">boolean</span> <span class="n">_defaultState</span><span class="o">;</span>
+
+        <span class="cm">/**
+         * Method that calculates bit set (flags) of all features that are enabled by default.
+         */</span>
+        <span class="kd">public</span> <span class="kd">static</span> <span class="kt">int</span> <span class="nf">collectDefaults</span><span class="o">()</span> <span class="o">{</span>
+            <span class="kt">int</span> <span class="n">flags</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+            <span class="k">for</span> <span class="o">(</span><span class="n">Feature</span> <span class="n">f</span> <span class="o">:</span> <span class="n">values</span><span class="o">())</span> <span class="o">{</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">f</span><span class="o">.</span><span class="na">enabledByDefault</span><span class="o">())</span> <span class="o">{</span>
+                    <span class="n">flags</span> <span class="o">|=</span> <span class="n">f</span><span class="o">.</span><span class="na">getMask</span><span class="o">();</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+            <span class="k">return</span> <span class="n">flags</span><span class="o">;</span>
+        <span class="o">}</span>
+
+        <span class="kd">private</span> <span class="nf">Feature</span><span class="o">(</span><span class="kt">boolean</span> <span class="n">defaultState</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">_defaultState</span> <span class="o">=</span> <span class="n">defaultState</span><span class="o">;</span>
+        <span class="o">}</span>
+
+        <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">enabledByDefault</span><span class="o">()</span> <span class="o">{</span>
+            <span class="k">return</span> <span class="n">_defaultState</span><span class="o">;</span>
+        <span class="o">}</span>
+
+        <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">enabledIn</span><span class="o">(</span><span class="kt">int</span> <span class="n">flags</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">return</span> <span class="o">(</span><span class="n">flags</span> <span class="o">&amp;</span> <span class="n">getMask</span><span class="o">())</span> <span class="o">!=</span> <span class="mi">0</span><span class="o">;</span>
+        <span class="o">}</span>
+
+        <span class="kd">public</span> <span class="kt">int</span> <span class="nf">getMask</span><span class="o">()</span> <span class="o">{</span>
+            <span class="k">return</span> <span class="o">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="n">ordinal</span><span class="o">());</span>
+        <span class="o">}</span>
+    <span class="o">};</span>
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Note: 在枚举最后有一个公共静态方法<code class="highlighter-rouge">collectDefaults()</code>，这个方法返回一个整形，整形包含的是所有枚举项对应位bit为初始默认值（true：1；false：0），如果默认属性为true，则通过对<code class="highlighter-rouge">1 &lt;&lt; ordinal()</code>的值和flags进行亦或来置位。</p>
+  </blockquote>
+</blockquote>
+
+<h3 id="deserializationconfig反序列化相关配置属性">DeserializationConfig反序列化相关配置属性</h3>
+
+<p>将Java 对象序列化为Json字符串。Jackson在序列化Java对象的时候，对于有些不存在的属性处理，以及一些类型转换等，都可以通过配置来设置。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+
+	<span class="cm">/**
+     * Enumeration that defines togglable features that guide the serialization feature.
+     */</span>
+    <span class="kd">public</span> <span class="kd">enum</span> <span class="n">Feature</span> <span class="kd">implements</span> <span class="n">MapperConfig</span><span class="o">.</span><span class="na">ConfigFeature</span> <span class="o">{</span>
+        <span class="cm">/*
+         * /****************************************************** Introspection features
+         * /******************************************************
+         */</span>
+
+        <span class="cm">/**
+         * 该特性决定是否启动内部注解功能支持配置；如果允许，则使用AnnotationIntrospector扫描配置，否则，不考了注解配置。
+         *
+         * 默认启动该功能配置属性。
+         * 
+         * @since 1.2
+         */</span>
+        <span class="n">USE_ANNOTATIONS</span><span class="o">(</span><span class="kc">true</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 该特性决定是否使用“getter”方法来根据标准bean命名转换方式来自动检测。如果true，则所有公共的带有一个参数
+         * 并且前缀为set的方法都将被当做setter方法。如果false，只会把显式注解的作为setter方法。
+         *
+         * 注意: 这个特性的优先级低于显式注解，并且只会在获取不到更细粒度配置的情况下。
+         *
+         */</span>
+        <span class="n">AUTO_DETECT_GETTERS</span><span class="o">(</span><span class="kc">true</span><span class="o">),</span>                        <span class="n">DETECT_IS_GETTERS</span><span class="o">(</span><span class="kc">true</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 该特性决定是否使用creator方法来根据公共构造函数以及名字为“valueOf”的静态单参数方法自动检测。
+         *
+         * 注意：这个特性比每个类上注解的优先级要低。
+         *
+         */</span>
+        <span class="n">AUTO_DETECT_CREATORS</span><span class="o">(</span><span class="kc">true</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 这个特性决定是否非静态field被当做属性。如果true，则所有公共成员field都被当做属性， 否则只有注解，才会被当做属性field。
+         *
+         */</span>
+        <span class="n">AUTO_DETECT_FIELDS</span><span class="o">(</span><span class="kc">true</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 使用getter方法来作为setter方法（一般只处理集合和Maps，和其他没有setter的类型）。 该属性决定是否不需要setter方法，而只需要getter方法来修改属性。
+         * 
+         * 注意：该配置优先级低于setter。
+         */</span>
+        <span class="n">USE_GETTERS_AS_SETTERS</span><span class="o">(</span><span class="kc">true</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 该特性决定当访问属性时候，方法和field访问是否修改设置。 如果设置为true，则通过反射调用方法AccessibleObject#setAccessible 来允许访问不能访问的对象。
+         * 
+         */</span>
+        <span class="n">CAN_OVERRIDE_ACCESS_MODIFIERS</span><span class="o">(</span><span class="kc">true</span><span class="o">),</span>                <span class="n">GETTERS</span><span class="o">(</span><span class="kc">false</span><span class="o">),</span>
+
+        <span class="cm">/*
+         * /****************************************************** /* Type conversion features
+         * /******************************************************
+         */</span>
+
+        <span class="cm">/**
+         * 该特性决定对于json浮点数，是否使用BigDecimal来序列化。如果不允许，则使用Double序列化。
+         * 
+         * 注意：该特性默认是关闭的，因为性能上来说，BigDecimal低于Double。
+         *
+         */</span>
+        <span class="n">USE_BIG_DECIMAL_FOR_FLOATS</span><span class="o">(</span><span class="kc">false</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 该特性决定对于json整形（非浮点），是否使用BigInteger来序列化。如果不允许，则根据数值大小来确定 是使用Integer}, {@link Long} 或者
+         * {@link java.math.BigInteger}
+         *
+         */</span>
+        <span class="n">USE_BIG_INTEGER_FOR_INTS</span><span class="o">(</span><span class="kc">false</span><span class="o">),</span>
+
+        <span class="c1">// [JACKSON-652]</span>
+        <span class="cm">/**
+         * 该特性决定JSON ARRAY是映射为Object[]还是List&lt;Object&gt;。如果开启，都为Object[]，false时，则使用List。
+         *
+         * @since 1.9
+         */</span>
+        <span class="n">USE_JAVA_ARRAY_FOR_JSON_ARRAY</span><span class="o">(</span><span class="kc">false</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 该特性决定了使用枚举值的标准序列化机制：如果允许，则枚举假定使用Enum.toString()返回的值作为序列化结构；如果禁止, 则返回Enum.name()的值。
+         *
+         * 注意：默认使用的时Enum.name()的值作为枚举序列化结果。这个的设置和WRITE_ENUMS_USING_TO_STRING需要一致。
+         *
+         * For further details, check out [JACKSON-212]
+         * 
+         * @since 1.6
+         */</span>
+        <span class="n">READ_ENUMS_USING_TO_STRING</span><span class="o">(</span><span class="kc">false</span><span class="o">),</span>
+
+        <span class="cm">/*
+         * /****************************************************** Error handling features
+         * /****************************************************** 错误处理特性
+         */</span>
+
+        <span class="cm">/**
+         * 该特性决定了当遇到未知属性（没有映射到属性，没有任何setter或者任何可以处理它的handler），是否应该抛出一个
+         * JsonMappingException异常。这个特性一般式所有其他处理方法对未知属性处理都无效后才被尝试，属性保留未处理状态。
+         *
+         * 默认情况下，该设置是被打开的。
+         *
+         * @since 1.2
+         */</span>
+        <span class="n">FAIL_ON_UNKNOWN_PROPERTIES</span><span class="o">(</span><span class="kc">true</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 该特性决定当遇到JSON null的对象是java 原始类型，则是否抛出异常。当false时，则使用0 for 'int', 0.0 for double 来设定原始对象初始值。
+         *
+         * 默认情况下，允许原始类型可以使用null。
+         *
+         * @since 1.7
+         */</span>
+        <span class="n">FAIL_ON_NULL_FOR_PRIMITIVES</span><span class="o">(</span><span class="kc">false</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 该特性决定JSON 整数是否是一个有效的值，当被用来反序列化Java枚举值。如果false，数字可以接受，并且映射为枚举的值ordinal()；
+         * 如果true，则数字不允许并且抛出JsonMappingException异常。后面一种行为原因是因为大部分情况下，枚举被反序列化为 JSON 字符串， 从而造成从整形到枚举的意外映射关系。
+         *
+         * Feature is disabled by default (to be consistent with behavior of Jackson 1.6), i.e. to allow use of JSON
+         * integers for Java enums.
+         * 
+         * @since 1.7
+         */</span>
+        <span class="n">FAIL_ON_NUMBERS_FOR_ENUMS</span><span class="o">(</span><span class="kc">false</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 异常封装，不封装Error,catch异常之后，抛出IOException。默认封装异常。
+         *
+         * @since 1.7
+         */</span>
+        <span class="n">WRAP_EXCEPTIONS</span><span class="o">(</span><span class="kc">true</span><span class="o">),</span>
+
+        <span class="cm">/*
+         * /****************************************************** Structural conversion features
+         * /****************************************************** 数据结构转换特性
+         */</span>
+
+        <span class="cm">/**
+         * 该特性决定是否接受强制非数组（JSON）值到Java集合类型。如果允许，集合反序列化将尝试处理非数组值。
+         *
+         * Feature that determines whether it is acceptable to coerce non-array (in JSON) values to work with Java
+         * collection (arrays, java.util.Collection) types. If enabled, collection deserializers will try to handle
+         * non-array values as if they had "implicit" surrounding JSON array. This feature is meant to be used for
+         * compatibility/interoperability reasons, to work with packages (such as XML-to-JSON converters) that leave out
+         * JSON array in cases where there is just a single element in array.
+         * 
+         * @since 1.8
+         */</span>
+        <span class="n">ACCEPT_SINGLE_VALUE_AS_ARRAY</span><span class="o">(</span><span class="kc">false</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 该特征允许 unwrap根级别JSON 值，来匹配WRAP_ROOT_VALUE 序列化设置。
+         *
+         * @since 1.9
+         */</span>
+        <span class="n">UNWRAP_ROOT_VALUE</span><span class="o">(</span><span class="kc">false</span><span class="o">),</span>
+
+        <span class="cm">/*
+         * /****************************************************** Value conversion features
+         * /****************************************************** 值转换特性
+         */</span>
+
+        <span class="cm">/**
+         * 该特性可以允许JSON空字符串转换为POJO对象为null。如果禁用，则标准POJO只会从JSON null或者JSON对象转换过来；
+         * 如果允许，则空JSON字符串可以等价于JSON null。
+         * @since 1.8
+         */</span>
+        <span class="n">ACCEPT_EMPTY_STRING_AS_NULL_OBJECT</span><span class="o">(</span><span class="kc">false</span><span class="o">)</span>
+
+        <span class="o">;</span>
+
+        <span class="kd">final</span> <span class="kt">boolean</span> <span class="n">_defaultState</span><span class="o">;</span>
+
+        <span class="kd">private</span> <span class="nf">Feature</span><span class="o">(</span><span class="kt">boolean</span> <span class="n">defaultState</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">_defaultState</span> <span class="o">=</span> <span class="n">defaultState</span><span class="o">;</span>
+        <span class="o">}</span>
+
+        <span class="nd">@Override</span>
+        <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">enabledByDefault</span><span class="o">()</span> <span class="o">{</span>
+            <span class="k">return</span> <span class="n">_defaultState</span><span class="o">;</span>
+        <span class="o">}</span>
+
+        <span class="nd">@Override</span>
+        <span class="kd">public</span> <span class="kt">int</span> <span class="nf">getMask</span><span class="o">()</span> <span class="o">{</span>
+            <span class="k">return</span> <span class="o">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="n">ordinal</span><span class="o">());</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+
+</code></pre></div></div>
+
+<h3 id="serializationconfig-序列化相关配置属性">SerializationConfig 序列化相关配置属性</h3>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+	<span class="cm">/**
+     * 定义序列化对象所需配置的一些枚举.
+     */</span>
+    <span class="kd">public</span> <span class="kd">enum</span> <span class="n">Feature</span> <span class="kd">implements</span> <span class="n">MapperConfig</span><span class="o">.</span><span class="na">ConfigFeature</span>
+    <span class="o">{</span>
+        <span class="cm">/*
+        /******************************************************
+        /*  Introspection features
+        /******************************************************
+         */</span>
+        
+        <span class="cm">/**
+         * 注解扫描配置
+         */</span>
+        <span class="n">USE_ANNOTATIONS</span><span class="o">(</span><span class="kc">true</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 获取getter方法，前缀为get
+         */</span>
+        <span class="n">AUTO_DETECT_GETTERS</span><span class="o">(</span><span class="kc">true</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 获取getter方法，前缀为is
+         */</span>
+        <span class="n">AUTO_DETECT_IS_GETTERS</span><span class="o">(</span><span class="kc">true</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 将对象所有的field作为json属性
+         */</span>
+         <span class="n">AUTO_DETECT_FIELDS</span><span class="o">(</span><span class="kc">true</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 该特性决定当访问属性时候，方法和field访问是否修改设置。 如果设置为true，
+         * 则通过反射调用方法AccessibleObject#setAccessible 来允许访问不能访问的对象。
+         */</span>
+        <span class="n">CAN_OVERRIDE_ACCESS_MODIFIERS</span><span class="o">(</span><span class="kc">true</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 获取的getter方法需要setter方法，否则，所有发现的getter都可以作为getter方法。
+         */</span>
+        <span class="n">REQUIRE_SETTERS_FOR_GETTERS</span><span class="o">(</span><span class="kc">false</span><span class="o">),</span>
+        
+        <span class="cm">/*
+        /******************************************************
+        /* Generic output features
+        /******************************************************
+         */</span>
+
+        <span class="cm">/**
+         * 属性对应的值为null，是否需要写出来，write out。
+         */</span>
+        <span class="nd">@Deprecated</span>
+        <span class="n">WRITE_NULL_PROPERTIES</span><span class="o">(</span><span class="kc">true</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 特征决定是使用运行时动态类型，还是声明的静态类型。
+         * 也可以使用{@link JsonSerialize#typing} 注解属性
+         */</span>
+        <span class="n">USE_STATIC_TYPING</span><span class="o">(</span><span class="kc">false</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 该特性决定拥有view注解{@link org.codehaus.jackson.map.annotate.JsonView}的属性是否在JSON序列化视图中。如果true，则非注解视图，也包含；
+         * 否则，它们将会被排除在外。
+         *
+         */</span>
+        <span class="n">DEFAULT_VIEW_INCLUSION</span><span class="o">(</span><span class="kc">true</span><span class="o">),</span>
+        
+        <span class="cm">/**
+         * 在JAVA中配置XML root{@XmlRootElement.name}注解,最后xml数据中会出现对应root根name.
+         */</span>
+        <span class="n">WRAP_ROOT_VALUE</span><span class="o">(</span><span class="kc">false</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 该特性对于最基础的生成器，使用默认pretty printer {@link org.codehaus.jackson.JsonGenerator#useDefaultPrettyPrinter}
+         * 这只会对{@link org.codehaus.jackson.JsonGenerator}有影响.该属性值允许使用默认的实现。
+         */</span>
+        <span class="n">INDENT_OUTPUT</span><span class="o">(</span><span class="kc">false</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 是否对属性使用排序，默认排序按照字母顺序。
+         */</span>
+        <span class="n">SORT_PROPERTIES_ALPHABETICALLY</span><span class="o">(</span><span class="kc">false</span><span class="o">),</span>
+        
+        <span class="cm">/*
+        /******************************************************
+        /*  Error handling features
+        /******************************************************
+         */</span>
+        
+        <span class="cm">/**
+         * 是否允许一个类型没有注解表明打算被序列化。默认true，抛出一个异常；否则序列化一个空对象，比如没有任何属性。
+         *
+         * Note that empty types that this feature has only effect on
+         * those "empty" beans that do not have any recognized annotations
+         * (like &lt;code&gt;@JsonSerialize&lt;/code&gt;): ones that do have annotations
+         * do not result in an exception being thrown.
+         *
+         * @since 1.4
+         */</span>
+        <span class="n">FAIL_ON_EMPTY_BEANS</span><span class="o">(</span><span class="kc">true</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 封装所有异常
+         */</span>
+        <span class="n">WRAP_EXCEPTIONS</span><span class="o">(</span><span class="kc">true</span><span class="o">),</span>
+
+        <span class="cm">/*
+        /******************************************************
+        /* Output life cycle features
+        /******************************************************
+         */</span>
+        
+         <span class="cm">/**
+          * 该特性决定序列化root级对象的实现closeable接口的close方法是否在序列化后被调用。
+          * 
+          * 注意：如果true，则完成序列化后就关闭；如果，你可以在处理最后，调用排序操作等，则为false。
+          * 
+          */</span>
+        <span class="n">CLOSE_CLOSEABLE</span><span class="o">(</span><span class="kc">false</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 该特性决定是否在writeValue()方法之后就调用JsonGenerator.flush()方法。
+         * 当我们需要先压缩，然后再flush，则可能需要false。
+         * 
+         */</span>
+        <span class="n">FLUSH_AFTER_WRITE_VALUE</span><span class="o">(</span><span class="kc">true</span><span class="o">),</span>
+         
+        <span class="cm">/*
+        /******************************************************
+        /* Data type - specific serialization configuration
+        /******************************************************
+         */</span>
+
+        <span class="cm">/**
+         * 该特性决定是否将基于Date的值序列化为timestamp数字式的值，或者作为文本表示。
+         * 如果文本表示，则实际格式化的时候会调用{@link #getDateFormat}方法。
+         * 
+         * 该特性可能会影响其他date相关类型的处理，虽然我们理想情况是只对date起作用。
+         * 
+         */</span>
+        <span class="n">WRITE_DATES_AS_TIMESTAMPS</span><span class="o">(</span><span class="kc">true</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 是否将Map中得key为Date的值，也序列化为timestamps形式（否则，会被序列化为文本形式的值）。
+         */</span>
+        <span class="n">WRITE_DATE_KEYS_AS_TIMESTAMPS</span><span class="o">(</span><span class="kc">false</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 该特性决定怎样处理类型char[]序列化，是否序列化为一个显式的JSON数组，还是默认作为一个字符串。
+         *
+         */</span>
+        <span class="n">WRITE_CHAR_ARRAYS_AS_JSON_ARRAYS</span><span class="o">(</span><span class="kc">false</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 该特性决定对Enum 枚举值使用标准的序列化机制。如果true，则返回Enum.toString()值，否则为Enum.name()
+         *
+         */</span>
+        <span class="n">WRITE_ENUMS_USING_TO_STRING</span><span class="o">(</span><span class="kc">false</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 这个特性决定Java枚举值是否序列化为数字（true）或者文本值（false）.如果是值的话，则使用Enum.ordinal().
+         * 该特性优先级高于上面的那个。
+         * 
+         * @since 1.9
+         */</span>
+        <span class="n">WRITE_ENUMS_USING_INDEX</span><span class="o">(</span><span class="kc">false</span><span class="o">),</span>
+        
+        <span class="cm">/**
+         * 决定是否Map的带有null值的entry被序列化（true）
+         *
+         */</span>
+        <span class="n">WRITE_NULL_MAP_VALUES</span><span class="o">(</span><span class="kc">true</span><span class="o">),</span>
+
+        <span class="cm">/**
+         * 决定容器空的属性（声明为Collection或者array的值）是否被序列化为空的JSON数组（true），否则强制输出。
+         *
+         * Note that this does not change behavior of {@link java.util.Map}s, or
+         * "Collection-like" types.
+         * 
+         * @since 1.9
+         */</span>
+        <span class="n">WRITE_EMPTY_JSON_ARRAYS</span><span class="o">(</span><span class="kc">true</span><span class="o">)</span>
+        
+            <span class="o">;</span>
+
+        <span class="kd">final</span> <span class="kt">boolean</span> <span class="n">_defaultState</span><span class="o">;</span>
+        
+        <span class="kd">private</span> <span class="nf">Feature</span><span class="o">(</span><span class="kt">boolean</span> <span class="n">defaultState</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">_defaultState</span> <span class="o">=</span> <span class="n">defaultState</span><span class="o">;</span>
+        <span class="o">}</span>
+
+        <span class="nd">@Override</span>
+        <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">enabledByDefault</span><span class="o">()</span> <span class="o">{</span> <span class="k">return</span> <span class="n">_defaultState</span><span class="o">;</span> <span class="o">}</span>
+    
+        <span class="nd">@Override</span>
+        <span class="kd">public</span> <span class="kt">int</span> <span class="nf">getMask</span><span class="o">()</span> <span class="o">{</span> <span class="k">return</span> <span class="o">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="n">ordinal</span><span class="o">());</span> <span class="o">}</span>
+    <span class="o">}</span>
+
+</code></pre></div></div>
+
+<h2 id="jackson解析json数据"><a id="JsonParser">Jackson解析JSON数据</a></h2>
+
+<p>Jackson对外提供了多种解析json数据格式的方法，例如，<code class="highlighter-rouge">String context</code>、<code class="highlighter-rouge">Reader src</code>、<code class="highlighter-rouge">Url src</code>等，此外，对于Java POJO类型也提供了三种方式：<code class="highlighter-rouge">Class&lt;T&gt; valueType</code>和<code class="highlighter-rouge">TypeReference valueTypeRef</code>以及<code class="highlighter-rouge">JavaType valueType</code>。为了简单，这里分析通常应用最多的一种，即</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="kd">public</span> <span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">T</span> <span class="nf">readValue</span><span class="o">(</span><span class="n">String</span> <span class="n">content</span><span class="o">,</span> <span class="n">Class</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">valueType</span><span class="o">)</span>
+
+</code></pre></div></div>
+
+<p><code class="highlighter-rouge">readValue()</code>和其他解析方法一样，内部都是通过构造<code class="highlighter-rouge">_readMapAndClose(JsonParser jp, JavaType valueType)</code>方法所需要的参数，来调用解析JSON数据的。</p>
+
+<p>首先，来看下如何构造方法的两个参数：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+	<span class="kd">public</span> <span class="n">JsonParser</span> <span class="nf">createJsonParser</span><span class="o">(</span><span class="n">String</span> <span class="n">content</span><span class="o">)</span>
+        <span class="kd">throws</span> <span class="n">IOException</span><span class="o">,</span> <span class="n">JsonParseException</span>
+    <span class="o">{</span>
+	<span class="c1">// true -&gt; we own the Reader (and must close); not a big deal（还记得上面的配置吗:)）</span>
+	<span class="n">Reader</span> <span class="n">r</span> <span class="o">=</span> <span class="k">new</span> <span class="n">StringReader</span><span class="o">(</span><span class="n">content</span><span class="o">);</span>
+	<span class="k">return</span> <span class="nf">_createJsonParser</span><span class="o">(</span><span class="n">r</span><span class="o">,</span> <span class="n">_createContext</span><span class="o">(</span><span class="n">r</span><span class="o">,</span> <span class="kc">true</span><span class="o">));</span>
+    <span class="o">}</span>
+    
+    <span class="c1">// 构造实际使用的parser的工厂方法。</span>
+    <span class="c1">// _parserFeatures就是上面默认的属性int，collectDefaults()方法返回值。</span>
+    <span class="c1">// _objectCodec：实现在JAVA对象和JSON内容之间的转换功能，没有默认，需要显式去设置。一般我们直接使用MappingJsonFactory构造。</span>
+    <span class="kd">protected</span> <span class="n">JsonParser</span> <span class="nf">_createJsonParser</span><span class="o">(</span><span class="n">Reader</span> <span class="n">r</span><span class="o">,</span> <span class="n">IOContext</span> <span class="n">ctxt</span><span class="o">)</span>
+	<span class="kd">throws</span> <span class="n">IOException</span><span class="o">,</span> <span class="n">JsonParseException</span>
+    <span class="o">{</span>
+        <span class="k">return</span> <span class="k">new</span> <span class="nf">ReaderBasedParser</span><span class="o">(</span><span class="n">ctxt</span><span class="o">,</span> <span class="n">_parserFeatures</span><span class="o">,</span> <span class="n">r</span><span class="o">,</span> <span class="n">_objectCodec</span><span class="o">,</span>
+                <span class="n">_rootCharSymbols</span><span class="o">.</span><span class="na">makeChild</span><span class="o">(</span><span class="n">isEnabled</span><span class="o">(</span><span class="n">JsonParser</span><span class="o">.</span><span class="na">Feature</span><span class="o">.</span><span class="na">CANONICALIZE_FIELD_NAMES</span><span class="o">),</span>
+                    <span class="n">isEnabled</span><span class="o">(</span><span class="n">JsonParser</span><span class="o">.</span><span class="na">Feature</span><span class="o">.</span><span class="na">INTERN_FIELD_NAMES</span><span class="o">)));</span>
+    <span class="o">}</span>
+    
+    <span class="c1">// 直接调用构造函数构造一个JsonParser实现类实例</span>
+    <span class="kd">public</span> <span class="nf">ReaderBasedParser</span><span class="o">(</span><span class="n">IOContext</span> <span class="n">ioCtxt</span><span class="o">,</span> <span class="kt">int</span> <span class="n">features</span><span class="o">,</span> <span class="n">Reader</span> <span class="n">r</span><span class="o">,</span>
+                             <span class="n">ObjectCodec</span> <span class="n">codec</span><span class="o">,</span> <span class="n">CharsToNameCanonicalizer</span> <span class="n">st</span><span class="o">)</span>
+    <span class="o">{</span>
+        <span class="kd">super</span><span class="o">(</span><span class="n">ioCtxt</span><span class="o">,</span> <span class="n">features</span><span class="o">,</span> <span class="n">r</span><span class="o">);</span>
+        <span class="n">_objectCodec</span> <span class="o">=</span> <span class="n">codec</span><span class="o">;</span>
+        <span class="n">_symbols</span> <span class="o">=</span> <span class="n">st</span><span class="o">;</span>
+    <span class="o">}</span>
+    
+</code></pre></div></div>
+
+<p>在上面实现中，还可以看看<code class="highlighter-rouge">_createContext(r, true)</code>的实现，它会构造出一个<code class="highlighter-rouge">IOConetxt</code>对象。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+	<span class="kd">public</span> <span class="nf">IOContext</span><span class="o">(</span><span class="n">BufferRecycler</span> <span class="n">br</span><span class="o">,</span> <span class="n">Object</span> <span class="n">sourceRef</span><span class="o">,</span> <span class="kt">boolean</span> <span class="n">managedResource</span><span class="o">)</span>
+    <span class="o">{</span>
+        <span class="n">_bufferRecycler</span> <span class="o">=</span> <span class="n">br</span><span class="o">;</span>
+        <span class="n">_sourceRef</span> <span class="o">=</span> <span class="n">sourceRef</span><span class="o">;</span>
+        <span class="n">_managedResource</span> <span class="o">=</span> <span class="n">managedResource</span><span class="o">;</span>
+    <span class="o">}</span>
+    
+    <span class="c1">//  _recyclerRef 是一个定义全局的ThreadLocal&lt;SoftReference&lt;BufferRecycler&gt;&gt;</span>
+     <span class="kd">public</span> <span class="n">BufferRecycler</span> <span class="nf">_getBufferRecycler</span><span class="o">()</span>
+    <span class="o">{</span>
+        <span class="n">SoftReference</span><span class="o">&lt;</span><span class="n">BufferRecycler</span><span class="o">&gt;</span> <span class="n">ref</span> <span class="o">=</span> <span class="n">_recyclerRef</span><span class="o">.</span><span class="na">get</span><span class="o">();</span>
+        <span class="n">BufferRecycler</span> <span class="n">br</span> <span class="o">=</span> <span class="o">(</span><span class="n">ref</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">?</span> <span class="kc">null</span> <span class="o">:</span> <span class="n">ref</span><span class="o">.</span><span class="na">get</span><span class="o">();</span>
+
+        <span class="k">if</span> <span class="o">(</span><span class="n">br</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">br</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BufferRecycler</span><span class="o">();</span>
+            <span class="n">_recyclerRef</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="k">new</span> <span class="n">SoftReference</span><span class="o">&lt;</span><span class="n">BufferRecycler</span><span class="o">&gt;(</span><span class="n">br</span><span class="o">));</span>
+        <span class="o">}</span>
+        <span class="k">return</span> <span class="n">br</span><span class="o">;</span>
+    <span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>构造函数有三个参数，<code class="highlighter-rouge">managedResource</code>，我们在配置上讲过，Jackson对于外部的资源会默认自动关闭流，但是对<code class="highlighter-rouge">自己拥有的流Reader</code>，会自动关闭，无论设置与否。<code class="highlighter-rouge">Object sourceRef</code>参数其实就是我们通过<code class="highlighter-rouge">content</code>构造出来的Reader引用。<code class="highlighter-rouge">BufferRecycler br</code>这是一个很重要的参数，涉及到内存分配优化。</p>
+
+<blockquote>
+  <blockquote>
+    <p>Note： <code class="highlighter-rouge">BufferRecycler</code>其实就是一个小的工具类，主要负责初始字节/字符缓存的重复使用。在Jackson中，主要用来通过引用该类的<code class="highlighter-rouge">SoftReference</code>形式作为<code class="highlighter-rouge">ThreadLocal</code>成员，这样可以达到低负载GC循环的效果，显然是使用流reader所期待的结果。
+其主要定义四种类型缓存：</p>
+  </blockquote>
+</blockquote>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+      <span class="kd">public</span> <span class="kd">enum</span> <span class="n">CharBufferType</span> <span class="o">{</span>
+        <span class="n">TOKEN_BUFFER</span><span class="o">(</span><span class="mi">2000</span><span class="o">)</span> <span class="c1">// Tokenizable input</span>
+            <span class="o">,</span><span class="n">CONCAT_BUFFER</span><span class="o">(</span><span class="mi">2000</span><span class="o">)</span> <span class="c1">// concatenated output</span>
+            <span class="o">,</span><span class="n">TEXT_BUFFER</span><span class="o">(</span><span class="mi">200</span><span class="o">)</span> <span class="c1">// Text content from input</span>
+            <span class="o">,</span><span class="n">NAME_COPY_BUFFER</span><span class="o">(</span><span class="mi">200</span><span class="o">)</span> <span class="c1">// Temporary buffer for getting name characters</span>
+            <span class="o">;</span>
+        
+ <span class="kd">private</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">size</span><span class="o">;</span>
+
+ <span class="n">CharBufferType</span><span class="o">(</span><span class="kt">int</span> <span class="n">size</span><span class="o">)</span> <span class="o">{</span> <span class="k">this</span><span class="o">.</span><span class="na">size</span> <span class="o">=</span> <span class="n">size</span><span class="o">;</span> <span class="o">}</span>
+    <span class="o">}</span>
+    
+</code></pre></div></div>
+
+<p>上面的<code class="highlighter-rouge">JsonParser</code>就完成的参数构造，接下来就是<code class="highlighter-rouge">JavaType</code>了，两种类型都最后调用<code class="highlighter-rouge">_constructType</code>来构造<code class="highlighter-rouge">JavaType</code>类型。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+	<span class="kd">public</span> <span class="n">JavaType</span> <span class="nf">constructType</span><span class="o">(</span><span class="n">Type</span> <span class="n">type</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="nf">_constructType</span><span class="o">(</span><span class="n">type</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span>
+    <span class="o">}</span>
+    
+    
+    <span class="cm">/**
+     * Factory method that can be used if type information is passed
+     * as Java typing returned from &lt;code&gt;getGenericXxx&lt;/code&gt; methods
+     * (usually for a return or argument type).
+     */</span>
+    <span class="kd">public</span> <span class="n">JavaType</span> <span class="nf">_constructType</span><span class="o">(</span><span class="n">Type</span> <span class="n">type</span><span class="o">,</span> <span class="n">TypeBindings</span> <span class="n">context</span><span class="o">)</span>
+    <span class="o">{</span>
+        <span class="n">JavaType</span> <span class="n">resultType</span><span class="o">;</span>
+
+        <span class="c1">// simple class?</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">type</span> <span class="k">instanceof</span> <span class="n">Class</span><span class="o">&lt;?&gt;)</span> <span class="o">{</span>
+            <span class="n">Class</span><span class="o">&lt;?&gt;</span> <span class="n">cls</span> <span class="o">=</span> <span class="o">(</span><span class="n">Class</span><span class="o">&lt;?&gt;)</span> <span class="n">type</span><span class="o">;</span>
+            <span class="cm">/* 24-Mar-2010, tatu: Better create context if one was not passed;
+             *   mostly matters for root serialization types
+             */</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">context</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">context</span> <span class="o">=</span> <span class="k">new</span> <span class="n">TypeBindings</span><span class="o">(</span><span class="k">this</span><span class="o">,</span> <span class="n">cls</span><span class="o">);</span>
+            <span class="o">}</span>
+            <span class="n">resultType</span> <span class="o">=</span> <span class="n">_fromClass</span><span class="o">(</span><span class="n">cls</span><span class="o">,</span> <span class="n">context</span><span class="o">);</span>
+        <span class="o">}</span>
+        <span class="c1">// But if not, need to start resolving.</span>
+        <span class="k">else</span> <span class="nf">if</span> <span class="o">(</span><span class="n">type</span> <span class="k">instanceof</span> <span class="n">ParameterizedType</span><span class="o">)</span> <span class="o">{</span><span class="c1">//带有参数化的类型，比如Collection&lt;String&gt;</span>
+            <span class="n">resultType</span> <span class="o">=</span> <span class="n">_fromParamType</span><span class="o">((</span><span class="n">ParameterizedType</span><span class="o">)</span> <span class="n">type</span><span class="o">,</span> <span class="n">context</span><span class="o">);</span>
+        <span class="o">}</span>
+        <span class="k">else</span> <span class="nf">if</span> <span class="o">(</span><span class="n">type</span> <span class="k">instanceof</span> <span class="n">GenericArrayType</span><span class="o">)</span> <span class="o">{</span><span class="c1">//表示一个数组类型，成员有参数化类型或者type变量</span>
+            <span class="n">resultType</span> <span class="o">=</span> <span class="n">_fromArrayType</span><span class="o">((</span><span class="n">GenericArrayType</span><span class="o">)</span> <span class="n">type</span><span class="o">,</span> <span class="n">context</span><span class="o">);</span>
+        <span class="o">}</span>
+        <span class="k">else</span> <span class="nf">if</span> <span class="o">(</span><span class="n">type</span> <span class="k">instanceof</span> <span class="n">TypeVariable</span><span class="o">&lt;?&gt;)</span> <span class="o">{</span><span class="c1">//其他类型的父接口</span>
+            <span class="n">resultType</span> <span class="o">=</span> <span class="n">_fromVariable</span><span class="o">((</span><span class="n">TypeVariable</span><span class="o">&lt;?&gt;)</span> <span class="n">type</span><span class="o">,</span> <span class="n">context</span><span class="o">);</span>
+        <span class="o">}</span>
+        <span class="k">else</span> <span class="nf">if</span> <span class="o">(</span><span class="n">type</span> <span class="k">instanceof</span> <span class="n">WildcardType</span><span class="o">)</span> <span class="o">{</span><span class="c1">//通配符类型，比如? 或者 ? extends Number</span>
+            <span class="n">resultType</span> <span class="o">=</span> <span class="n">_fromWildcard</span><span class="o">((</span><span class="n">WildcardType</span><span class="o">)</span> <span class="n">type</span><span class="o">,</span> <span class="n">context</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+        
+        <span class="c1">// 最后类型都不符合，就会抛出非法参数异常Unrecognized Type</span>
+          <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalArgumentException</span><span class="o">(</span><span class="s">"Unrecognized Type: "</span><span class="o">+</span><span class="n">type</span><span class="o">.</span><span class="na">toString</span><span class="o">());</span>
+        <span class="o">}</span>
+        <span class="cm">/* 
+         * 目前只会被 simple types调用 (i.e. not for arrays, map or collections).
+         */</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">_modifiers</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">resultType</span><span class="o">.</span><span class="na">isContainerType</span><span class="o">())</span> <span class="o">{</span>
+            <span class="k">for</span> <span class="o">(</span><span class="n">TypeModifier</span> <span class="n">mod</span> <span class="o">:</span> <span class="n">_modifiers</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">resultType</span> <span class="o">=</span> <span class="n">mod</span><span class="o">.</span><span class="na">modifyType</span><span class="o">(</span><span class="n">resultType</span><span class="o">,</span> <span class="n">type</span><span class="o">,</span> <span class="n">context</span><span class="o">,</span> <span class="k">this</span><span class="o">);</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+        <span class="k">return</span> <span class="n">resultType</span><span class="o">;</span>
+    <span class="o">}</span>
+
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>代码逻辑很简单，就是通过对参数类型进行不同的处理构造，最后返回<code class="highlighter-rouge">JavaType</code>某一具体的实现类实例。和其他处理一样，一般都是从精确类型开始匹配，慢慢抽象。</p>
+  </blockquote>
+</blockquote>
+
+<p>接下来，为了简单起见，我们不对非常用设置进行分析，看下面代码：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+	<span class="kd">protected</span> <span class="n">Object</span> <span class="nf">_readMapAndClose</span><span class="o">(</span><span class="n">JsonParser</span> <span class="n">jp</span><span class="o">,</span> <span class="n">JavaType</span> <span class="n">valueType</span><span class="o">)</span>
+        <span class="kd">throws</span> <span class="n">IOException</span><span class="o">,</span> <span class="n">JsonParseException</span><span class="o">,</span> <span class="n">JsonMappingException</span>
+    <span class="o">{</span>
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="n">Object</span> <span class="n">result</span><span class="o">;</span>
+            <span class="n">JsonToken</span> <span class="n">t</span> <span class="o">=</span> <span class="n">_initForReading</span><span class="o">(</span><span class="n">jp</span><span class="o">);</span>
+            
+            <span class="c1">// 省略一部分非重点代码。。。。。。</span>
+            
+            	<span class="n">DeserializationConfig</span> <span class="n">cfg</span> <span class="o">=</span> <span class="n">copyDeserializationConfig</span><span class="o">();</span><span class="c1">//创建一个反序列化配置的副本，内部采用copy-on-write模式，所以使用副本。</span>
+                <span class="n">DeserializationContext</span> <span class="n">ctxt</span> <span class="o">=</span> <span class="n">_createDeserializationContext</span><span class="o">(</span><span class="n">jp</span><span class="o">,</span> <span class="n">cfg</span><span class="o">);</span><span class="c1">//反序列化上下文</span>
+                <span class="n">JsonDeserializer</span><span class="o">&lt;</span><span class="n">Object</span><span class="o">&gt;</span> <span class="n">deser</span> <span class="o">=</span> <span class="n">_findRootDeserializer</span><span class="o">(</span><span class="n">cfg</span><span class="o">,</span> <span class="n">valueType</span><span class="o">);</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">cfg</span><span class="o">.</span><span class="na">isEnabled</span><span class="o">(</span><span class="n">DeserializationConfig</span><span class="o">.</span><span class="na">Feature</span><span class="o">.</span><span class="na">UNWRAP_ROOT_VALUE</span><span class="o">))</span> <span class="o">{</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="n">_unwrapAndDeserialize</span><span class="o">(</span><span class="n">jp</span><span class="o">,</span> <span class="n">valueType</span><span class="o">,</span> <span class="n">ctxt</span><span class="o">,</span> <span class="n">deser</span><span class="o">);</span>
+                <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="n">deser</span><span class="o">.</span><span class="na">deserialize</span><span class="o">(</span><span class="n">jp</span><span class="o">,</span> <span class="n">ctxt</span><span class="o">);</span>
+                <span class="o">}</span>
+            
+            <span class="c1">// Need to consume the token too</span>
+            <span class="n">jp</span><span class="o">.</span><span class="na">clearCurrentToken</span><span class="o">();</span>
+            <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
+        <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+            <span class="k">try</span> <span class="o">{</span>
+                <span class="n">jp</span><span class="o">.</span><span class="na">close</span><span class="o">();</span><span class="c1">//关闭资源</span>
+            <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">IOException</span> <span class="n">ioe</span><span class="o">)</span> <span class="o">{</span> <span class="o">}</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>上述代码中有几点重要的方法：</p>
+
+<ul>
+  <li><code class="highlighter-rouge">JsonToken _initForReading(JsonParser jp)</code>方法:</li>
+</ul>
+
+<p>该方法主要是在反序列化开始的时候，获取JsonToken标识。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+	<span class="kd">protected</span> <span class="n">JsonToken</span> <span class="nf">_initForReading</span><span class="o">(</span><span class="n">JsonParser</span> <span class="n">jp</span><span class="o">)</span>
+        <span class="kd">throws</span> <span class="n">IOException</span><span class="o">,</span> <span class="n">JsonParseException</span><span class="o">,</span> <span class="n">JsonMappingException</span>
+    <span class="o">{</span>
+        <span class="cm">/* 首先：必须只想一个token；没有token的情况只可以出现在第一次，和当前token被清除。
+         * 此外，这里的JsonParser具体是指ReaderBaseParser实例，（还记得把String Reader处理吗？！）
+         */</span>
+        <span class="n">JsonToken</span> <span class="n">t</span> <span class="o">=</span> <span class="n">jp</span><span class="o">.</span><span class="na">getCurrentToken</span><span class="o">();</span> <span class="c1">//内部使用了简单地缓存ConcurrentHashMap实现</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">t</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="c1">// and then we must get something...</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">jp</span><span class="o">.</span><span class="na">nextToken</span><span class="o">();</span> <span class="c1">// 判断当前是什么类型的JSON标识，比如对象JSON刚开始为"START_OBJECT"</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">t</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                <span class="cm">/* [JACKSON-99] Should throw EOFException, closest thing
+                 *   semantically
+                 */</span>
+                <span class="k">throw</span> <span class="k">new</span> <span class="nf">EOFException</span><span class="o">(</span><span class="s">"No content to map to Object due to end of input"</span><span class="o">);</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+        <span class="k">return</span> <span class="n">t</span><span class="o">;</span>
+    <span class="o">}</span>
+
+</code></pre></div></div>
+
+<ul>
+  <li><code class="highlighter-rouge">_findRootDeserializer(DeserializationConfig cfg, JavaType valueType)</code>方法：</li>
+</ul>
+
+<p>该方法在反序列化root-level值时调用。该方法使用了ConcurrentHashMap缓存来优化，只有root-level的反序列化才会被缓存，这主要是因为反序列化的输入和解决方案都是静态的，但是序列化却是动态的，所以做缓存只对反序列化。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+ 	<span class="cm">/**
+     * Method called to locate deserializer for the passed root-level value.
+     */</span>
+    <span class="kd">protected</span> <span class="n">JsonDeserializer</span><span class="o">&lt;</span><span class="n">Object</span><span class="o">&gt;</span> <span class="nf">_findRootDeserializer</span><span class="o">(</span><span class="n">DeserializationConfig</span> <span class="n">cfg</span><span class="o">,</span> <span class="n">JavaType</span> <span class="n">valueType</span><span class="o">)</span>
+        <span class="kd">throws</span> <span class="n">JsonMappingException</span>
+    <span class="o">{</span>
+        <span class="c1">// First: have we already seen it?</span>
+        <span class="n">JsonDeserializer</span><span class="o">&lt;</span><span class="n">Object</span><span class="o">&gt;</span> <span class="n">deser</span> <span class="o">=</span> <span class="n">_rootDeserializers</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">valueType</span><span class="o">);</span><span class="c1">//从缓存中获取对应类型的反序列化实例</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">deser</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">return</span> <span class="n">deser</span><span class="o">;</span>
+        <span class="o">}</span>
+        <span class="c1">// Nope: need to ask provider to resolve it</span>
+        <span class="n">deser</span> <span class="o">=</span> <span class="n">_deserializerProvider</span><span class="o">.</span><span class="na">findTypedValueDeserializer</span><span class="o">(</span><span class="n">cfg</span><span class="o">,</span> <span class="n">valueType</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span><span class="c1">//使用StdDeserializationContext默认的DeserializationContext实现。反序列化类实际上就是对某一类型进行详细描述，如下图。</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">deser</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span> <span class="c1">// can this happen?</span>
+            <span class="k">throw</span> <span class="k">new</span> <span class="nf">JsonMappingException</span><span class="o">(</span><span class="s">"Can not find a deserializer for type "</span><span class="o">+</span><span class="n">valueType</span><span class="o">);</span>
+        <span class="o">}</span>
+        <span class="n">_rootDeserializers</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">valueType</span><span class="o">,</span> <span class="n">deser</span><span class="o">);</span><span class="c1">//放入缓存中</span>
+        <span class="k">return</span> <span class="n">deser</span><span class="o">;</span>
+    <span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>反序列化类结构如图：<br />
+<img src="/images/2014/09/deser.png" /></p>
+
+<ul>
+  <li><code class="highlighter-rouge">deserialize(JsonParser jp, DeserializationContext ctxt)</code>方法:</li>
+</ul>
+
+<p>由于解析对象为简单地Bean，所以调用<code class="highlighter-rouge">BeanDeserializer</code>转换为POJO对象。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+
+ <span class="kd">public</span> <span class="kd">final</span> <span class="n">Object</span> <span class="nf">deserialize</span><span class="o">(</span><span class="n">JsonParser</span> <span class="n">jp</span><span class="o">,</span> <span class="n">DeserializationContext</span> <span class="n">ctxt</span><span class="o">)</span>
+        <span class="kd">throws</span> <span class="n">IOException</span><span class="o">,</span> <span class="n">JsonProcessingException</span>
+    <span class="o">{</span>
+        <span class="n">JsonToken</span> <span class="n">t</span> <span class="o">=</span> <span class="n">jp</span><span class="o">.</span><span class="na">getCurrentToken</span><span class="o">();</span>
+        <span class="c1">// common case first:</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">t</span> <span class="o">==</span> <span class="n">JsonToken</span><span class="o">.</span><span class="na">START_OBJECT</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">jp</span><span class="o">.</span><span class="na">nextToken</span><span class="o">();</span>
+            <span class="k">return</span> <span class="nf">deserializeFromObject</span><span class="o">(</span><span class="n">jp</span><span class="o">,</span> <span class="n">ctxt</span><span class="o">);</span>
+        <span class="o">}</span>
+        <span class="c1">// and then others, generally requiring use of @JsonCreator</span>
+        <span class="k">switch</span> <span class="o">(</span><span class="n">t</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">case</span> <span class="nl">VALUE_STRING:</span>
+            <span class="k">return</span> <span class="nf">deserializeFromString</span><span class="o">(</span><span class="n">jp</span><span class="o">,</span> <span class="n">ctxt</span><span class="o">);</span>
+        <span class="k">case</span> <span class="nl">VALUE_NUMBER_INT:</span>
+            <span class="k">return</span> <span class="nf">deserializeFromNumber</span><span class="o">(</span><span class="n">jp</span><span class="o">,</span> <span class="n">ctxt</span><span class="o">);</span>
+        <span class="k">case</span> <span class="nl">VALUE_NUMBER_FLOAT:</span>
+	    <span class="k">return</span> <span class="nf">deserializeFromDouble</span><span class="o">(</span><span class="n">jp</span><span class="o">,</span> <span class="n">ctxt</span><span class="o">);</span>
+        <span class="k">case</span> <span class="nl">VALUE_EMBEDDED_OBJECT:</span>
+            <span class="k">return</span> <span class="n">jp</span><span class="o">.</span><span class="na">getEmbeddedObject</span><span class="o">();</span>
+        <span class="k">case</span> <span class="nl">VALUE_TRUE:</span>
+        <span class="k">case</span> <span class="nl">VALUE_FALSE:</span>
+            <span class="k">return</span> <span class="nf">deserializeFromBoolean</span><span class="o">(</span><span class="n">jp</span><span class="o">,</span> <span class="n">ctxt</span><span class="o">);</span>
+        <span class="k">case</span> <span class="nl">START_ARRAY:</span>
+            <span class="c1">// these only work if there's a (delegating) creator...</span>
+            <span class="k">return</span> <span class="nf">deserializeFromArray</span><span class="o">(</span><span class="n">jp</span><span class="o">,</span> <span class="n">ctxt</span><span class="o">);</span>
+        <span class="k">case</span> <span class="nl">FIELD_NAME:</span>
+        <span class="k">case</span> <span class="nl">END_OBJECT:</span> <span class="c1">// added to resolve [JACKSON-319], possible related issues</span>
+            <span class="k">return</span> <span class="nf">deserializeFromObject</span><span class="o">(</span><span class="n">jp</span><span class="o">,</span> <span class="n">ctxt</span><span class="o">);</span>
+	<span class="o">}</span>
+        <span class="k">throw</span> <span class="n">ctxt</span><span class="o">.</span><span class="na">mappingException</span><span class="o">(</span><span class="n">getBeanClass</span><span class="o">());</span>
+    <span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>下面是具体的反序列化方法,如下：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    
+    <span class="kd">public</span> <span class="n">Object</span> <span class="nf">deserializeFromObject</span><span class="o">(</span><span class="n">JsonParser</span> <span class="n">jp</span><span class="o">,</span> <span class="n">DeserializationContext</span> <span class="n">ctxt</span><span class="o">)</span>
+        <span class="kd">throws</span> <span class="n">IOException</span><span class="o">,</span> <span class="n">JsonProcessingException</span>
+    <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">_nonStandardCreation</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">_unwrappedPropertyHandler</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                <span class="k">return</span> <span class="nf">deserializeWithUnwrapped</span><span class="o">(</span><span class="n">jp</span><span class="o">,</span> <span class="n">ctxt</span><span class="o">);</span>
+            <span class="o">}</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">_externalTypeIdHandler</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                <span class="k">return</span> <span class="nf">deserializeWithExternalTypeId</span><span class="o">(</span><span class="n">jp</span><span class="o">,</span> <span class="n">ctxt</span><span class="o">);</span>
+            <span class="o">}</span>
+            <span class="k">return</span> <span class="nf">deserializeFromObjectUsingNonDefault</span><span class="o">(</span><span class="n">jp</span><span class="o">,</span> <span class="n">ctxt</span><span class="o">);</span>
+        <span class="o">}</span>
+
+        <span class="kd">final</span> <span class="n">Object</span> <span class="n">bean</span> <span class="o">=</span> <span class="n">_valueInstantiator</span><span class="o">.</span><span class="na">createUsingDefault</span><span class="o">();</span><span class="c1">// 构造一个默认的初始化类型对象，对象属性值使用初始化默认值。</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">_injectables</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">injectValues</span><span class="o">(</span><span class="n">ctxt</span><span class="o">,</span> <span class="n">bean</span><span class="o">);</span>
+        <span class="o">}</span>
+        <span class="k">for</span> <span class="o">(;</span> <span class="n">jp</span><span class="o">.</span><span class="na">getCurrentToken</span><span class="o">()</span> <span class="o">!=</span> <span class="n">JsonToken</span><span class="o">.</span><span class="na">END_OBJECT</span><span class="o">;</span> <span class="n">jp</span><span class="o">.</span><span class="na">nextToken</span><span class="o">())</span> <span class="o">{</span> <span class="c1">//迭代输入流来设置各个属性的值</span>
+            <span class="n">String</span> <span class="n">propName</span> <span class="o">=</span> <span class="n">jp</span><span class="o">.</span><span class="na">getCurrentName</span><span class="o">();</span>
+            <span class="c1">// Skip field name:</span>
+            <span class="n">jp</span><span class="o">.</span><span class="na">nextToken</span><span class="o">();</span><span class="c1">// 迭代到下一个输入流的token名字，即使在POJO中没有对应属性，则会调用_handleUnknown来处理。</span>
+            <span class="n">SettableBeanProperty</span> <span class="n">prop</span> <span class="o">=</span> <span class="n">_beanProperties</span><span class="o">.</span><span class="na">find</span><span class="o">(</span><span class="n">propName</span><span class="o">);</span> <span class="c1">//具体实现如下</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">prop</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span> <span class="c1">// 如果在POJO中有对应属性，则返回kv</span>
+                <span class="k">try</span> <span class="o">{</span>
+                    <span class="n">prop</span><span class="o">.</span><span class="na">deserializeAndSet</span><span class="o">(</span><span class="n">jp</span><span class="o">,</span> <span class="n">ctxt</span><span class="o">,</span> <span class="n">bean</span><span class="o">);</span><span class="c1">//根据类型调用具体的方法设置属性值，比如StringDeserializer类对字符串。</span>
+                <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="n">wrapAndThrow</span><span class="o">(</span><span class="n">e</span><span class="o">,</span> <span class="n">bean</span><span class="o">,</span> <span class="n">propName</span><span class="o">,</span> <span class="n">ctxt</span><span class="o">);</span>
+                <span class="o">}</span>
+                <span class="k">continue</span><span class="o">;</span>
+            <span class="o">}</span>
+            <span class="n">_handleUnknown</span><span class="o">(</span><span class="n">jp</span><span class="o">,</span> <span class="n">ctxt</span><span class="o">,</span> <span class="n">bean</span><span class="o">,</span> <span class="n">propName</span><span class="o">);</span><span class="c1">//这里会根据上面的配置来决定处理方案</span>
+        <span class="o">}</span>
+        <span class="k">return</span> <span class="n">bean</span><span class="o">;</span>
+    <span class="o">}</span>
+    
+    <span class="c1">// BeanPropertyMap类是一个存储属性名到SettableBeanProperty实例之间的映射的工具类。该类主要代替HashMap，做了一些业务优化。</span>
+    <span class="kd">public</span> <span class="n">SettableBeanProperty</span> <span class="nf">find</span><span class="o">(</span><span class="n">String</span> <span class="n">key</span><span class="o">)</span>
+    <span class="o">{</span>
+        <span class="kt">int</span> <span class="n">index</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="na">hashCode</span><span class="o">()</span> <span class="o">&amp;</span> <span class="n">_hashMask</span><span class="o">;</span><span class="c1">//hash找到bucket位置</span>
+        <span class="n">Bucket</span> <span class="n">bucket</span> <span class="o">=</span> <span class="n">_buckets</span><span class="o">[</span><span class="n">index</span><span class="o">];</span><span class="c1">//</span>
+        <span class="c1">// Let's unroll first lookup since that is null or match in 90+% cases</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">bucket</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span><span class="c1">//如果不存在，则返回null</span>
+            <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+        <span class="o">}</span>
+        <span class="c1">// Primarily we do just identity comparison as keys should be interned</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">bucket</span><span class="o">.</span><span class="na">key</span> <span class="o">==</span> <span class="n">key</span><span class="o">)</span> <span class="o">{</span> <span class="c1">// 当没有hash碰撞时，则会相等</span>
+            <span class="k">return</span> <span class="n">bucket</span><span class="o">.</span><span class="na">value</span><span class="o">;</span>
+        <span class="o">}</span>
+        <span class="k">while</span> <span class="o">((</span><span class="n">bucket</span> <span class="o">=</span> <span class="n">bucket</span><span class="o">.</span><span class="na">next</span><span class="o">)</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span><span class="c1">//不能直接相等，则遍历找到bucket里面所有的key</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">bucket</span><span class="o">.</span><span class="na">key</span> <span class="o">==</span> <span class="n">key</span><span class="o">)</span> <span class="o">{</span>
+                <span class="k">return</span> <span class="n">bucket</span><span class="o">.</span><span class="na">value</span><span class="o">;</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+        <span class="c1">// Do we need fallback for non-interned Strings?</span>
+        <span class="k">return</span> <span class="nf">_findWithEquals</span><span class="o">(</span><span class="n">key</span><span class="o">,</span> <span class="n">index</span><span class="o">);</span>
+    <span class="o">}</span>
+
+</code></pre></div></div>
+
+<h2 id="jackson序列化java对象"><a id="JsonDeserializer">Jackson序列化Java对象</a></h2>
+<p><code class="highlighter-rouge">Jackson</code>工具包对外提供看好几种序列化接口，比如转换为String对象，Byte[]数组，或者直接写到stream中等等，但是不管如何，其内部实现的核心方法都是</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protected</span> <span class="kd">final</span> <span class="kt">void</span> <span class="nf">_configAndWriteValue</span><span class="o">(</span><span class="n">JsonGenerator</span> <span class="n">jgen</span><span class="o">,</span> <span class="n">Object</span> <span class="n">value</span><span class="o">)</span>
+</code></pre></div></div>
+
+<p>因此，这里就选择常用的<code class="highlighter-rouge">writeValueAsString(Object value)</code>来解析器内部实现。</p>
+
+<blockquote>
+  <blockquote>
+    <p>Note：虽然在<code class="highlighter-rouge">Jackson</code>中提供了<code class="highlighter-rouge">public void writeValue(Writer w, Object value)</code>的通用方法来序列化java对象，对于需要转换为String类型的需求，只需要<code class="highlighter-rouge">StringWriter</code>就可以调用writeValue，但是由于这种序列化对性能要求高，并且使用频繁，所以单独提供更高效的实现方式。而正由于在项目代码中AsString 场景十分多，所以这里选择<code class="highlighter-rouge">writeValueAsString</code>方法分析。</p>
+  </blockquote>
+</blockquote>
+
+<h3 id="序列化方法处理流程">序列化方法处理流程</h3>
+
+<p><code class="highlighter-rouge">writeValueAsString(Object value)</code>其处理和反序列化很相似，基本流程为：</p>
+
+<ol>
+  <li><em>首先，构建通用序列化基础方法所需要的参数类型对象；</em></li>
+  <li><em>其次，对序列化类型进行分析，根据注解或者”get方法名(比如getXxx,isXxx)”等来构建需要序列化的属性</em></li>
+  <li><em>然后，通过反射机制分别对所有的序列化属性进行处理：通过发现拿到对应的值,getxxx方法等</em></li>
+  <li><em>拼接字符串：其内部是根据类型写入一些开始结束符号，例如{,[等，在其中嵌入步骤3的解析设值</em></li>
+  <li><em>返回最后得到的字符串内容</em></li>
+</ol>
+
+
+                </div>
+                <div class="read-all">
+                    <a  href="/2014/09/09/Jackson-Manual-and-Implementation-Analyzing/"><i class="fa fa-newspaper-o"></i>Read All</a>
+                </div>
+                <hr>
+              </li>
+            
+              <li>
+                <h2>
+                  <a class="post-link" href="/2014/08/26/Vim-Plugin-On-Mac/">Mac OS系统Vim酷炫插件安装</a>
+                </h2>
+                <div class="label">
+                    <div class="label-card">
+                        <i class="fa fa-calendar"></i>2014-08-26
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+
+                    <div class="label-card">
+                    
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#tools" title="Category: tools" rel="category">tools</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+                    </div>
+
+                    <div class="label-card">
+                    
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+                    </div>
+                </div>
+                <div class="excerpt">
+                    <h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p>vim工具，对于一个程序猿来讲，是使用非常普遍的。以前在Ubuntu上安装<code class="highlighter-rouge">ma6174</code>大神提供的安装脚本，一键安装一些非常好用的插件，但是对于Mac来说，一直不能很好地执行一件安装。</p>
+
+<p>这里，记录一下，使用大神提供的安装脚本出现问题的解决方法。</p>
+
+<h2 id="vim一键安装脚本"><a id="Shell">Vim一键安装脚本</a></h2>
+
+<p><code class="highlighter-rouge">ma6174</code>大神提供的安装脚本，不能直接在Mac 上运行，直接copy到本地，脚本为：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="c">#!/bin/bash</span>
+
+brew <span class="nb">install </span>vim ctags git astyle
+<span class="nb">sudo </span><span class="nv">ARCHFLAGS</span><span class="o">=</span><span class="nt">-Wno-error</span><span class="o">=</span>unused-command-line-argument-hard-error-in-future easy_install twisted
+
+<span class="nb">sudo </span>easy_install <span class="nt">-ZU</span> autopep8 twisted
+<span class="nb">sudo ln</span> <span class="nt">-s</span> /usr/bin/ctags /usr/local/bin/ctags
+<span class="nb">mv</span> <span class="nt">-f</span> ~/vim ~/vim_old
+<span class="nb">cd</span> ~/ <span class="o">&amp;&amp;</span> git clone https://github.com/ma6174/vim.git
+<span class="nb">mv</span> <span class="nt">-f</span> ~/.vim ~/.vim_old
+<span class="nb">mv</span> <span class="nt">-f</span> ~/vim ~/.vim
+<span class="nb">mv</span> <span class="nt">-f</span> ~/.vimrc ~/.vimrc_old
+<span class="nb">mv</span> <span class="nt">-f</span> ~/.vim/.vimrc ~/
+git clone https://github.com/gmarik/vundle.git ~/.vim/bundle/vundle
+vim vim_mac <span class="nt">-c</span> <span class="s2">"BundleInstall"</span> <span class="nt">-c</span> <span class="s2">"q"</span> <span class="nt">-c</span> <span class="s2">"q"</span>
+<span class="nb">rm </span>vim_mac
+<span class="nb">echo</span> <span class="s2">"安装完成"</span>
+            
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Note：上面的脚本是直接从一键安装命令中的build脚本部分拷贝的，因为我的Mac无法直接执行一键安装命令。此外，Mac必须安装HomeBrew工具，关于该工具的安装使用，请参考 <a href="http://brew.sh/index_zh-cn.html">http://brew.sh/index_zh-cn.html</a></p>
+  </blockquote>
+</blockquote>
+
+<!-- more -->
+
+<h2 id="手动安装zope"><a id="Zope">手动安装zope</a></h2>
+
+<p>在上面的脚本安装完成之后，控制台执行<code class="highlighter-rouge">vim</code>命令，会报错：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+Error detected while processing /Users/rum/.vim/plugin/client.vim:
+line 314:
+Traceback (most recent call last):
+File "", line 2, in 
+File "/Library/Python/2.7/site-packages/Twisted-14.0.0-py2.7-macosx-10.9-intel.egg/twisted/init.py", line 53, in 
+checkRequirements()
+File "/Library/Python/2.7/site-packages/Twisted-14.0.0-py2.7-macosx-10.9-intel.egg/twisted/__init_.py", line 37, in _checkRequirements
+raise ImportError(required + ": no module named zope.interface.")
+ImportError: Twisted requires zope.interface 3.6.0 or later: no module named zope.interface.
+
+</code></pre></div></div>
+
+<p>然后，Google搜了各种方法都不生效，无奈执行，只能源码安装了。安装起来很简单，直接执行就好了。</p>
+
+<ol>
+  <li>源码下载地址：<a href="https://pypi.python.org/packages/source/z/zope.interface/zope.interface-4.1.0.tar.gz#md5=ac63de1784ea0327db876c908af07a94">https://pypi.python.org/packages/source/z/zope.interface/zope.interface-4.1.0.tar.gz#md5=ac63de1784ea0327db876c908af07a94</a></li>
+  <li>解压缩之后，执行安装命令:<code class="highlighter-rouge">sudo python setup.py install</code>。</li>
+</ol>
+
+<p>完成之后，在执行	<code class="highlighter-rouge">vim</code>命令，就不会报错了。</p>
+
+<h2 id="后记"><a id="End">后记</a></h2>
+
+<p>安装完插件之后，果然用起来十分爽哇！！此外，<code class="highlighter-rouge">ma6174</code>大神还提供了一些使用<code class="highlighter-rouge">Tips</code>。</p>
+
+<h3 id="编写python程序">编写python程序</h3>
+
+<ol>
+  <li>自动插入头信息：
+    <ul>
+      <li><code class="highlighter-rouge"><span class="c">#!/usr/bin/env python</span></code></li>
+      <li><code class="highlighter-rouge"># coding=utf-8</code>
+    - 输入<code class="highlighter-rouge">.</code>或按<code class="highlighter-rouge">TAB</code>键会触发代码补全功能
+    - <code class="highlighter-rouge">:w</code>保存代码之后会自动检查代码错误与规范
+    - 按<code class="highlighter-rouge">F6</code>可以按<code class="highlighter-rouge">pep8</code>格式对代码格式优化
+    - 按<code class="highlighter-rouge">F5</code>可以一键执行代码</li>
+    </ul>
+  </li>
+</ol>
+
+<h3 id="多窗口操作">多窗口操作</h3>
+
+<ol>
+  <li>使用<code class="highlighter-rouge">:sp + 文件名</code>可以水平分割窗口
+    <ul>
+      <li>使用<code class="highlighter-rouge">:vs + 文件名</code>可以垂直分割窗口</li>
+      <li>使用<code class="highlighter-rouge">Ctrl + w</code>可以快速在窗口间切换</li>
+    </ul>
+  </li>
+</ol>
+
+<h3 id="编写markdown文件">编写markdown文件</h3>
+
+<ol>
+  <li>编写markdown文件(<code class="highlighter-rouge">*.md</code>)的时候，在normal模式下按 <code class="highlighter-rouge">md</code> 即可在当前目录下生成相应的<code class="highlighter-rouge">html</code>文件
+    <ul>
+      <li>生成之后还是在normal模式按<code class="highlighter-rouge">fi</code>可以使用firefox打开相应的<code class="highlighter-rouge">html</code>文件预览</li>
+      <li>当然也可以使用万能的<code class="highlighter-rouge">F5</code>键来一键转换并打开预览</li>
+      <li>如果打开过程中屏幕出现一些混乱信息，可以按<code class="highlighter-rouge">Ctrl + l</code>来恢复</li>
+    </ul>
+  </li>
+</ol>
+
+<h3 id="快速注释">快速注释</h3>
+
+<ul>
+  <li>按<code class="highlighter-rouge"> \ </code> 可以根据文件类型自动注释</li>
+</ul>
+
+                </div>
+                <div class="read-all">
+                    <a  href="/2014/08/26/Vim-Plugin-On-Mac/"><i class="fa fa-newspaper-o"></i>Read All</a>
+                </div>
+                <hr>
+              </li>
+            
+              <li>
+                <h2>
+                  <a class="post-link" href="/2014/08/11/Redis-Cookbook-Implementing-OAuth/">Redis Cookbook 之 基于Redis 实现Oauth协议</a>
+                </h2>
+                <div class="label">
+                    <div class="label-card">
+                        <i class="fa fa-calendar"></i>2014-08-11
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+
+                    <div class="label-card">
+                    
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Redis" title="Category: Redis" rel="category">Redis</a>&nbsp;
+    
+        <a href="/category/#Redis Cookbook" title="Category: Redis Cookbook" rel="category">Redis Cookbook</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+                    </div>
+
+                    <div class="label-card">
+                    
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+                    </div>
+                </div>
+                <div class="excerpt">
+                    <h2 id="问题"><a id="Problem">问题</a></h2>
+
+<p>在我们案例里，我们将实现一个数据模型和交互来支持Oauth v1.0a API。一般常常是基于MySQL或者其他的RDBMS实现，但是我们可以利用Redis的数据结构更高效的实现Oauth协议。</p>
+
+<h2 id="解决方法"><a id="Solution">解决方法</a></h2>
+
+<p>我们不会去实现Oauth的API或者交互。这里我们仅仅感兴趣的是这种类型场景里所需要的数据。我们将在Redis里面存储五种类型的数据：</p>
+
+<ul>
+  <li>consumer keys</li>
+  <li>consumer secrets</li>
+  <li>request tokens</li>
+  <li>access tokens</li>
+  <li>nonces</li>
+</ul>
+
+<p>所以我们的需求如下：通过一对<code class="highlighter-rouge">key</code>和<code class="highlighter-rouge">secret</code>标识的应用（客户）。这些客户根据他们的需求会有许多次的请求和访问token，并且每个用户/时间戳对是唯一的。</p>
+
+<p>根据他们的要求和交互情况，这种类型的数据可以被存储在<code class="highlighter-rouge">hashes</code>、<code class="highlighter-rouge">sets</code>和<code class="highlighter-rouge">strings</code>。</p>
+
+<h2 id="讨论"><a id="Discussion">讨论</a></h2>
+
+<h3 id="初始设置">初始设置</h3>
+
+<p>一开始，在客户发出一个请求之前，他们必须输入他们的数据。我们将这个数据和客户信息放入hash中。当他注册我们系统的时候，key是我们为特定的商户存储的数据之一：</p>
+
+<!-- more -->
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HMSET /consumers/key:dpf43f3p2l4k3l03 secret kd94hf93k423kf44 created_at 201103060000 redirect_url http://www.example.com/oauth_redirect name test_application
+</code></pre></div></div>
+
+<p>如同命令所示，这个hash包含它的正常的数据，并且可以随着时间进行扩展。这样，和Memcache一样，或者以不同的keys来存储所有的值，或者存储像JSON一样的数据。</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HSET hash-name key value
+    Sets a value on a hash with the given key. As with other Redis commands, if the hash doesn’t exist, it’s created.
+    
+HMSET hash-name key1 value1 [key2 value2 ...]
+    Allows you to set several values in a hash with a single command
+</code></pre></div></div>
+
+<h3 id="获取一个请求token">获取一个请求token</h3>
+
+<p>为了获取一个请求token，客户发送他们的key、时间戳、唯一生成随机数、回调url和一个请求的签名（使用客户的secret对请求路径和参数hash计算结果）。</p>
+
+<p>API提供者需要验证签名是否正确，检查随机数/时间戳在之前是否使用过，并且生成一个新的请求token。</p>
+
+<p>为了做到这样，server需要获取客户的数据：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HGETALL /consumers/key:dpf43f3p2l4k3l03
+</code></pre></div></div>
+
+<p>然后检查这个随机数是否以前使用过：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>SADD /nonces/key:dpf43f3p2l4k3l03/timestamp:20110306182600 dji430splmx33448
+</code></pre></div></div>
+
+
+                </div>
+                <div class="read-all">
+                    <a  href="/2014/08/11/Redis-Cookbook-Implementing-OAuth/"><i class="fa fa-newspaper-o"></i>Read All</a>
+                </div>
+                <hr>
+              </li>
+            
+              <li>
+                <h2>
+                  <a class="post-link" href="/2014/08/10/Redis-Cookbook-Redis-KeyValue-Store/">Redis Cookbook 之 Redis 键值对存储服务</a>
+                </h2>
+                <div class="label">
+                    <div class="label-card">
+                        <i class="fa fa-calendar"></i>2014-08-10
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+
+                    <div class="label-card">
+                    
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Redis" title="Category: Redis" rel="category">Redis</a>&nbsp;
+    
+        <a href="/category/#Redis Cookbook" title="Category: Redis Cookbook" rel="category">Redis Cookbook</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+                    </div>
+
+                    <div class="label-card">
+                    
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+                    </div>
+                </div>
+                <div class="excerpt">
+                    <h2 id="问题"><a id="Problem">问题</a></h2>
+
+<p>许多的应用服务都需要存储关于使用，配置或者其他相关的信息的临时数据，这些数据结构并不适合存储在关系数据库中。
+通常情况下，开发者会是MySQL或者其他RDBMS来存储这种数据。在这里，我们将使用Redis和它内建的数据结构，以一种更轻量级、更快速、更宽松的方式完成存储应用临时数据的功能。</p>
+
+<h2 id="解决方法"><a id="Solution">解决方法</a></h2>
+
+<p>Redis本身的定位并不仅仅是<code class="highlighter-rouge">key/value</code>存储服务，同时也可以作为存储数据结构的服务器。这意味着，在传统的<code class="highlighter-rouge">key/value</code>存储功能之上，它还提供给你一些存储和操作应用数据的方式。
+我们将使用这些数据结构和命令来存储应用示例数据：比如，我们在一些<code class="highlighter-rouge">regular keys</code>里面存储有用的计数器，在<code class="highlighter-rouge">Redis hashes</code>里面存储用户对象，以及使用<code class="highlighter-rouge">sets</code>实现朋友圈（像Google+）。</p>
+
+<h2 id="讨论"><a id="Discussion">讨论</a></h2>
+
+<h3 id="存储应用使用计数器">存储应用使用计数器</h3>
+
+<p>首先，让我们开始存储一些非常基础的事情：计数器。想象我们运营一个商业的社交网络，然后想要追踪<code class="highlighter-rouge">profile/page</code>的访问数据。我们可以在RDBMS的存储我们页数据的表里面增加一列，
+但是希望我们的流量足够高以至于每次更新这一列会带来一些麻烦。因此，我们需要更快的工具来更新和查询，所以我们使用Redis来代替。</p>
+
+<p>由于Redis命令的原子性，我们知道如果我们存储一个计数器的key，则我们可以使用命令，比如：<code class="highlighter-rouge">INCR(或者INCRBY)和DECR(或者DECRBY)</code>，来增加增加或者减少它包含的值。所以，通过为我们的数据设计一个合适的命名保证我们的计数器单次操作成本微乎其微。</p>
+
+<p>Redis系统内实际上并没有约定的方法来组织keys，但是许多人（包括作者）都喜欢使用<code class="highlighter-rouge">冒号：</code>来区分关键字从而创建keys，因此在这里也这样约定。为了存储我们的社交网络页面访问数据，我们可以有一个像<code class="highlighter-rouge">visits:pageid:totals</code>的命名，比如页面id为635，则命名为<code class="highlighter-rouge">visits:635:totals</code>。如果我们已经在一些地方存储访问数据，我们可以首先根据这些数据产生redis的keys，并且设置对应的值，比如：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	SET visits:1:totals 21389 
+	SET visits:2:totals 1367894 
+	(...)
+</code></pre></div></div>
+
+<p>当访问一个给定的页面，一个简单地<code class="highlighter-rouge">INCR</code>命令将更新Redis中的计数器：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	INCR visits:635:totals
+</code></pre></div></div>
+
+<p>然后我们可以获取任何页面在任何时候的访问次数，这只需要通过简单地<code class="highlighter-rouge">GET</code>命令：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	GET visits:635:totals
+</code></pre></div></div>
+
+<p>你也可以让你的命令更智能，比如你可以在人们查看页面的时候，显示当前该页面被访问的次数给他看。当然，你也可以计算他自己访问的次数，所以你甚至不需要执行最后的<code class="highlighter-rouge">GET</code>命令：你可以利用<code class="highlighter-rouge">INCR</code>命令返回值的特点，因为<code class="highlighter-rouge">INCR</code>命令会返回自增之后的计数值。一个简单地关于访问和计数器的伪代码如下所示：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	1. 访问者访问页面.
+	2. 我们 INCR 相关页面的访问计数器 (比如：INCR visits:635:totals）		3. 我们获取INCR命令的返回值。
+	4. 我们展示返回的值在用户页面上。
+</code></pre></div></div>
+
+<p>这种方式我们保证用户在查看页面的时候，常常可以看见实时计数值，以及他自己访问的计数–着所有都可以使用Redis命令。</p>
+
+<!-- more -->
+
+<h3 id="存储对象数据在hashes内">存储对象数据在hashes内</h3>
+
+<p>Redis关于hashes的实现对于存储对象数据应用来说是一个很好的方案。在下面的例子里，我们将调查我们怎样使用<code class="highlighter-rouge">hashes</code>来在给定系统上存储用户相关的信息。</p>
+
+<p>我们将开始设计一个key命名来存储我们的用户。在此之前，我们使用分号来分割我们的关键字，进而产生意义丰富的key。为了达到这个案例的目的，我们将构建一个简单的key，形如：<code class="highlighter-rouge">users:alias</code>，其中<code class="highlighter-rouge">alias</code>是二进制安全的字符串。所以，为了存储一个叫做<code class="highlighter-rouge">John Doe</code>的用户，我们将建一个hash叫做<code class="highlighter-rouge">users:jdoe</code>。</p>
+
+<p>我们也假设我们将要存储关于用户的许多属性，比如全名、邮件地址、电话号码、以及访问我们英语的次数。我们将使用Redis的<code class="highlighter-rouge">hash管理命令</code>–像<code class="highlighter-rouge">HSET</code>、<code class="highlighter-rouge">HGET</code>和<code class="highlighter-rouge">HINCRBY</code>–存储用户的这些信息。</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	redis&gt; hset users:jdoe name "John Doe" 
+	(integer) 1
+	
+	redis&gt; hset users:jdoe email "jdoe@test.com" 
+	(integer) 1
+	
+	redis&gt; hset users:jdoe phone "+1555313940" 
+	(integer) 1
+	
+	redis&gt; hincrby users:jdoe visits 1 
+	(integer) 1
+</code></pre></div></div>
+
+<p>随着我们hash的建立，我们可以在合适的地方通过<code class="highlighter-rouge">HGET</code>获取简单地属性值或者通过<code class="highlighter-rouge">HGETALL</code>命令所有hash对象数据，如同下面的示例：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	redis&gt; hget users:jdoe email 
+	"jdoe@test.com"
+
+	redis&gt; hgetall users:jdoe
+	1) "name"
+	2) "John Doe"
+	3) "email"
+	4) "jdoe@test.com" 5) "phone"
+	6) "+1555313940" 7) "visits"
+	8) "1"
+</code></pre></div></div>
+
+<p>还有辅助的命令，比如<code class="highlighter-rouge">HKEYS</code>，该命令返回一个特定的hash里面存储的所有keys；<code class="highlighter-rouge">HVALS</code>，该命令仅仅返回values。当从你应用的Redis中检索数据时，你可能会发现使用<code class="highlighter-rouge">HGETALL</code>或者其他命令很有用，这其实取决于你想怎样检索你的数据。</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	redis&gt; hkeys users:jdoe 
+	1) "name"
+	2) "email"
+	3) "phone"
+	4) "visits"
+
+	redis&gt; hvals users:jdoe 
+	1) "John Doe"
+	2) "jdoe@test.com"
+	3) "+1555313940"
+	4) "1"
+</code></pre></div></div>
+
+<p>关于我们用户hash的其他命令列表，你可以详细阅读 <code class="highlighter-rouge">Redis official documentation for hash commands</code>，这里面包含他自己的使用<code class="highlighter-rouge">hashes</code>管理数据的示例。</p>
+
+<h3 id="使用sets存储用户的朋友圈">使用sets存储用户的朋友圈</h3>
+
+<p>为了完成Redis特有的方式存储数据，我们看看怎么样使用Redis支持的sets来创建和google+相似的朋友圈功能。sets天生就适应朋友圈，因为sets代码数据的集合，并且有一些天生的功能来做一些有趣的事情，比如交集和并集。</p>
+
+<p>首先，让我们定义一个朋友圈的命名。我们想要为我们每一个用户存储一些朋友圈，所以我们的key需要包含用户和实际的朋友圈。举个例子，<code class="highlighter-rouge">John Doe</code>的家庭圈可能有一个key像<code class="highlighter-rouge">circle:jdoe:family</code>样子。相似地，他的足球训练朋友可能在key为<code class="highlighter-rouge">circle:jdoe:soccer</code>的set里面。这里没有key设计的设置规则，所以常常以一种对我们应用有意义的方式来设计它们。</p>
+
+<p>现在，我们知道存储我们sets里面的keys，接下来，我们来创建<code class="highlighter-rouge">John Doe</code>的家庭集和足球朋友集。在集合本身里面，我们可以通过用户id来获取Redis里其他的keys。如果我们想要获取属于<code class="highlighter-rouge">John Doe</code>家庭圈用户的列表，和它们的用户信息，我们可以使用我们set的操作结果，然后为每一个用户提取真实的hashes（使用hashes来存储用户信息）。</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	redis&gt; sadd circle:jdoe:family users:anna 
+	(integer) 1
+
+	redis&gt; sadd circle:jdoe:family users:richard
+	(integer) 1 
+	
+	redis&gt; sadd circle:jdoe:family users:mike
+	(integer) 1 
+	
+	redis&gt; sadd circle:jdoe:soccer users:mike
+	(integer) 1 
+	
+	redis&gt; sadd circle:jdoe:soccer users:adam
+	(integer) 1 
+	
+	redis&gt; sadd circle:jdoe:soccer users:toby
+	(integer) 1 
+	
+	redis&gt; sadd circle:jdoe:soccer users:apollo
+	(integer) 1
+</code></pre></div></div>
+
+<p>需要记住的是，在上面的例子里，我们需要规范化我们set的成员通过使用实际的id数值而不是<code class="highlighter-rouge"> users:name</code>。虽然上面的例子工作得很好，但它可能为了性能原因牺牲一些可读性而获取更快的速度和更高的内存使用效率。</p>
+
+<p>现在我们有一个set叫做<code class="highlighter-rouge">circle:jdoe:family</code>,带有三个值（分别是：users:anna, users:richard, and users:mike），第二个叫做<code class="highlighter-rouge">	circle:jdoe:soccer</code>,带有四个值（分别是：users:mike, users:adam, users:toby, and users:apollo）。它们的值仅仅只是字符串，但是通过使用字符串对我们来说是有意义的（这和我们设计用户的hashes很相似），我们可以使用<code class="highlighter-rouge">SMEMBERS</code>命令的结果进而获取特点用户的信息。如下面的例子：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	redis&gt; smembers circle:jdoe:family 
+	1) "users:richard"
+	2) "users:mike"
+	3) "users:anna"
+
+	redis&gt; hgetall users:mike 
+	(...)
+</code></pre></div></div>
+
+<p>现在，我们已经知道了怎么在sets里面存储信息了，我们可以扩展这个只是，做一些有趣的事情，比如获取属于这两个sets里面的人，或者获取一个<code class="highlighter-rouge">John Doe</code>添加到我们系统朋友圈中的完整的用户列表。</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	redis&gt; sinter circle:jdoe:family circle:jdoe:soccer 
+	1) "users:mike"
+
+	redis&gt; sunion circle:jdoe:family circle:jdoe:soccer 
+	1) "users:anna"
+	2) "users:mike"
+	3) "users:apollo" 
+	4) "users:adam"
+	5) "users:richard" 
+	6) "users:toby"
+</code></pre></div></div>
+
+<p>根据我们的结果，<code class="highlighter-rouge">Mike</code>在<code class="highlighter-rouge">John Doe</code>的家庭圈和足球圈里面，通过两个圈的并集，我们也可以获取完整地成员列表。</p>
+
+<p>如你所见，Redis sets使得RDBMS一些查询变得非常简单。Redis完成得非常的快，使得对于那些管理集合操作的应用来说，<code class="highlighter-rouge">Redis sets</code>是一个理想的候选者。朋友圈就是一个例子，此外像 推荐或者甚至文本搜素也很适合。在随后的案例里面，将会看到更深入的例子。</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>SET key value
+	Sets the key to hold the given value. Existing data is overwritten (even if of a dif- ferent data type).	
+
+GET key
+	Returns the content held by the key. Works only with string values.
+
+INCR key
+	Increments the integer stored at key by 1.
+
+INCRBY key value
+	Performs the same operation as INCR, but incrementing by value instead.	
+DECR key
+	Decrements the integer stored at key by 1.
+
+DECRBY key value
+	Performs the same operation as DECR, but decrementing by value instead
+</code></pre></div></div>
+
+
+                </div>
+                <div class="read-all">
+                    <a  href="/2014/08/10/Redis-Cookbook-Redis-KeyValue-Store/"><i class="fa fa-newspaper-o"></i>Read All</a>
+                </div>
+                <hr>
+              </li>
+            
+              <li>
+                <h2>
+                  <a class="post-link" href="/2014/08/10/Redis-CookBook-Redis-Data-Types/">Redis Cookbook 之 Redis数据类型</a>
+                </h2>
+                <div class="label">
+                    <div class="label-card">
+                        <i class="fa fa-calendar"></i>2014-08-10
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+
+                    <div class="label-card">
+                    
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Redis" title="Category: Redis" rel="category">Redis</a>&nbsp;
+    
+        <a href="/category/#Redis Cookbook" title="Category: Redis Cookbook" rel="category">Redis Cookbook</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+                    </div>
+
+                    <div class="label-card">
+                    
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+                    </div>
+                </div>
+                <div class="excerpt">
+                    <h2 id="问题"><a id="Problem">问题</a></h2>
+
+<p>首先，你需要了解<code class="highlighter-rouge">Redis</code>的数据类型，这样才能够为特定的应用提供更好的<code class="highlighter-rouge">Redis</code>使用方式和性能。</p>
+
+<h2 id="解决方法"><a id="Solution">解决方法</a></h2>
+
+<p>和大部分其他的<code class="highlighter-rouge">NoSQL</code>方案和<code class="highlighter-rouge">key-value</code>存储引擎不同，<code class="highlighter-rouge">Redis</code>包含一些内建的数据类型，允许开发者可以使用有意义的语义方式来构建他们的数据。在<code class="highlighter-rouge">Redis</code>内部操作指定类型的数据时，预定义的数据类型一般会比外部定义数据类型要操作更快。</p>
+
+<h2 id="讨论"><a id="Discussion">讨论</a></h2>
+
+<p>在我们深入特定的数据类型之前，先来了解一些在设计<code class="highlighter-rouge">Key</code>数据结构的时候需要关注的事情：</p>
+
+<ul>
+  <li>
+    <p>定义<code class="highlighter-rouge">key</code>空间时需要一致。由于一个key可以包含任意的字符，你可以使用分隔符去为自己的业务定义有意义的命名。例如：<code class="highlighter-rouge"> cache:project:319:tasks</code>，每一个冒号就是一个命名分隔符。</p>
+  </li>
+  <li>
+    <p>当定义自己的<code class="highlighter-rouge">key</code>时，尝试限制合适的大小。从存储中检索一个key是需要比较操作的，所以保证<code class="highlighter-rouge">key</code>长度足够的小是一个很好的建议。此外，更小的<code class="highlighter-rouge">key</code>长度还会节省内存的使用。</p>
+  </li>
+  <li>
+    <p>即使<code class="highlighter-rouge">key</code>不能够特别的大，但是保持特别小的<code class="highlighter-rouge">key</code>并不会带来非常大的性能提升。这意味着，你设计自己的<code class="highlighter-rouge">key</code>时需要综合考虑<code class="highlighter-rouge">key</code>的易读性和正常的键长度。</p>
+  </li>
+</ul>
+
+<p>因此，当键设计成<code class="highlighter-rouge">c:p:319:t</code>或者<code class="highlighter-rouge">user 123</code>是相当失败的，前面一个可读性很差，后面一个包含空格。另一方面，像<code class="highlighter-rouge">cache:project:319:tasks</code>，<code class="highlighter-rouge">lastchatmessage</code>，<code class="highlighter-rouge">464A1E96B2D217EBE87449FA8B70E6C7D112560C</code>的<code class="highlighter-rouge">key</code>都是很好的，因为他们都是有语义的词（最后一个是SHA1哈希值，虽然很难猜测他的语义，但是这对于存储了对应的对象，你就可以计算出hash值了）。</p>
+
+<!-- more -->
+
+<h3 id="strings">Strings</h3>
+
+<p>这是<code class="highlighter-rouge">Redis</code>里面最简单的数据类型：字符串。<code class="highlighter-rouge">Strings</code>也是其他<code class="highlighter-rouge">key-value</code>存储引擎中典型的数据类型。你可以存储任意类型的字符串，包括二进制数据。比如：你可能想要为<code class="highlighter-rouge">社交网络中的头像</code>缓存图片数据。你需要考虑的唯一一件事情就是在<code class="highlighter-rouge">Redis</code>里面不允许特定的值大小超过<code class="highlighter-rouge">512M</code>。</p>
+
+<h3 id="lists">Lists</h3>
+
+<p>在<code class="highlighter-rouge">Redis</code>存储里面，<code class="highlighter-rouge">  Lists</code>是一个有序的二进制安全的字符串列表，使用<code class="highlighter-rouge">linked list</code>来实现。这意外者，当通过一个指定的索引获取元素的时候，会是一个很慢的操作，但是在这个数据结构的头部或者尾部增加元素是非常快的。你可能想要基于<code class="highlighter-rouge">Lists</code>去实现<code class="highlighter-rouge">queues</code>之类的数据结构。关于这点，后文会说到。</p>
+
+<h3 id="hashes">Hashes</h3>
+
+<p>和传统的hash表很像，在<code class="highlighter-rouge">Redis</code>中<code class="highlighter-rouge">hashes</code>在特定的key里面存储一些<code class="highlighter-rouge">fields</code>和他们对应的值。<code class="highlighter-rouge">hashes</code>是需要映射复杂对像的完美选项，通过使用对象属性的<code class="highlighter-rouge">fields</code>（比如一个对象有多个属性：“color”,“brand”, “license plate”）。</p>
+
+<h3 id="sets-and-sorted-sets">Sets and Sorted Sets</h3>
+
+<p>在<code class="highlighter-rouge">Redis</code>中，<code class="highlighter-rouge">sets</code>是一个无序的二进制安全的字符串集合。在给定的<code class="highlighter-rouge">set</code>中是不存在重复的元素的。比如，当你尝试在一个<code class="highlighter-rouge">set</code>中添加两次<code class="highlighter-rouge">wheel</code>时，<code class="highlighter-rouge">Redis</code>会忽略第二次插入操作。<code class="highlighter-rouge">sets</code>允许你执行传统语言中<code class="highlighter-rouge">set</code>的相关操作，比如获取集合的交集和并集。</p>
+
+<p>虽然这个和<code class="highlighter-rouge">lists</code>看起来很相似，但是他们实现是非常不同的，并且由于他们不同的特性而决定适应不同的应用需求。此外，set的内存占用要比<code class="highlighter-rouge">lists</code>高一些。</p>
+
+<p><code class="highlighter-rouge">Sorted sets</code>是<code class="highlighter-rouge">sets</code>的特例，通过定义<code class="highlighter-rouge">score</code>来实现排序，此外也是经典的二进制安全字符串。这个<code class="highlighter-rouge">score</code>允许你通过使用<code class="highlighter-rouge">ZRANGE</code>命令查询一个有序的元素列表。后面，会介绍一些关于<code class="highlighter-rouge">sets and sorted sets</code>的使用实例。</p>
+
+
+                </div>
+                <div class="read-all">
+                    <a  href="/2014/08/10/Redis-CookBook-Redis-Data-Types/"><i class="fa fa-newspaper-o"></i>Read All</a>
+                </div>
+                <hr>
+              </li>
+            
+        </ul>
+
+
+
+        <!-- Pagination links -->
+        <div class="pagination">
+          
+            <a href="/index.html" class="previous"><i class="fa fa-angle-double-left"></i></a>
+            <a href="/page4" class="previous"><i class="fa fa-angle-left"></i></a>
+          
+          <span class="page_number ">5/8</span>
+          
+            <a href="/page6" class="next"><i class="fa fa-angle-right"></i></a>
+            <a href="/page8" class="next"><i class="fa fa-angle-double-right"></i></a>
+          
+        </div>
+    </div>
+    <!-- <button class="anchor"><i class="fa fa-anchor"></i></button> -->
+    <div class="right">
+        <div class="wrap">
+            <div class="side">
+                <div>
+                    <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
+                    Recent Posts
+                </div>
+                <ul class="content-ul" recent>
+                    
+                        <li><a href="/2017/03/29/java-server-in-action/">深入浅出Java服务端原理之基础篇</a></li>
+                    
+                        <li><a href="/2016/12/10/rpc-theory-in-action/">深入浅出RPC原理</a></li>
+                    
+                        <li><a href="/2016/05/29/talk-about-java-gc/">聊聊 Java GC</a></li>
+                    
+                        <li><a href="/2016/04/29/thrift-service-discory-using-zookeeper-ourea/">Ourea-基于Zookeeper的Thrift服务发现框架实现</a></li>
+                    
+                        <li><a href="/2016/03/10/junit-mockito-guice-in-action-and-junit-test-mechanism/">基于JUnit Mockito Guice测试实践及JUnit运行机制浅析</a></li>
+                    
+                        <li><a href="/2016/01/02/delayed-message-consume-service-use-kafka/">基于kafka的定时消息/任务服务</a></li>
+                    
+                        <li><a href="/2015/09/05/zookeeper-programmer-guide/">Zookeeper 编程指南</a></li>
+                    
+                        <li><a href="/2015/08/30/nginx-proxy-configure-and-sduty/">Nginx 反向代理配置和工作原理</a></li>
+                    
+                        <li><a href="/2015/04/29/LogBack-Implemention-And-Slf4j-Mdc/">Slf4j MDC 使用和 基于 Logback 的实现分析</a></li>
+                    
+                        <li><a href="/2015/02/26/Python-Tutoril-Python-Object-Oriented-Programming/">Python 教程学习之 Python 面向对象编程</a></li>
+                    
+                </ul>
+            </div>
+
+            <!-- Content -->
+            <div class="side ">
+                <div>
+                    <i class="fa fa-th-list"></i>
+                    Categories
+                </div>
+                <ul class="content-ul" cate>
+                    
+                    <li>
+                        <a href="/category/#Java" class="categories-list-item" cate="Java">
+                            <span class="name">
+                                Java
+                            </span>
+                            <span class="badge">19</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#IDE" class="categories-list-item" cate="IDE">
+                            <span class="name">
+                                IDE
+                            </span>
+                            <span class="badge">2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Log" class="categories-list-item" cate="Log">
+                            <span class="name">
+                                Log
+                            </span>
+                            <span class="badge">2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Thread" class="categories-list-item" cate="Thread">
+                            <span class="name">
+                                Thread
+                            </span>
+                            <span class="badge">2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Spring" class="categories-list-item" cate="Spring">
+                            <span class="name">
+                                Spring
+                            </span>
+                            <span class="badge">2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#GC" class="categories-list-item" cate="GC">
+                            <span class="name">
+                                GC
+                            </span>
+                            <span class="badge">2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Mysql" class="categories-list-item" cate="Mysql">
+                            <span class="name">
+                                Mysql
+                            </span>
+                            <span class="badge">2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Script" class="categories-list-item" cate="Script">
+                            <span class="name">
+                                Script
+                            </span>
+                            <span class="badge">3</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Linux" class="categories-list-item" cate="Linux">
+                            <span class="name">
+                                Linux
+                            </span>
+                            <span class="badge">5</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Python" class="categories-list-item" cate="Python">
+                            <span class="name">
+                                Python
+                            </span>
+                            <span class="badge">5</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Redis" class="categories-list-item" cate="Redis">
+                            <span class="name">
+                                Redis
+                            </span>
+                            <span class="badge">6</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Redis Cookbook" class="categories-list-item" cate="Redis Cookbook">
+                            <span class="name">
+                                Redis Cookbook
+                            </span>
+                            <span class="badge">6</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#tools" class="categories-list-item" cate="tools">
+                            <span class="name">
+                                tools
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Json" class="categories-list-item" cate="Json">
+                            <span class="name">
+                                Json
+                            </span>
+                            <span class="badge">3</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Dubbo" class="categories-list-item" cate="Dubbo">
+                            <span class="name">
+                                Dubbo
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Git" class="categories-list-item" cate="Git">
+                            <span class="name">
+                                Git
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Nginx" class="categories-list-item" cate="Nginx">
+                            <span class="name">
+                                Nginx
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Zookeeper" class="categories-list-item" cate="Zookeeper">
+                            <span class="name">
+                                Zookeeper
+                            </span>
+                            <span class="badge">2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Translation" class="categories-list-item" cate="Translation">
+                            <span class="name">
+                                Translation
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Kafka" class="categories-list-item" cate="Kafka">
+                            <span class="name">
+                                Kafka
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#JUnit" class="categories-list-item" cate="JUnit">
+                            <span class="name">
+                                JUnit
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Guice" class="categories-list-item" cate="Guice">
+                            <span class="name">
+                                Guice
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Thrift" class="categories-list-item" cate="Thrift">
+                            <span class="name">
+                                Thrift
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#rpc" class="categories-list-item" cate="rpc">
+                            <span class="name">
+                                rpc
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#dubbo" class="categories-list-item" cate="dubbo">
+                            <span class="name">
+                                dubbo
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#thrift" class="categories-list-item" cate="thrift">
+                            <span class="name">
+                                thrift
+                            </span>
+                            <span class="badge">2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#java" class="categories-list-item" cate="java">
+                            <span class="name">
+                                java
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#socket" class="categories-list-item" cate="socket">
+                            <span class="name">
+                                socket
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                </ul>
+            </div>
+            <!-- 其他div框放到这里 -->
+            <div class="side">
+                <div>
+                    <i class="fa fa-tags"></i>
+                    Tags
+                </div>
+                <div class="tags-cloud">
+                    
+                    
+                    
+                    
+
+                    
+
+                    
+                </div>
+            </div>
+
+            <!-- <div class="side">
+                <div>
+                    <i class="fa fa-external-link"></i>
+                    Links
+                </div>
+                <ul  class="content-ul">
+
+                </ul>
+            </div> -->
+        </div>
+    </div>
+</div>
+<!-- <script src="/js/scroll.min.js " charset="utf-8"></script> -->
+<!-- <script src="/js/pageContent.js " charset="utf-8"></script> -->
+
+
+    <footer class="site-footer">
+
+
+    <div class="wrapper">
+
+        <p class="description">
+             本站保留着一点点技术积蓄！ 
+        </p>
+        <p class="contact">
+            Contact me at: 
+            <a href="https://github.com/ketao1989" title="GitHub"><i class="fa fa-github" aria-hidden="true"></i></a>  
+            <a href="mailto:ketao1989@126.com" title="email"><i class="fa fa-envelope-o" aria-hidden="true"></i></a>  
+            <a href="http://weibo.com/柯小小西" title="Weibo"><i class="fa fa-weibo" aria-hidden="true"></i></a>       
+        </p>
+        <p>
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次，本站访客数<span id="busuanzi_value_site_uv"></span>人次，本文总阅读量<span id="busuanzi_value_page_pv"></span>次
+        </p>
+        <p class="power">
+            <span>
+                Site powered by <a href="https://jekyllrb.com/">Jekyll</a> & <a href="https://pages.github.com/">Github Pages</a>.
+            </span>
+            <span>
+                Theme designed by <a href="https://github.com/Gaohaoyang">HyG</a>.
+            </span>
+        </p>
+    </div>
+</footer>
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+    <div class="back-to-top">
+    <a href="#top" data-scroll>
+        <i class="fa fa-arrow-up" aria-hidden="true"></i>
+    </a>
+</div>
+
+    <script src=" /js/main.js " charset="utf-8"></script>
+    <script src=" /js/smooth-scroll.min.js " charset="utf-8"></script>
+    <script type="text/javascript">
+      smoothScroll.init({
+        speed: 500, // Integer. How fast to complete the scroll in milliseconds
+        easing: 'easeInOutCubic', // Easing pattern to use
+        offset: 20, // Integer. How far to offset the scrolling anchor location in pixels
+      });
+    </script>
+    <!-- <script src=" /js/scroll.min.js " charset="utf-8"></script> -->
+  </body>
+
+</html>

@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>线上Mysql Delete 和 Insert 操作导致死锁问题分析</title>
+    <meta name="description" content="前言今天项目发布，上线上跟日志的时候，发现一些死锁信息的出现，查询了一下，发现日志里面虽然死锁出现很少，但是都是同一个代码sql语句产生的，如下图所示：并且，一天产生死锁31次。从DBA那边拿到了对应死锁的Mysql日志信息：------------------------LATEST DETECTED DEAD...">
+
+    <link rel="shortcut icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://at.alicdn.com/t/font_8v3czwksspqlg14i.css">
+    <link rel="stylesheet" href="/css/main.css ">
+    <link rel="canonical" href="http://localhost:4000/2014/10/09/Mysql-Delete-Insert-Deadlock-Analyse/">
+    <link rel="alternate" type="application/rss+xml" title="柯小小西" href="http://localhost:4000/feed.xml ">
+
+
+    <script>
+    // 百度统计代码
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?a9b0f47a0e50b02dafb8a7088436a9bc";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+    </script>
+
+
+
+
+</head>
+
+
+  <body>
+
+    <header id="top">
+    <div class="wrapper">
+        <a href="/" class="brand">柯小小西</a>
+        <small>留着一点点技术积蓄</small>
+        <button id="headerMenu" class="menu"><i class="fa fa-bars"></i></button>
+        <nav id="headerNav">
+            <ul>
+                <li>
+                    
+                    <a href="/">
+                    
+                        <i class="fa fa-home"></i>Home
+                    </a>
+                </li>
+
+                
+                    
+                    <li>
+                        
+                        <a href="/archive/">
+                        
+                            <i class="fa fa-archive"></i>Archives
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/category/">
+                        
+                            <i class="fa fa-th-list"></i>Categories
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/tag/">
+                        
+                            <i class="fa fa-tags"></i>Tags
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/about/">
+                        
+                            <i class="fa fa-heart"></i>About
+                        </a>
+                    </li>
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+        <div class="page clearfix" post>
+    <div class="left">
+        <h1>线上Mysql Delete 和 Insert 操作导致死锁问题分析</h1>
+        <div class="label">
+
+            <div class="label-card">
+                <i class="fa fa-calendar"></i>2014-10-09
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+            
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Mysql" title="Category: Mysql" rel="category">Mysql</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+            </div>
+
+            <div class="label-card">
+            
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+            </div>
+
+        </div>
+        <hr>
+        <article itemscope itemtype="http://schema.org/BlogPosting">
+        <h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p>今天项目发布，上线上跟日志的时候，发现一些死锁信息的出现，查询了一下，发现日志里面虽然死锁出现很少，但是都是同一个代码<code class="highlighter-rouge">sql</code>语句产生的，如下图所示：</p>
+
+<p><img src="/images/2014/10/deadlock-log.png" /></p>
+
+<p>并且，一天产生死锁<code class="highlighter-rouge">31</code>次。</p>
+
+<p>从DBA那边拿到了对应死锁的<code class="highlighter-rouge">Mysql</code>日志信息：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">------------------------</span>
+LATEST DETECTED DEADLOCK
+<span class="nt">------------------------</span>
+141009 12:54:59
+<span class="k">***</span> <span class="o">(</span>1<span class="o">)</span> TRANSACTION:
+TRANSACTION AEE50DCB, ACTIVE 0 sec starting index <span class="nb">read
+</span>mysql tables <span class="k">in </span>use 1, locked 1
+LOCK WAIT 2 lock struct<span class="o">(</span>s<span class="o">)</span>, heap size 376, 1 row lock<span class="o">(</span>s<span class="o">)</span>
+MySQL thread <span class="nb">id </span>6055694, OS thread handle 0x7f4345c8d700, query <span class="nb">id </span>2443700084 192.168.249.154 crm_w updating
+DELETE FROM crm_business WHERE serial_number <span class="o">=</span> <span class="s1">'CH01313320'</span>
+<span class="k">***</span> <span class="o">(</span>1<span class="o">)</span> WAITING FOR THIS LOCK TO BE GRANTED:
+RECORD LOCKS space <span class="nb">id </span>244 page no 817 n bits 824 index <span class="sb">`</span>uniq_serial_number_business_type<span class="sb">`</span> of table <span class="sb">`</span>crm<span class="sb">`</span>.<span class="sb">`</span>crm_business<span class="sb">`</span> trx <span class="nb">id </span>AEE50DCB lock_mode X waiting
+<span class="k">***</span> <span class="o">(</span>2<span class="o">)</span> TRANSACTION:
+TRANSACTION AEE50DCA, ACTIVE 0 sec inserting, thread declared inside InnoDB 500
+mysql tables <span class="k">in </span>use 1, locked 1
+3 lock struct<span class="o">(</span>s<span class="o">)</span>, heap size 1248, 3 row lock<span class="o">(</span>s<span class="o">)</span>, undo log entries 1
+MySQL thread <span class="nb">id </span>6055696, OS thread handle 0x7f4344941700, query <span class="nb">id </span>2443700084 192.168.249.154 crm_w update
+INSERT INTO crm_business<span class="o">(</span>serial_number, business_type<span class="o">)</span> values <span class="o">(</span><span class="s1">'CH01313318'</span>, 2<span class="o">)</span>
+<span class="k">***</span> <span class="o">(</span>2<span class="o">)</span> HOLDS THE LOCK<span class="o">(</span>S<span class="o">)</span>:
+RECORD LOCKS space <span class="nb">id </span>244 page no 817 n bits 824 index <span class="sb">`</span>uniq_serial_number_business_type<span class="sb">`</span> of table <span class="sb">`</span>crm<span class="sb">`</span>.<span class="sb">`</span>crm_business<span class="sb">`</span> trx <span class="nb">id </span>AEE50DCA lock mode S
+<span class="k">***</span> <span class="o">(</span>2<span class="o">)</span> WAITING FOR THIS LOCK TO BE GRANTED:
+RECORD LOCKS space <span class="nb">id </span>244 page no 817 n bits 824 index <span class="sb">`</span>uniq_serial_number_business_type<span class="sb">`</span> of table <span class="sb">`</span>crm<span class="sb">`</span>.<span class="sb">`</span>crm_business<span class="sb">`</span> trx <span class="nb">id </span>AEE50DCA lock_mode X locks gap before rec insert intention waiting
+<span class="k">***</span> WE ROLL BACK TRANSACTION <span class="o">(</span>1<span class="o">)</span>
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Note: 数据库中，<code class="highlighter-rouge">CH01313318</code>和<code class="highlighter-rouge">CH01313320</code>序列号是连着的两个记录。</p>
+  </blockquote>
+</blockquote>
+
+<h2 id="死锁问题定位"><a id="Problem">死锁问题定位</a></h2>
+
+<p>之所以需要分析这个问题，主要原因是，这边代码并<em>没有</em>涉及到在一个事务内部sql操作导致死锁等常见的情况。</p>
+
+<!-- more -->
+
+<ul>
+  <li>首先，我们看看设计问题的代码片段：</li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="k">for</span> <span class="o">(</span><span class="kd">final</span> <span class="n">C</span> <span class="n">c</span> <span class="o">:</span> <span class="n">cs</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">threadPool</span><span class="o">.</span><span class="na">execute</span><span class="o">(</span><span class="k">new</span> <span class="n">Runnable</span><span class="o">()</span> <span class="o">{</span>
+                <span class="nd">@Override</span>
+                <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+                    <span class="n">processOneC</span><span class="o">(</span><span class="n">c</span><span class="o">);</span>
+                <span class="o">}</span>
+            <span class="o">});</span>
+        <span class="o">}</span>
+
+
+<span class="kd">private</span> <span class="kt">void</span> <span class="nf">processOneC</span><span class="o">(</span><span class="n">C</span> <span class="n">c</span><span class="o">)</span> <span class="o">{</span>
+
+
+        <span class="k">if</span> <span class="o">(</span><span class="n">Strings</span><span class="o">.</span><span class="na">isNullOrEmpty</span><span class="o">(</span><span class="n">c</span><span class="o">.</span><span class="na">getSeqNumber</span><span class="o">()))</span> <span class="o">{</span>
+            <span class="k">return</span><span class="o">;</span>
+        <span class="o">}</span>
+        <span class="k">try</span> <span class="o">{</span>
+
+            <span class="c1">// 删除原合作业务</span>
+            <span class="n">cBusinessDAO</span><span class="o">.</span><span class="na">deleteBySN</span><span class="o">(</span><span class="n">c</span><span class="o">.</span><span class="na">getSerialNumber</span><span class="o">());</span> <span class="c1">//delete操作</span>
+
+            <span class="c1">//..........</span>
+            
+            <span class="n">setTuanBusiness</span><span class="o">(</span><span class="n">c</span><span class="o">,</span> <span class="n">hotelResult</span><span class="o">);</span> <span class="c1">//insert操作</span>
+            <span class="n">setDirectBusiness</span><span class="o">(</span><span class="n">c</span><span class="o">,</span> <span class="n">hotelResult</span><span class="o">);</span> <span class="c1">//insert操作</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+        
+            <span class="n">logger</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">"CustomerBusinessProcess.processOneCustomer error, Exception"</span><span class="o">,</span> <span class="n">e</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"=========="</span> <span class="o">+</span> <span class="n">co</span><span class="o">.</span><span class="na">addAndGet</span><span class="o">(</span><span class="mi">1</span><span class="o">));</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+
+
+</code></pre></div></div>
+
+<p>上面代码的逻辑很简单，就是对一个列表对象，多线程来分别操作。每个对象的处理，删除原来的记录，然后添加新的记录。</p>
+
+<ul>
+  <li>其次，设计到的SQL语句：</li>
+</ul>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="k">DELETE</span> 
+<span class="k">FROM</span> <span class="n">crm_business</span> 
+<span class="k">WHERE</span> <span class="n">serial_number</span> <span class="o">=</span> <span class="s1">'xxxx'</span>
+
+<span class="k">INSERT</span> 
+<span class="k">INTO</span> <span class="n">crm_business</span><span class="p">(</span>
+<span class="n">serial_number</span><span class="p">,</span> 
+<span class="n">business_type</span>
+<span class="p">)</span> <span class="k">values</span> <span class="p">(</span>
+<span class="s1">'xxxx'</span><span class="p">,</span> 
+<span class="mi">1</span>
+<span class="p">)</span>
+</code></pre></div></div>
+
+<ul>
+  <li>最后，看看相关表的建表sql语句：</li>
+</ul>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="k">CREATE</span> <span class="k">TABLE</span> <span class="nv">`crm_business`</span> <span class="p">(</span>
+  <span class="nv">`id`</span> <span class="n">int</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span> <span class="n">unsigned</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="n">AUTO_INCREMENT</span> <span class="k">COMMENT</span> <span class="s1">'主键ID'</span><span class="p">,</span>
+  <span class="nv">`serial_number`</span> <span class="n">varchar</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">COMMENT</span> <span class="s1">'商户编号'</span><span class="p">,</span>
+  <span class="nv">`business_type`</span> <span class="n">tinyint</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">COMMENT</span> <span class="s1">'业务类型'</span><span class="p">,</span>
+  <span class="k">PRIMARY</span> <span class="k">KEY</span> <span class="p">(</span><span class="nv">`id`</span><span class="p">),</span>
+  <span class="k">UNIQUE</span> <span class="k">KEY</span> <span class="nv">`uniq_serial_number_business_type`</span> <span class="p">(</span><span class="nv">`serial_number`</span><span class="p">,</span><span class="nv">`business_type`</span><span class="p">)</span>
+<span class="p">)</span> <span class="n">ENGINE</span><span class="o">=</span><span class="n">InnoDB</span> <span class="n">AUTO_INCREMENT</span><span class="o">=</span><span class="mi">34856774</span> <span class="k">DEFAULT</span> <span class="n">CHARSET</span><span class="o">=</span><span class="n">utf8</span> <span class="k">COMMENT</span><span class="o">=</span><span class="s1">'合作业务'</span>
+
+</code></pre></div></div>
+
+<p>数据表里面，字段很简单，但是里面涉及一个唯一键索引。</p>
+
+<blockquote>
+  <blockquote>
+    <p>Note: 上面的代码，<code class="highlighter-rouge">delete</code>和<code class="highlighter-rouge">insert</code>操作不在一个事务里面，因为代码上没有添加@transaction 注解，也就是单纯delete<code class="highlighter-rouge">和</code>insert`操作在多线程环境下，竟然会产生死锁。此外，需要注意，操作唯一键相关字段，经常会不注意就产生死锁问题。</p>
+  </blockquote>
+</blockquote>
+
+<h2 id="死锁问题分析"><a id="Analyse">死锁问题分析</a></h2>
+
+<p>首先，给出一篇博客，mysql大神写的<a href="http://hedengcheng.com/?p=844">http://hedengcheng.com/?p=844</a>,一下分析，借鉴使用该博客的分析。</p>
+
+<blockquote>
+  <blockquote>
+    <p>Tips: 有兴趣，请直接阅读该博客的分析。</p>
+  </blockquote>
+</blockquote>
+
+<h3 id="mysql日志分析">Mysql日志分析</h3>
+
+<p>以上Mysql产生的死锁日志，包含两个事务。</p>
+
+<p><em>事务1</em>：当前正在操作一张表（mysql tables in use 1），持有两把锁(2 lock structs，一个表级意向锁，一个行锁(1 row lock))，这个事务，当前正在处理的语句是一条delete语句。同时，这唯一的一个行锁，处于等待状态(WAITING FOR THIS LOCK TO BE GRANTED)。</p>
+
+<p>事务1等待中的行锁，加锁的对象是唯一索引<code class="highlighter-rouge">uniq_serial_number_business_type</code>上页面号为<code class="highlighter-rouge">817</code>页面上的一行(注：具体是哪一行，无法看到。但是能够看到的是，这个行锁，一共有824个bits可以用来锁824个行记录，n bits 824：lock_rec_print()方法)。同时，等待的行锁模式为next key锁(lock_mode X)。简单来说，next key锁有两层含义，一是对当前记录加X锁，防止记录被并发修改，同时锁住记录之前的GAP，防止有新的记录插入到此记录之前。</p>
+
+<p><em>事务2</em>：和事务1一样，事务2上面有三个行锁，三个行锁，<code class="highlighter-rouge">undo log entries 1</code>，两个锁都是唯一索引<code class="highlighter-rouge">uniq_serial_number_business_type</code>上页号<code class="highlighter-rouge">817</code>上的某一条记录。其中，一个锁处于持有状态，锁模式为S mode，即共享锁，同时，另外一把锁处于等待状态，锁模式为X mode，即互斥锁。因此，拥有锁S模式不代表可以获取接下来的X模式的锁。</p>
+
+<p>事务1正在等待事务2释放锁的S模式，从而获取X模式的锁；但是事务2已经获取了S模式，但是其等待继续获取锁的X模型,这个模式事务1优先申请获取，因此就导致死锁。</p>
+
+<blockquote>
+  <blockquote>
+    <p>Note: 事务1优先去等待获取锁的X模式，是因为在Mysql中为了公平竞争，杜绝事务1发生饥饿现象。这样会导致上述死锁出现。</p>
+  </blockquote>
+</blockquote>
+
+<p>那么为什么会出现<code class="highlighter-rouge">delete</code>操作抛出死锁失败，事务回滚。</p>
+
+<p>Mysql实现，会根据死锁冲突的两个事务的权重，事务1的权重会更低，然后被选为抛弃的对象，回滚该操作。</p>
+
+<h3 id="delete操作的加锁逻辑">Delete操作的加锁逻辑</h3>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">DELETE</span> 
+<span class="k">FROM</span> <span class="n">crm_business</span> 
+<span class="k">WHERE</span> <span class="n">serial_number</span> <span class="o">=</span> <span class="s1">'xxxx'</span>
+</code></pre></div></div>
+
+<p><code class="highlighter-rouge"> serial_number</code>是数据表里面的唯一键索引，一个二级索引键值。</p>
+
+<p><code class="highlighter-rouge"> serial_number</code>是unique索引，而主键是id列。因此delete语句会选择走<code class="highlighter-rouge">serial_number</code>列的索引进行where条件的过滤，在找到<code class="highlighter-rouge">serial_number = 'xxxx'</code>的记录后，首先会将unique索引上的<code class="highlighter-rouge">serial_number = 'xxxx'</code>索引记录加上X锁，同时，会根据读取到的<code class="highlighter-rouge">id</code>列，回主键索引(聚簇索引)，然后将聚簇索引上的<code class="highlighter-rouge">id = 10</code> 对应的主键索引项加X锁。为什么聚簇索引上的记录也要加锁？试想一下，如果并发的一个SQL，是通过主键索引来更新：<code class="highlighter-rouge">update crm_business set serial_number = xyy where id = 10</code>; 此时，如果delete语句没有将主键索引上的记录加锁，那么并发的update就会感知不到delete语句的存在，违背了同一记录上的更新/删除需要串行执行的约束。</p>
+
+<blockquote>
+  <blockquote>
+    <p>Note：和delete操作类似的加锁操作，还有：</p>
+  </blockquote>
+</blockquote>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+    <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="k">table</span> <span class="k">where</span> <span class="o">?</span> <span class="k">lock</span> <span class="k">in</span> <span class="k">share</span> <span class="k">mode</span><span class="p">;</span>  
+    <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="k">table</span> <span class="k">where</span> <span class="o">?</span> <span class="k">for</span> <span class="k">update</span><span class="p">;</span>  
+    <span class="k">insert</span> <span class="k">into</span> <span class="k">table</span> <span class="k">values</span> <span class="p">(</span><span class="s1">'xxx'</span><span class="p">);</span>  
+    <span class="k">update</span> <span class="k">table</span> <span class="k">set</span> <span class="o">?</span> <span class="k">where</span> <span class="o">?</span><span class="p">;</span>  
+    <span class="k">delete</span> <span class="k">from</span> <span class="k">table</span> <span class="k">where</span> <span class="o">?</span><span class="p">;</span>  
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>上述操作都是当前读，需要读取记录的最新操作，读取之后，为了保证其他并发事务不能修改当前记录，会对读的记录加锁，可能是S模式锁，或者X模式锁。</p>
+  </blockquote>
+</blockquote>
+
+
+        </article>
+        <hr>
+
+        
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+        
+
+        <div class="post-recent">
+    <div class="pre">
+        
+        <p><strong>上一篇</strong> <a href="/2014/09/09/Jackson-Manual-and-Implementation-Analyzing/">Jackson 工具类使用及配置指南</a></p>
+        
+    </div>
+    <div class="nex">
+
+        
+        <p><strong>下一篇</strong> <a href="/2014/10/22/Dubbo-Provider-Groups-Bug-Analyse/">Dubbo provider 多组名注册问题分析</a></p>
+        
+    </div>
+</div>
+
+
+        <h2 id="comments">Comments</h2>
+        
+
+
+<div id="disqus_thread"></div>
+<script>
+    /**
+     * RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     * LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+
+    var disqus_config = function() {
+        this.page.url = 'http://localhost:4000/2014/10/09/Mysql-Delete-Insert-Deadlock-Analyse/'; // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = 'http://localhost:4000/2014/10/09/Mysql-Delete-Insert-Deadlock-Analyse/'; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+
+    (function() { // DON'T EDIT BELOW THIS LINE
+        var d = document,
+            s = d.createElement('script');
+
+        s.src = '//taocoder.disqus.com/embed.js';
+
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+
+
+
+    </div>
+    <button class="anchor"><i class="fa fa-anchor"></i></button>
+    <div class="right">
+        <div class="wrap">
+
+            <!-- Content -->
+            <div class="side content">
+                <div>
+                    Content
+                </div>
+                <ul id="content-side" class="content-ul">
+                    
+                    <li><a href="#comments">Comments</a></li>
+                </ul>
+            </div>
+            <!-- 其他div框放到这里 -->
+            <!-- <div class="side">bbbb</div> -->
+        </div>
+    </div>
+</div>
+<script>
+/**
+ * target _blank
+ */
+(function() {
+    var aTags = document.querySelectorAll('article a:not([id])')
+    for (var i = 0; i < aTags.length; i++) {
+        aTags[i].setAttribute('target', '_blank')
+    }
+}());
+</script>
+<script src="/js/pageContent.js " charset="utf-8"></script>
+
+
+    <footer class="site-footer">
+
+
+    <div class="wrapper">
+
+        <p class="description">
+             本站保留着一点点技术积蓄！ 
+        </p>
+        <p class="contact">
+            Contact me at: 
+            <a href="https://github.com/ketao1989" title="GitHub"><i class="fa fa-github" aria-hidden="true"></i></a>  
+            <a href="mailto:ketao1989@126.com" title="email"><i class="fa fa-envelope-o" aria-hidden="true"></i></a>  
+            <a href="http://weibo.com/柯小小西" title="Weibo"><i class="fa fa-weibo" aria-hidden="true"></i></a>       
+        </p>
+        <p>
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次，本站访客数<span id="busuanzi_value_site_uv"></span>人次，本文总阅读量<span id="busuanzi_value_page_pv"></span>次
+        </p>
+        <p class="power">
+            <span>
+                Site powered by <a href="https://jekyllrb.com/">Jekyll</a> & <a href="https://pages.github.com/">Github Pages</a>.
+            </span>
+            <span>
+                Theme designed by <a href="https://github.com/Gaohaoyang">HyG</a>.
+            </span>
+        </p>
+    </div>
+</footer>
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+    <div class="back-to-top">
+    <a href="#top" data-scroll>
+        <i class="fa fa-arrow-up" aria-hidden="true"></i>
+    </a>
+</div>
+
+    <script src=" /js/main.js " charset="utf-8"></script>
+    <script src=" /js/smooth-scroll.min.js " charset="utf-8"></script>
+    <script type="text/javascript">
+      smoothScroll.init({
+        speed: 500, // Integer. How fast to complete the scroll in milliseconds
+        easing: 'easeInOutCubic', // Easing pattern to use
+        offset: 20, // Integer. How far to offset the scrolling anchor location in pixels
+      });
+    </script>
+    <!-- <script src=" /js/scroll.min.js " charset="utf-8"></script> -->
+  </body>
+
+</html>

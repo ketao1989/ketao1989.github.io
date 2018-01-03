@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Intelij IDEA 远程调试Tomcat服务</title>
+    <meta name="description" content="前言在很多情况下，我们在本地启动调试一些服务；或者说外部调用开发测试环境某些服务时，需要直接调试定位问题代码点；这些问题都会让我们需要可以在本地IDE上面调试本地代码来查看线上情况。最近和其他业务部门联调的时候，了解到原来真的可以debug本地代码同步控制线上运行流程。下面，记录一下具体的操作配置步骤。线上服务配...">
+
+    <link rel="shortcut icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://at.alicdn.com/t/font_8v3czwksspqlg14i.css">
+    <link rel="stylesheet" href="/css/main.css ">
+    <link rel="canonical" href="http://localhost:4000/2014/04/29/Intelij-IDEA-Remote-Debug-Tomcat-App/">
+    <link rel="alternate" type="application/rss+xml" title="柯小小西" href="http://localhost:4000/feed.xml ">
+
+
+    <script>
+    // 百度统计代码
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?a9b0f47a0e50b02dafb8a7088436a9bc";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+    </script>
+
+
+
+
+</head>
+
+
+  <body>
+
+    <header id="top">
+    <div class="wrapper">
+        <a href="/" class="brand">柯小小西</a>
+        <small>留着一点点技术积蓄</small>
+        <button id="headerMenu" class="menu"><i class="fa fa-bars"></i></button>
+        <nav id="headerNav">
+            <ul>
+                <li>
+                    
+                    <a href="/">
+                    
+                        <i class="fa fa-home"></i>Home
+                    </a>
+                </li>
+
+                
+                    
+                    <li>
+                        
+                        <a href="/archive/">
+                        
+                            <i class="fa fa-archive"></i>Archives
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/category/">
+                        
+                            <i class="fa fa-th-list"></i>Categories
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/tag/">
+                        
+                            <i class="fa fa-tags"></i>Tags
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/about/">
+                        
+                            <i class="fa fa-heart"></i>About
+                        </a>
+                    </li>
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+        <div class="page clearfix" post>
+    <div class="left">
+        <h1>Intelij IDEA 远程调试Tomcat服务</h1>
+        <div class="label">
+
+            <div class="label-card">
+                <i class="fa fa-calendar"></i>2014-04-29
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+            
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Java" title="Category: Java" rel="category">Java</a>&nbsp;
+    
+        <a href="/category/#IDE" title="Category: IDE" rel="category">IDE</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+            </div>
+
+            <div class="label-card">
+            
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+            </div>
+
+        </div>
+        <hr>
+        <article itemscope itemtype="http://schema.org/BlogPosting">
+        <h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p>在很多情况下，我们在本地启动调试一些服务；或者说外部调用开发测试环境某些服务时，需要直接调试定位问题代码点；
+这些问题都会让我们需要可以在本地IDE上面调试本地代码来查看线上情况。最近和其他业务部门联调的时候，
+了解到原来真的可以debug本地代码同步控制线上运行流程。下面，记录一下具体的操作配置步骤。</p>
+
+<h2 id="线上服务配置"><a id="Server">线上服务配置</a></h2>
+
+<p>目前线上的整个tomcat的服务脚本配置：</p>
+
+<ol>
+  <li>一台机器上放一个全局脚本，比如放置在<code class="highlighter-rouge">/home/tomcat/bin</code>目录下；</li>
+  <li>机器上的每一个tomcat实例目录里面都会有一些基本的设置，比如tomcat的<code class="highlighter-rouge">conf</code>目录，以及<code class="highlighter-rouge">startenv.sh</code>文件，</li>
+  <li><code class="highlighter-rouge">startenv.sh</code>文件目前的配置为：</li>
+</ol>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">export </span><span class="nv">TOMCAT_USER</span><span class="o">=</span><span class="s2">"tomcat"</span>
+<span class="nb">export </span><span class="nv">JAVA_OPTS</span><span class="o">=</span><span class="s2">"-Xms512m -Xmx1024m -XX:NewSize=256m -XX:PermSize=256m -server -XX:+DisableExplicitGC -Dqunar.logs=</span><span class="nv">$CATALINA_BASE</span><span class="s2">/logs -Dqunar.cache=</span><span class="nv">$CATALINA_BASE</span><span class="s2">/cache -verbose:gc -XX:+PrintGCDateStamps -XX:+PrintGCDetails -Xloggc:</span><span class="nv">$CATALINA_BASE</span><span class="s2">/logs/gc.log"</span>
+<span class="nb">chown</span> <span class="nt">-R</span> tomcat:tomcat <span class="nv">$CATALINA_BASE</span>/logs
+<span class="nb">chown</span> <span class="nt">-R</span> tomcat:tomcat <span class="nv">$CATALINA_BASE</span>/cache
+<span class="nb">chown</span> <span class="nt">-R</span> tomcat:tomcat <span class="nv">$CATALINA_BASE</span>/conf
+<span class="nb">chown</span> <span class="nt">-R</span> tomcat:tomcat <span class="nv">$CATALINA_BASE</span>/work
+<span class="nb">chown</span> <span class="nt">-R</span> tomcat:tomcat <span class="nv">$CATALINA_BASE</span>/temp
+</code></pre></div></div>
+
+<!-- more -->
+
+<p>因此，为了方便，我们只需要增加debug相关配置在JAVA_OPTS就可以了：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">-server</span> <span class="nt">-Xdebug</span> <span class="nt">-Xnoagent</span> <span class="nt">-Djava</span>.compiler<span class="o">=</span>NONE <span class="nt">-Xrunjdwp</span>:transport<span class="o">=</span>dt_socket,address<span class="o">=</span>9999,server<span class="o">=</span>y,suspend<span class="o">=</span>n
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Note: 这里的端口指定为9999，你也可以自己指定。主要是JVM绑定端口使用。</p>
+  </blockquote>
+</blockquote>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>-Xdebug					|启用调试特性
+-Xrunjdwp				|启用JDWP实现，它包含若干子选项：
+transport=dt_socket		|JPDA front-end和back-end之间的传输方法。dt_socket表示使用套接字传输。
+address=9999			|JVM在9999端口上监听请求。
+server=y				|y表示启动的JVM是被调试者。如果为n，则表示启动的JVM是调试器。
+suspend=y				|y表示启动的JVM会暂停等待，直到调试器连接上。
+suspend=y这个选项很重要。如果你想从Tomcat启动的一开始就进行调试，那么就必须设置suspend=y。
+</code></pre></div></div>
+
+<p>接下来，重新启动线上服务，就可以在本地调试相关app了。</p>
+
+<h2 id="ide本地配置"><a id="Client">IDE本地配置</a></h2>
+
+<p>本地使用的IDE是Intelij IDEA 开发工具，具体操作步骤为：</p>
+
+<p>1、 在IDEA上面新建一个 tomcat remote server服务：
+<img src="/images/2014/04/newremote.png" /></p>
+<blockquote>
+  <blockquote>
+    <p>Note:图片中的端口是web服务的端口号，而不是JVM监听绑定的端口号。</p>
+  </blockquote>
+</blockquote>
+
+<p><img src="/images/2014/04/debugaddress.png" /></p>
+<blockquote>
+  <blockquote>
+    <p>Note:图片中的端口是JVM监听绑定的端口号，即我们在服务端设置绑定的address值。</p>
+  </blockquote>
+</blockquote>
+
+<p>2、 接下来就可以通过debug来启动本地服务，当出现下面字样时，表示连接成功，可以debug了。</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>client：  
+	Connected to server
+	Connected to the target VM, address: 'l-hds2.h.dev.cn6.qunar.com:9999', transport: 'socket'  
+server：  
+	Listening for transport dt_socket at address: 9999  
+	Listening for transport dt_socket at address: 9999  
+	Listening for transport dt_socket at address: 9999
+</code></pre></div></div>
+
+        </article>
+        <hr>
+
+        
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+        
+
+        <div class="post-recent">
+    <div class="pre">
+        
+        <p><strong>上一篇</strong> <a href="/2014/04/16/google-java-style/">Google Java编程风格指南</a></p>
+        
+    </div>
+    <div class="nex">
+
+        
+        <p><strong>下一篇</strong> <a href="/2014/05/02/Java-slf4j-Introduce/">Java日志框架slf4j API介绍及异常接口实现分析</a></p>
+        
+    </div>
+</div>
+
+
+        <h2 id="comments">Comments</h2>
+        
+
+
+<div id="disqus_thread"></div>
+<script>
+    /**
+     * RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     * LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+
+    var disqus_config = function() {
+        this.page.url = 'http://localhost:4000/2014/04/29/Intelij-IDEA-Remote-Debug-Tomcat-App/'; // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = 'http://localhost:4000/2014/04/29/Intelij-IDEA-Remote-Debug-Tomcat-App/'; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+
+    (function() { // DON'T EDIT BELOW THIS LINE
+        var d = document,
+            s = d.createElement('script');
+
+        s.src = '//taocoder.disqus.com/embed.js';
+
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+
+
+
+    </div>
+    <button class="anchor"><i class="fa fa-anchor"></i></button>
+    <div class="right">
+        <div class="wrap">
+
+            <!-- Content -->
+            <div class="side content">
+                <div>
+                    Content
+                </div>
+                <ul id="content-side" class="content-ul">
+                    
+                    <li><a href="#comments">Comments</a></li>
+                </ul>
+            </div>
+            <!-- 其他div框放到这里 -->
+            <!-- <div class="side">bbbb</div> -->
+        </div>
+    </div>
+</div>
+<script>
+/**
+ * target _blank
+ */
+(function() {
+    var aTags = document.querySelectorAll('article a:not([id])')
+    for (var i = 0; i < aTags.length; i++) {
+        aTags[i].setAttribute('target', '_blank')
+    }
+}());
+</script>
+<script src="/js/pageContent.js " charset="utf-8"></script>
+
+
+    <footer class="site-footer">
+
+
+    <div class="wrapper">
+
+        <p class="description">
+             本站保留着一点点技术积蓄！ 
+        </p>
+        <p class="contact">
+            Contact me at: 
+            <a href="https://github.com/ketao1989" title="GitHub"><i class="fa fa-github" aria-hidden="true"></i></a>  
+            <a href="mailto:ketao1989@126.com" title="email"><i class="fa fa-envelope-o" aria-hidden="true"></i></a>  
+            <a href="http://weibo.com/柯小小西" title="Weibo"><i class="fa fa-weibo" aria-hidden="true"></i></a>       
+        </p>
+        <p>
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次，本站访客数<span id="busuanzi_value_site_uv"></span>人次，本文总阅读量<span id="busuanzi_value_page_pv"></span>次
+        </p>
+        <p class="power">
+            <span>
+                Site powered by <a href="https://jekyllrb.com/">Jekyll</a> & <a href="https://pages.github.com/">Github Pages</a>.
+            </span>
+            <span>
+                Theme designed by <a href="https://github.com/Gaohaoyang">HyG</a>.
+            </span>
+        </p>
+    </div>
+</footer>
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+    <div class="back-to-top">
+    <a href="#top" data-scroll>
+        <i class="fa fa-arrow-up" aria-hidden="true"></i>
+    </a>
+</div>
+
+    <script src=" /js/main.js " charset="utf-8"></script>
+    <script src=" /js/smooth-scroll.min.js " charset="utf-8"></script>
+    <script type="text/javascript">
+      smoothScroll.init({
+        speed: 500, // Integer. How fast to complete the scroll in milliseconds
+        easing: 'easeInOutCubic', // Easing pattern to use
+        offset: 20, // Integer. How far to offset the scrolling anchor location in pixels
+      });
+    </script>
+    <!-- <script src=" /js/scroll.min.js " charset="utf-8"></script> -->
+  </body>
+
+</html>

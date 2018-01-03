@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Zookeeper 编程指南</title>
+    <meta name="description" content="前言该文档是提供给期望使用 Zookeeper协作服务功能的开发者创建分布式应用的。文档内部包含了一些概念上和实践应用上的资料信息。在指南的前四节主要讨论了 Zookeeper 各方面的概念。这些东西对于理解 Zookeeper如何工作以及如何去使用 Zookeeper 是非常必要的。它虽然没有包含源代码，但是它...">
+
+    <link rel="shortcut icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://at.alicdn.com/t/font_8v3czwksspqlg14i.css">
+    <link rel="stylesheet" href="/css/main.css ">
+    <link rel="canonical" href="http://localhost:4000/2015/09/05/zookeeper-programmer-guide/">
+    <link rel="alternate" type="application/rss+xml" title="柯小小西" href="http://localhost:4000/feed.xml ">
+
+
+    <script>
+    // 百度统计代码
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?a9b0f47a0e50b02dafb8a7088436a9bc";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+    </script>
+
+
+
+
+</head>
+
+
+  <body>
+
+    <header id="top">
+    <div class="wrapper">
+        <a href="/" class="brand">柯小小西</a>
+        <small>留着一点点技术积蓄</small>
+        <button id="headerMenu" class="menu"><i class="fa fa-bars"></i></button>
+        <nav id="headerNav">
+            <ul>
+                <li>
+                    
+                    <a href="/">
+                    
+                        <i class="fa fa-home"></i>Home
+                    </a>
+                </li>
+
+                
+                    
+                    <li>
+                        
+                        <a href="/archive/">
+                        
+                            <i class="fa fa-archive"></i>Archives
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/category/">
+                        
+                            <i class="fa fa-th-list"></i>Categories
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/tag/">
+                        
+                            <i class="fa fa-tags"></i>Tags
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/about/">
+                        
+                            <i class="fa fa-heart"></i>About
+                        </a>
+                    </li>
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+        <div class="page clearfix" post>
+    <div class="left">
+        <h1>Zookeeper 编程指南</h1>
+        <div class="label">
+
+            <div class="label-card">
+                <i class="fa fa-calendar"></i>2015-09-05
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+            
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Zookeeper" title="Category: Zookeeper" rel="category">Zookeeper</a>&nbsp;
+    
+        <a href="/category/#Translation" title="Category: Translation" rel="category">Translation</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+            </div>
+
+            <div class="label-card">
+            
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+            </div>
+
+        </div>
+        <hr>
+        <article itemscope itemtype="http://schema.org/BlogPosting">
+        <h2 id="前言"><a id="Introduction">前言</a></h2>
+
+<p>该文档是提供给期望使用 <code class="highlighter-rouge">Zookeeper</code>协作服务功能的开发者创建分布式应用的。文档内部包含了一些概念上和实践应用上的资料信息。</p>
+
+<p>在指南的前四节主要讨论了 <code class="highlighter-rouge">Zookeeper</code> 各方面的概念。这些东西对于理解 <code class="highlighter-rouge">Zookeeper</code>如何工作以及如何去使用 <code class="highlighter-rouge">Zookeeper</code> 是非常必要的。它虽然没有包含源代码，但是它是假设读者对于分布式计算相关的问题是很熟悉的。它们主要如下介绍：</p>
+
+<ul>
+  <li><a href="#The_ZooKeeper_Data_Model">Zookeeper 数据模型</a></li>
+  <li><a href="#ZooKeeper_Sessions">Zookeeper 会话</a></li>
+  <li><a href="#ZooKeeper_Watches">Zookeeper 监听</a></li>
+  <li><a href="#Consistency_Guarantees">Zookeeper 一致性保证</a></li>
+</ul>
+
+<p>后面四节主要提供了一些实践编程相关的资料。主要是：</p>
+
+<ul>
+  <li><a href="#A_Guide_to_ZooKeeper_Operations">Zookeeper 操作指南</a></li>
+  <li><a href="#Bindings">Zookeeper Bindings</a></li>
+  <li><a href="#Program_Structure">Zookeeper 程序结构简单示例（待定）</a></li>
+  <li><a href="#Gotchas">Zookeeper 性能和可伸缩性</a></li>
+</ul>
+
+<p>文档最后的附录部分包含了一些有用的，Zookeeper 相关的链接。</p>
+
+<p>虽然，该指南中的很多资料在其他一些独立的文章博客中都已经存在了，但是对于开始第一个 <code class="highlighter-rouge">Zookeeper</code> 应用的你来说，还是最后阅读完<code class="highlighter-rouge">Zookeeper 数据模型</code> 和 <code class="highlighter-rouge">Zookeeper 操作指南</code>。</p>
+
+<h2 id="--zookeeper-数据模型"><a id="The_ZooKeeper_Data_Model">  Zookeeper 数据模型</a></h2>
+
+<p><code class="highlighter-rouge">Zookeeper</code> 有一个分级的命名空间，类似于一个分布式的文件系统。唯一不同的是命名空间中每个节点可以有对应的数据关联它，就像孩子一样。这一点类似于文件系统中允许一个文件也可以成为目录一样。到节点的路径常常表示成正则的，绝对的，斜线分隔的路径；它们没有相对的引用。在路径上使用的任何编码需要满足以下限制：</p>
+
+<ul>
+  <li><code class="highlighter-rouge">null</code>字符不可以成为路径名字的一部分。</li>
+  <li>由于显示的问题，如下字符不能使用：<code class="highlighter-rouge">\u0001</code>-<code class="highlighter-rouge">\u001F</code> 和 <code class="highlighter-rouge">\u007F</code>-<code class="highlighter-rouge">\u009F</code>.</li>
+  <li>下面字符同样不被允许：<code class="highlighter-rouge">\ud800</code>-<code class="highlighter-rouge">\u0F8FF</code> 和 <code class="highlighter-rouge">\uFFF0</code>-<code class="highlighter-rouge">\uFFFF</code>.</li>
+  <li><code class="highlighter-rouge">.</code>字符可以作为路径名字中某块名的一部分，但是<code class="highlighter-rouge">.</code>和<code class="highlighter-rouge">..</code>不能单独作为路径的一块，因为在 Zookeeper 中不允许相对路径。因此，如下是非法的：<code class="highlighter-rouge">/a/b/./c</code>或者<code class="highlighter-rouge">/a/b/../c</code>.</li>
+  <li><code class="highlighter-rouge">zookeeper</code>字符串保留。</li>
+</ul>
+
+<!-- more -->
+
+<h3 id="znodes">ZNodes</h3>
+
+<p>ZooKeeper 树上的每一个节点都称之为<code class="highlighter-rouge">znode</code>。Znodes 维护了一个包含数据变化和acl变化版本号的状态结构体。这个结构体也包含时间戳。因此，版本号和时间戳一起确保Zookeeper验证缓存和协调更新。每一次znode的数据变化，版本号也会对应增长。例如，当一个客户端检索数据时，它也会获得该数据的版本号，然后当一个客户端执行更新或者删除时，它必须提供对应变化的znode的数据版本。如果它提供的版本不能够匹配到实际的数据版本时，更新将会失败。</p>
+
+<blockquote>
+  <blockquote>
+    <p>Note:
+在分布式应用工程中，<code class="highlighter-rouge">node</code>常常被看做一个主机，一台服务器，一组中的一个成员等等。在Zookeeper文档中，<code class="highlighter-rouge">znodes</code>称为数据节点；<code class="highlighter-rouge">Servers</code>则是标记为Zookeeper服务的机器；<code class="highlighter-rouge">quorum peers</code>是标记为一个集群的所有服务器；<code class="highlighter-rouge">client</code>是任何使用Zookeeper服务的机器或者进程。</p>
+
+  </blockquote>
+</blockquote>
+
+<p>Znodes是开发者访问的最主要的实体。它们有一些值得去关注的特征：</p>
+
+<h4 id="watches">Watches</h4>
+
+<p>客户端可以在 znodes 上设置监听。znode 的改变将会触发监听器，然后清理监听。当一个监听器被触发时，Zookeeper 会发送对应客户端一个通知。更新的信息可以参考 <a href="#ZooKeeper_Watches">Zookeeper 监听</a>。</p>
+
+<h4 id="数据访问">数据访问</h4>
+
+<p>保存在一个命名空间里的每个节点上的数据都可以被原子的读和写。读，获取对应znode上所有的数据字节；然后一个写，替换所有的数据。每个节点上的ACL(访问控制列表)可以限制<code class="highlighter-rouge">who can do what</code>。</p>
+
+<p>Zookeeper 不是被设计用来作为一个通用的数据库或者大对象的存储。相反，它是用来管理协调数据的。这个数据来源于配置，状态信息，集结地点等形式中。一般，协调的数据相对来说是很小的：几千字节计算。Zookeeper 客户端和服务器实现的时候会确保znode的数据小于1M，但是通常数据会比那个小得多。操作相对大的数据将会导致一些操作会花费更对的时间，从而一些操作的延迟性，这主要是因为一些额外的时间需要被用来在网络上移动更多的数据，存储起来。如果一定需要大数据的存储，通常的处理方式是将数据存储在大容量存储系统上，比如 NFS 或者 HDFS ，然后再Zookeeper里保持存储位置的指针。</p>
+
+<h4 id="短暂节点">短暂节点</h4>
+
+<p>Zookeeper 也有短暂节点的概念。在会话创建时，znode存活；当会话结束时，znode删除。由于这个特性，所以其不允许有孩子。</p>
+
+<h4 id="顺序节点-唯一命名">顺序节点-唯一命名</h4>
+
+<p>当创建一个znode时，你也可以请求Zookeeper在路径的末尾增加一个单调递增的计算器。这个计算器对父节点来说是唯一的。计算器有一个<code class="highlighter-rouge">%010d</code>格式化–表示10个数字0补全。比如：<code class="highlighter-rouge">&lt;path&gt;0000000001</code>。Notes：计数器用来保存下一个顺序数字是一个有符号整形，由父节点保存，当增长到<code class="highlighter-rouge">2147483647</code>将会溢出。</p>
+
+<h3 id="zookeeper-中的-time">Zookeeper 中的 Time</h3>
+
+<p>Zookeeper 追踪 time的多种方式如下：</p>
+
+<ul>
+  <li>
+    <p>Zxid<br />
+Zookeeper状态的每次改变，在<code class="highlighter-rouge">zxid</code>(ZooKeeper Transaction Id)里都会获取到一个时间戳。这意味着在ZooKeeper中所有都变化都是有序的。每次改变都将会有一个<code class="highlighter-rouge">zxid</code>，如果 zxid1 小于 zxid2，则 zxid1 一定在 zxid2 之前发生。</p>
+  </li>
+  <li>
+    <p>版本号<br />
+一个节点的每次改变都会导致对应节点的其中一个版本号递增。节点对应的三个版本号是：version(znode 数据改变对应的编号)；cversion(znode 的孩子改变对应的编号)；aversion(znode 的ACL改变对应的编号)。</p>
+  </li>
+  <li>
+    <p>Ticks<br />
+当使用多服务器的 ZooKeeper 时，服务器使用 <code class="highlighter-rouge">ticks</code> 来定义事件的时间，比如，状态上传，会话超时，连接超时等。tick 时间只能间接地表示最小的会话超时（每tick时间内2次）；如果一个客户端请求的会话超时小于最小的会话超时，则服务器将会告诉客户端它请求的会话超时实际上是最小的会话超时。</p>
+  </li>
+  <li>
+    <p>真实时间<br />
+ZooKeeper 不使用真实时间或者时钟时间，即使在所有我们期望把时间戳放入znode创建和修改的状态结构体里面。</p>
+  </li>
+</ul>
+
+<h3 id="zookeeper-状态结构体">ZooKeeper 状态结构体</h3>
+
+<p>ZooKeeper 里每个 znode 的状态结构体都包括下面这些字段：</p>
+
+<ul>
+  <li>czxid<br />
+导致znode被创建的zxid。</li>
+  <li>mzxid<br />
+对应znode最后一次改变的zxid。</li>
+  <li>ctime<br />
+当该znode创建开始的毫秒数。</li>
+  <li>mtime<br />
+当该znode最后一次更改开始的毫秒数。</li>
+  <li>version<br />
+znode数据改变的编号。</li>
+  <li>cversion</li>
+  <li>aversion</li>
+  <li>ephemeralOwner<br />
+如果该znode是临时节点，则为该节点owner的 会话id；如果不是临时节点，则为0。</li>
+  <li>dataLength<br />
+znode 数据字段的长度。</li>
+  <li>numChildren<br />
+znode对应孩子的个数。</li>
+</ul>
+
+<h2 id="--zookeeper-会话"><a id="ZooKeeper_Sessions">  Zookeeper 会话</a></h2>
+
+<p>ZooKeeper 客户端通过绑定的编程语言创建一个 <code class="highlighter-rouge">handle</code>从而和ZooKeeper服务建立会话。一旦创建完成，<code class="highlighter-rouge">handle</code>开始处在  <code class="highlighter-rouge">CONNECTING</code> 状态，然后客户端将会和ZooKeeper服务中某个服务器连接上，然后其会切换到 <code class="highlighter-rouge">CONNECTED</code>状态。在通常的操作过程中，会处在这两张状态中的一种。如果发生了一个不可恢复的错误，比如会话过期或者认证失败，再或者如果应用显示地关闭 <code class="highlighter-rouge">handle</code>，则该 <code class="highlighter-rouge">handle</code> 将会转变为 <code class="highlighter-rouge">CLOSE</code> 状态。</p>
+
+<p>下面的图展示了一个 ZooKeeper 客户端可能的状态流转情形：</p>
+
+<p><img src="/images/2015/09/zookeeper_stat.png" /></p>
+
+<p>为了创建一个客户端会话，应用代码必须提供一个连接字符串，包含一个以逗号分隔的 <code class="highlighter-rouge">host:pair</code>列表, 每个<code class="highlighter-rouge">host:pair</code> 对应的是一台 ZooKeeper服务器（比如，”127.0.0.1:4545” 或者 “127.0.0.1:3000,127.0.0.1:3001,127.0.0.1:3002”）。ZooKeeper 客户端会挑选任务的服务器，然后尝试去连接它。如果这个连接失败，或者这个客户端因为任何原因导致和这个服务器断开连接，客户端都将会自动尝试列表中的下一台服务器，知道一个连接被(重新)建立起来。</p>
+
+<p><em>3.2.0 新特性</em>：一个可选择的”chroot”后缀也可能会添加到连接字符串中。和linux中的<code class="highlighter-rouge">chroot</code>命令相似，运行客户端的所有命令中的路径都是相对这个root来确定的。比如我们如果使用：”127.0.0.1:4545/app/a” 或者 “127.0.0.1:3000,127.0.0.1:3001,127.0.0.1:3002/app/a”，则客户端将会以”/app/a” 为root，然后所有路径都是相对这个root而言的–例如，我们获取 “/foo/bar” 下面的文件，则实际上将会在 “app/a/foo/bar” 下面执行。这个特性对于多租户环境下是很有用的，这样每个用户在 ZooKeeper服务上其root都可以不同。因此，对于每个用户如果编码他们的应用中以”/”为root情况下，重复使用ZooKeeper服务将非常简单。</p>
+
+<p>当一个客户端获取到ZooKeeper服务的一个<code class="highlighter-rouge">handle</code>，ZooKeeper 创建一个ZooKeeper 会话，以 64位数字表示。如果客户端连接到一台不同的 ZooKeeper服务器，它将会发送一个会话id作为连接握手的一部分。作为一个安全手段，服务器为该会话id创建一个任何ZooKeeper服务器都可以验证的password。当客户端建立完会话之后，password 将会和会话id一起发送给客户端。当客户端需要和新的服务器重新建立连接时，则发送该password 和 会话id。</p>
+
+<p>ZooKeeper 客户端库调用创建一个ZooKeeper会话时，其中有一个参数是毫秒数的会话超时。客户端发送一个请求超时，服务器将响应从客户端获取的超时。当前的时候要求超时时间最小为 2 个 tckTime，并且最大为 20 个 tickTime。ZooKeeper 客户端API 运行访问协商的超时。</p>
+
+<p>当一个客户端（会话）从ZK服务集群里分隔开，它将会开始搜素我们在创建会话时候指定的服务器列表。最后，当客户端和至少服务器中的一台重新建立连接后，会话将会要么转化为 <code class="highlighter-rouge">connected</code>状态（如果会话重连接在超时值之内），要么转化为<code class="highlighter-rouge">expired</code>状态（如果重连在会话超时之后）。为断开连接的客户端创建一个新的会话对象是不明智的。ZK 客户端库将会为你处理重连。在实践中，我们在客户端库中会有一些启发式的算法构建来处理像”羊群效应”等事情。只有在收到会话过期通过时，才会去创建一个新的会话。</p>
+
+<p>会话过期由ZooKeeper集群自己管理，而不是客户端。当ZK客户端和集群建立会话时，其提供一个超时值。集群使用这个值来决定客户端会话是否超时。当集群没有在超时时间内收到返回，则发送会话过期。在会话过期的时候，集群将会删除该会话拥有的所有的临时节点，然后立即通知监听该变化的所有连接状态的客户端。在这个时间点，超时会话的客户端仍然和集群断开连接，在重新和集群建立连接之前，它将不会收到会话超时的通知。客户端将会一直带着断开连接的状态，知道TCP连接被重新建立起来，然后 超时会话的<code class="highlighter-rouge">watcher</code>将会接收到”会话超时”的通知。</p>
+
+<p>一个超时的会话状态流转的过程示例：</p>
+
+<ol>
+  <li>connected：会话建立连接，客户端和集群处于通信中。</li>
+  <li>客户端从集群中分割开…</li>
+  <li>disconnected：客户端丢失和集群之间的连接</li>
+  <li>… 时间过去了，在 超时区间之后，集群过期了会话，客户端由于和集群断开了所以看不到任何东西。</li>
+  <li>… 时间进行走着，客户端恢复了和集群的网络层连接、</li>
+  <li>expired：最终，客户端重新连接上集群，然后被通知过期。</li>
+</ol>
+
+<p>ZooKeeper 建立会话调用的另一个蚕食是默认的 <code class="highlighter-rouge">watcher</code>。当在客户端上的状态发送变更，watcher 将会被通知到。例如，如果一个客户端丢失了和服务器之间的连接，则客户端将会收到通知，或者如果客户端会话过期了。watcher 应该认为初始状态是 断开连接的。在一个新连接的case里面，发送给 watcher 的第一个通知就是会话连接事件。</p>
+
+<p>会话通过客户端发送请求保持alive。如果会话空闲了会话超时时间段时，客户端将会发送 <code class="highlighter-rouge">PING</code>请求来保持会话alive。<code class="highlighter-rouge">PING</code>请求不仅允许 ZooKeeper服务器知道 客户端仍然活跃，也允许客户端通过连接验证 ZooKeeper服务器仍然活跃。<code class="highlighter-rouge">PING</code>的时间很充足，从而确保有在检测到死连接，然后重新连接到新的server的操作有足够的时间。</p>
+
+<p>一旦一个到服务器的连接成功的建立了，客户端 lib 有两个基本的case 导致 连接丢失，当执行一个同步或者异步操作，然后出现如下情况：</p>
+
+<ol>
+  <li>在一个不再活跃/有效的会话上调用一个操作。</li>
+  <li>当ZooKeeper客户端挂起一个操作时，断开和服务器之间的连接。</li>
+</ol>
+
+<p><em>3.2.0 新特性–SessionMovedException</em>：这是一个内部的异常。这个异常一般发生在一个会话和不同的服务器重新建立连接后接收到请求的时候。正常导致这个错误的原因是一个哭护短发生一个请求给一个服务器，但是网络包延迟，所以客户端超时，然后和新的服务器建立间接。当延迟的包被第一台服务器收到时，老的服务器检测到会话已经被移开，然后关闭客户端连接。客户端正常下不会看着这个错误，因为他不会从老的连接中读数据。出现这种情况的一个条件是当两个客户端尝试使用 password 和 会话id 重新建立相同的连接，其中一个客户端将重新建立连接，第二个客户端将会断开连接。</p>
+
+<p><em>更新服务器列表</em>：我们允许客户端通过提供一组新的逗号分隔的<code class="highlighter-rouge">host:port</code>对列表来更新连接字符串。这个函数调用一个基于概率的负载均衡算法导致客户端断开和当前host的连接，从而达到服务器列表中连接的平均数。万一当前客户端连接的host不在新的列表中，这个调用将会导致连接被丢弃。另外，决定服务器数量的增加或者减少以及多少。</p>
+
+<p>例如：如果前面的连接字符串包含 3 host，然后现在列表包含这 3 个 host和 2 个新加的 host，40%的客户端原来对应的连接将会迁移到新的hosts中的一个来确保均衡负载。这个方案将会导致客户端丢弃他的连接，然后0.4的概率连接到其他2台机器，在这种情况下，导致客户端随机选择连接 2 个新的host中的一台。</p>
+
+<p>另一个例子–假设我们有5 台host，现在我们更新服务器列表移走 2 台host，然后客户端连接剩下 3 台host的依然连接，然后 移除的2台 host上的连接将被移动到剩下 3 台host的其中一台。如果连接丢弃，客户端移动到指定的模式，其可以选择一个新的服务器去根据概率算法连接服务器，而不是 RR。</p>
+
+<p>在第一个例子中，每个客户端决定以0.4的概率来断开连接，但是一旦做完决定，它将尝试随机连接到一个新的服务器，仅仅在不能连接到新的服务器中的任何一台时，它才会尝试连接老的服务器。在找到一个服务器，或者尝试列表中所有的服务器，仍然连接失败的时候，客户端回退到正常的操作模式(从概率模式回到轮询RR模式)，即从连接字符串中选择任意的服务器，然后尝试连接它。如果失败，它将以RR模式尝试不同随机服务器。</p>
+
+<h2 id="--zookeeper-监听"><a id="ZooKeeper_Watches">  Zookeeper 监听</a></h2>
+
+<p>在 ZooKeeper 里所有的读操作（getData()，getChildren()和 exists()）都可以将设置一个 <code class="highlighter-rouge">watch</code> 作为附加功能。ZooKeeper 对 <code class="highlighter-rouge">watch</code>的定义是：一个监听事件是一次性的 <code class="highlighter-rouge">trigger</code>，当监听的数据发送变化的时候，发送给设置监听的客户端们。对于这个定义，有三个关键点：</p>
+
+<ul>
+  <li>
+    <p>One-time trigger<br />
+当监听数据发送变化的时候，一个监听事件将会发送给客户端。例如，一个客户端使用 <code class="highlighter-rouge">getData("/znode1", true)</code>，然后<code class="highlighter-rouge">/znode1</code>的数据发送变化或者删除，客户端将会获得一个对应 <code class="highlighter-rouge">/znode1</code>的监听事件。<em>但是，如果<code class="highlighter-rouge">/znode1</code>再次改变，就不会再有监听事件发送出去，除非客户端通过另一个读操作来设置监听watch</em></p>
+  </li>
+  <li>
+    <p>Sent to client<br />
+这意味着一个正发送给客户端的事件，可能在发送修改操作的客户端完成操作返回成功 code 之前不会到达客户端。监听事件是异步发送给监听客户端的。ZooKeeper 提供一个有序的保证：一个客户端永远只有在看到一个watch事件之后才会看到这个watch对应的改变。网络延迟或者其他原因可能导致不同的客户端看到watch和更新返回code的时间不同。其关键之处在于不同客户端看到的所有事情都是有一致性的顺序的。</p>
+  </li>
+  <li>
+    <p>The data for which the watch was set<br />
+这指的是节点改变的不同方式。你可以认为 ZooKeeper 维护 watch的两个列表：数据watch 和 孩子watch。<code class="highlighter-rouge">getData()</code>和<code class="highlighter-rouge">exists()</code>设置数据watch；<code class="highlighter-rouge">getChildren()</code> 设置child监听。此外，你也可以认为 watch 可以根据数据返回的类型来设置。<code class="highlighter-rouge">getData()</code>和<code class="highlighter-rouge">exists()</code> 返回节点数据的信息，然而<code class="highlighter-rouge">getChildren()</code> 返回 孩子列表。因此，<code class="highlighter-rouge">setData()</code>将触发节点的数据watch 设置。一个成功的<code class="highlighter-rouge">create()</code>将会触发znode的数据watch 以及 父节点的child watch。一个成功的 <code class="highlighter-rouge">delete()</code>将会触发节点的数据watch和child watch（因为将不会再有children了）。</p>
+  </li>
+</ul>
+
+<p>watch 由与对应client连接的ZooKeeper服务器负责维护。因此，这可以使得 watch 可以轻量级地设置，维护和分发。当一个客户端连接到一个新的server，watch将会出现会话时间。当和server断开连接后，将不会收到watch。当一个客户端重新连接，任务先前注册的watch将会被重新注册，然后当需要的时候触发。一般情况下，这都是显示地发生的。有一个case就是一个watch可能被丢失：一个人还未创建的znode的 existence watch 将会被丢失，如果这个znode 创建，然后当断开连接的时候又被删除了。</p>
+
+<h3 id="watch-语义">watch 语义</h3>
+
+<p>我们可以通过读ZooKeeper的三种状态来设置 watch：exists, getData, 和
+getChildren。下面的列表展示了一个watch 触发和调用激活的方式：</p>
+
+<ul>
+  <li>Created event:<br />
+通过 exist调用激活。</li>
+  <li>Deleted event:<br />
+通过调用 exists, getData, 和 getChildren 激活</li>
+  <li>Changed event:<br />
+通过调用 exists, getData 激活。</li>
+  <li>Child event:<br />
+通过调用 getChildren 激活。</li>
+</ul>
+
+<h3 id="watch-移除">watch 移除</h3>
+
+<p>我们可以调用 removeWatches 方法移除在 znode 注册的 watch。一个客户端可以本地移除watch操作，即使没有连接ZooKeeper服务器，只是本地设置标识为true。下面的列表详细说明了在成功移除watch 之后会触发什么事件：</p>
+
+<ul>
+  <li>Child Remove event:<br />
+在调用getChildren的时候添加 watcher。</li>
+  <li>Data Remove event:<br />
+在调用 exists 或者 getData 的时候添加 watcher。</li>
+</ul>
+
+<h3 id="关于-watch-需要记住的事情">关于 watch 需要记住的事情</h3>
+
+<ul>
+  <li>Watches 是一次性触发器。如果你获取了一个 watch 事件，然后你还想在未来更改的时候也获得通知，则你必须要设置另外的watch。</li>
+  <li>由于watch是一次性的触发器，并且在获取时间和发送新的请求去获取watch 这段之间的延迟，所看到的发生在 ZooKeeper Znode 上的所有改变都是不可信的。需要准备好处理在获取事件和设置watch之间znode改变多次的case。</li>
+  <li>一个watch对象，或者 function/context对，对于给定的通知只会被触发一次。例如，如果一个相同的watch对象被一个<code class="highlighter-rouge">exists 或者 getData</code> 文件file调用操作注册，然后这个文件file被删除了，这个watch对象将和这个文件file的删除通知一起，仅仅被调用一次。</li>
+  <li>当你从服务器上断开连接，你将不能获得任何watch 直到连接被重新建立起来。基于这个原因，会话事件将被发生给所有突出的watch处理器。使用会话事件会进入一个安全模式：你将不能接收事件指导断开连接，所以你的处理处理这种模式下需要谨慎。</li>
+</ul>
+
+
+        </article>
+        <hr>
+
+        
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+        
+
+        <div class="post-recent">
+    <div class="pre">
+        
+        <p><strong>上一篇</strong> <a href="/2015/08/30/nginx-proxy-configure-and-sduty/">Nginx 反向代理配置和工作原理</a></p>
+        
+    </div>
+    <div class="nex">
+
+        
+        <p><strong>下一篇</strong> <a href="/2016/01/02/delayed-message-consume-service-use-kafka/">基于kafka的定时消息/任务服务</a></p>
+        
+    </div>
+</div>
+
+
+        <h2 id="comments">Comments</h2>
+        
+
+
+<div id="disqus_thread"></div>
+<script>
+    /**
+     * RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     * LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+
+    var disqus_config = function() {
+        this.page.url = 'http://localhost:4000/2015/09/05/zookeeper-programmer-guide/'; // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = 'http://localhost:4000/2015/09/05/zookeeper-programmer-guide/'; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+
+    (function() { // DON'T EDIT BELOW THIS LINE
+        var d = document,
+            s = d.createElement('script');
+
+        s.src = '//taocoder.disqus.com/embed.js';
+
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+
+
+
+    </div>
+    <button class="anchor"><i class="fa fa-anchor"></i></button>
+    <div class="right">
+        <div class="wrap">
+
+            <!-- Content -->
+            <div class="side content">
+                <div>
+                    Content
+                </div>
+                <ul id="content-side" class="content-ul">
+                    
+                    <li><a href="#comments">Comments</a></li>
+                </ul>
+            </div>
+            <!-- 其他div框放到这里 -->
+            <!-- <div class="side">bbbb</div> -->
+        </div>
+    </div>
+</div>
+<script>
+/**
+ * target _blank
+ */
+(function() {
+    var aTags = document.querySelectorAll('article a:not([id])')
+    for (var i = 0; i < aTags.length; i++) {
+        aTags[i].setAttribute('target', '_blank')
+    }
+}());
+</script>
+<script src="/js/pageContent.js " charset="utf-8"></script>
+
+
+    <footer class="site-footer">
+
+
+    <div class="wrapper">
+
+        <p class="description">
+             本站保留着一点点技术积蓄！ 
+        </p>
+        <p class="contact">
+            Contact me at: 
+            <a href="https://github.com/ketao1989" title="GitHub"><i class="fa fa-github" aria-hidden="true"></i></a>  
+            <a href="mailto:ketao1989@126.com" title="email"><i class="fa fa-envelope-o" aria-hidden="true"></i></a>  
+            <a href="http://weibo.com/柯小小西" title="Weibo"><i class="fa fa-weibo" aria-hidden="true"></i></a>       
+        </p>
+        <p>
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次，本站访客数<span id="busuanzi_value_site_uv"></span>人次，本文总阅读量<span id="busuanzi_value_page_pv"></span>次
+        </p>
+        <p class="power">
+            <span>
+                Site powered by <a href="https://jekyllrb.com/">Jekyll</a> & <a href="https://pages.github.com/">Github Pages</a>.
+            </span>
+            <span>
+                Theme designed by <a href="https://github.com/Gaohaoyang">HyG</a>.
+            </span>
+        </p>
+    </div>
+</footer>
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+    <div class="back-to-top">
+    <a href="#top" data-scroll>
+        <i class="fa fa-arrow-up" aria-hidden="true"></i>
+    </a>
+</div>
+
+    <script src=" /js/main.js " charset="utf-8"></script>
+    <script src=" /js/smooth-scroll.min.js " charset="utf-8"></script>
+    <script type="text/javascript">
+      smoothScroll.init({
+        speed: 500, // Integer. How fast to complete the scroll in milliseconds
+        easing: 'easeInOutCubic', // Easing pattern to use
+        offset: 20, // Integer. How far to offset the scrolling anchor location in pixels
+      });
+    </script>
+    <!-- <script src=" /js/scroll.min.js " charset="utf-8"></script> -->
+  </body>
+
+</html>

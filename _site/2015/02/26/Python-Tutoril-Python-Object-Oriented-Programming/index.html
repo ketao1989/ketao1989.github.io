@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Python 教程学习之 Python 面向对象编程</title>
+    <meta name="description" content="前言在之前的学习中,基本上都是使用类似于面对过程的方式来写代码,学习各种 Python 的基础知识，接下来，我们需要继续学习面向对象的Python，也就是类对象继承等概念。对象和属性，这些概念在任务编程语言中，其定义都是一致的。我们通过一个对象来表示一个物体，而这个物体的一些特征，就是对象中的属性。比如，一个人，...">
+
+    <link rel="shortcut icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://at.alicdn.com/t/font_8v3czwksspqlg14i.css">
+    <link rel="stylesheet" href="/css/main.css ">
+    <link rel="canonical" href="http://localhost:4000/2015/02/26/Python-Tutoril-Python-Object-Oriented-Programming/">
+    <link rel="alternate" type="application/rss+xml" title="柯小小西" href="http://localhost:4000/feed.xml ">
+
+
+    <script>
+    // 百度统计代码
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?a9b0f47a0e50b02dafb8a7088436a9bc";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+    </script>
+
+
+
+
+</head>
+
+
+  <body>
+
+    <header id="top">
+    <div class="wrapper">
+        <a href="/" class="brand">柯小小西</a>
+        <small>留着一点点技术积蓄</small>
+        <button id="headerMenu" class="menu"><i class="fa fa-bars"></i></button>
+        <nav id="headerNav">
+            <ul>
+                <li>
+                    
+                    <a href="/">
+                    
+                        <i class="fa fa-home"></i>Home
+                    </a>
+                </li>
+
+                
+                    
+                    <li>
+                        
+                        <a href="/archive/">
+                        
+                            <i class="fa fa-archive"></i>Archives
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/category/">
+                        
+                            <i class="fa fa-th-list"></i>Categories
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/tag/">
+                        
+                            <i class="fa fa-tags"></i>Tags
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/about/">
+                        
+                            <i class="fa fa-heart"></i>About
+                        </a>
+                    </li>
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+        <div class="page clearfix" post>
+    <div class="left">
+        <h1>Python 教程学习之 Python 面向对象编程</h1>
+        <div class="label">
+
+            <div class="label-card">
+                <i class="fa fa-calendar"></i>2015-02-26
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+            
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Python" title="Category: Python" rel="category">Python</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+            </div>
+
+            <div class="label-card">
+            
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+            </div>
+
+        </div>
+        <hr>
+        <article itemscope itemtype="http://schema.org/BlogPosting">
+        <h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p>在之前的学习中,基本上都是使用类似于面对过程的方式来写代码,学习各种 Python 的基础知识，接下来，我们需要继续学习面向对象的Python，也就是类对象继承等概念。</p>
+
+<p>对象和属性，这些概念在任务编程语言中，其定义都是一致的。我们通过一个对象来表示一个物体，而这个物体的一些特征，就是对象中的属性。比如，一个人，作为一个对象 Person，则会有<code class="highlighter-rouge">姓名，身高，体重，性别，出生日期</code>等属性，这些属性就是这个人的对外特性了。</p>
+
+<h2 id="python-面向对象编程介绍"><a id="BasicGuide">Python 面向对象编程介绍</a></h2>
+
+<p>类，就是对一类物体进行抽象的表示，比如上面的 Person；而实例，则是具体化了每一个类的属性值，其可以决定某一个物体特征的对象。</p>
+
+<p>在 Python 中，可以如下来定义一个类：</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="k">class</span> <span class="nc">Person</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="s">"""docstring for Person"""</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Person</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__name</span> <span class="o">=</span> <span class="n">name</span>
+
+</code></pre></div></div>
+
+<!-- more -->
+
+<p><code class="highlighter-rouge">class</code> 用来表示这是一个类，<code class="highlighter-rouge">object</code> 表示该类继承的父类，默认是 object，但是推荐是写上父类，即使其继承 <code class="highlighter-rouge">object</code>类。</p>
+
+<blockquote>
+  <blockquote>
+    <p>Tips：Python 中，默认规定，类下面的第一行注释，是该类的 doc 说明。</p>
+
+    <p>此外，<code class="highlighter-rouge">__xx__</code>形式的属性和方法，在Python中都是有特殊用途的，比如 <strong>len</strong> 方法返回长度，再比如 <strong>init</strong> 方法是类对象初始化时调用的，<strong>new</strong> 方法则是构造对象的时候调用的，即在 <code class="highlighter-rouge">__init__</code> 之前调用。</p>
+
+  </blockquote>
+</blockquote>
+
+<p>接下来，需要说明的是，Python 的权限控制。</p>
+
+<p>和 Java 完全不一样，Python 没有关键字来说明该变量属性或者方法是 私有的 还是受保护的，亦或者是公共的。</p>
+
+<p>Python 使用一种约定的方式来，声明访问限制的粒度。</p>
+
+<ul>
+  <li>
+    <p>xx ：这种方式命名的变量或者方法，都是 <code class="highlighter-rouge">public</code>粒度的；</p>
+  </li>
+  <li>
+    <p>_xx ：这种方式命名的变量或者方法，都是 <code class="highlighter-rouge">protected</code>粒度的；</p>
+  </li>
+  <li>
+    <p>__xx ：私有属性的变量或者方法，外部调用会报错的。</p>
+  </li>
+</ul>
+
+<p>Python 中拥有的一些特殊功能的方法：</p>
+
+<ul>
+  <li>
+    <p>type() ：获取对象的类型，比如，type(‘abc’)会返回 <code class="highlighter-rouge">&lt;type 'str'&gt;</code> .</p>
+  </li>
+  <li>
+    <p>isinstance()：type 方法不能很好的判断拥有继承关系的对象，而 <code class="highlighter-rouge">isinstance</code> 则可以。例如：<code class="highlighter-rouge">isinstance(person,object) #person是Person的实例</code>.</p>
+  </li>
+  <li>
+    <p>dir()：想要获取一个类下面所有的方法吗？使用 dir 就可以了，比如<code class="highlighter-rouge">dir('abc')</code></p>
+  </li>
+  <li>
+    <p>hasattr/getattr/setattr()：依次是判断一个对象是否有指定属性，获取该属性，设置某个属性</p>
+  </li>
+</ul>
+
+<h2 id="python-面向对象编程技巧"><a id="AdvancedTech">Python 面向对象编程技巧</a></h2>
+
+<p>Python 中还有一些比较高大上的技巧。</p>
+
+<p><em><code class="highlighter-rouge">@property</code>装饰器</em></p>
+
+<p>装饰器概念，在 <code class="highlighter-rouge">Python 函数式编程</code> 中已经介绍了。我们在类的代码 coding 中，有一些可能想要把方法使用如同属性使用般方便，则可以使用<code class="highlighter-rouge">@property</code>装饰器。</p>
+
+<p>注解方式，如下所示：</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">age</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__age</span>
+        <span class="k">except</span> <span class="nb">Exception</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+
+    <span class="nd">@age.setter</span>
+    <span class="k">def</span> <span class="nf">age</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__age</span> <span class="o">=</span> <span class="n">value</span>
+
+</code></pre></div></div>
+
+<p><em>metaclass 元类</em></p>
+
+<p>Python 中，元类是一个很神奇的东西，由于其涉及到了底层的类结构构造，所以全部深入理解起来，可能会比较复杂。</p>
+
+<p>关于元类的资料，可以参考<a href="http://stackoverflow.com/questions/100003/what-is-a-metaclass-in-python">http://stackoverflow.com/questions/100003/what-is-a-metaclass-in-python</a>，第一个 answer 回答的特别棒。</p>
+
+<p>当我们定义了类以后，就可以根据这个类创建出实例，所以：先定义类，然后创建实例。</p>
+
+<p>但是如果我们想创建出类呢？那就必须根据metaclass创建出类，所以：先定义metaclass，然后创建类。</p>
+
+<p>连接起来就是：先定义metaclass，就可以创建类，最后创建实例。</p>
+
+<p>所以，metaclass允许你创建类或者修改类。换句话说，你可以把类看成是metaclass创建出来的“实例”。</p>
+
+<p>现在，一个简单的示例，就是，对于该类所有的自定义属性，其name都大写。</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="k">class</span> <span class="nc">Female</span><span class="p">(</span><span class="n">Person</span><span class="o">.</span><span class="n">Person</span><span class="p">):</span>
+
+    <span class="s">"""docstring for Female"""</span>
+
+    <span class="k">def</span> <span class="nf">log_construct</span><span class="p">(</span><span class="n">class_name</span><span class="p">,</span> <span class="n">class_parent</span><span class="p">,</span> <span class="n">class_attr</span><span class="p">):</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">'==----==---contruct---===---'</span><span class="p">)</span>
+        <span class="n">upper_attr</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">class_attr</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">key</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">'__'</span><span class="p">):</span>  <span class="c"># 不能改变class自带的属性</span>
+                <span class="n">upper_attr</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">upper_attr</span><span class="p">[</span><span class="n">key</span><span class="o">.</span><span class="n">upper</span><span class="p">()]</span> <span class="o">=</span> <span class="n">value</span>
+
+        <span class="k">return</span> <span class="nb">type</span><span class="p">(</span><span class="n">class_name</span><span class="p">,</span> <span class="n">class_parent</span><span class="p">,</span> <span class="n">upper_attr</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">married</span><span class="p">):</span>
+        <span class="n">Person</span><span class="o">.</span><span class="n">Person</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__married</span> <span class="o">=</span> <span class="n">married</span>
+
+    <span class="n">__metaclass__</span> <span class="o">=</span> <span class="n">log_construct</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">'__main__'</span><span class="p">:</span>
+    <span class="n">felame</span> <span class="o">=</span> <span class="n">Female</span><span class="p">(</span><span class="s">'ketao1989'</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+    <span class="n">felame</span><span class="o">.</span><span class="n">age</span> <span class="o">=</span> <span class="mi">100</span>
+    <span class="k">print</span> <span class="n">felame</span>
+
+    <span class="k">print</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">Female</span><span class="p">,</span> <span class="s">'MARRIED'</span><span class="p">)</span> <span class="c"># 返回Ture</span>
+
+</code></pre></div></div>
+
+<h2 id="python-面向对象编程代码示例"><a id="SourceCode">Python 面向对象编程代码示例</a></h2>
+
+<p>这里主要是两个类，涉及到继承，和一些面向对象的使用方法。</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="c">#!/usr/bin/env python</span>
+<span class="c"># -*- coding: utf-8 -*-</span>
+<span class="c"># @Date    : 2015-02-22 19:49:20</span>
+<span class="c"># @Author  : ketao1989</span>
+<span class="c"># @Version : $Id$</span>
+
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">json</span>
+
+<span class="nb">reload</span><span class="p">(</span><span class="n">sys</span><span class="p">)</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">setdefaultencoding</span><span class="p">(</span><span class="s">'utf8'</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">Person</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="s">"""docstring for Person"""</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Person</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__name</span> <span class="o">=</span> <span class="n">name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__name</span>
+
+    <span class="nd">@name.setter</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__name</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">get_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__tranform_name</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__tranform_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">name</span> <span class="o">+</span> <span class="s">"_test"</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">age</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__age</span>
+        <span class="k">except</span> <span class="nb">Exception</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+
+    <span class="nd">@age.setter</span>
+    <span class="k">def</span> <span class="nf">age</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__age</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">"</span><span class="si">%</span><span class="s">s 's age is : </span><span class="si">%</span><span class="s">s"</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_name</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">age</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">'__main__'</span><span class="p">:</span>
+    <span class="n">person</span> <span class="o">=</span> <span class="n">Person</span><span class="p">(</span><span class="s">'ketao1989'</span><span class="p">)</span>
+    <span class="n">person</span><span class="o">.</span><span class="n">age</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="k">print</span> <span class="n">person</span><span class="o">.</span><span class="n">name</span>
+    <span class="k">print</span> <span class="n">person</span>
+    <span class="k">print</span> <span class="n">os</span><span class="o">.</span><span class="n">uname</span><span class="p">()</span>
+    <span class="k">print</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s">'PATH'</span><span class="p">)</span>
+    <span class="k">print</span> <span class="nb">dir</span><span class="p">(</span><span class="s">'abc'</span><span class="p">)</span>
+
+<span class="c">#!/usr/bin/env python</span>
+<span class="c"># -*- coding: utf-8 -*-</span>
+<span class="c"># @Date    : 2015-02-22 20:34:46</span>
+<span class="c"># @Author  : ketao1989</span>
+<span class="c"># @Version : $Id$</span>
+
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">Person</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">json</span>
+
+<span class="nb">reload</span><span class="p">(</span><span class="n">sys</span><span class="p">)</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">setdefaultencoding</span><span class="p">(</span><span class="s">'utf8'</span><span class="p">)</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">Female</span><span class="p">(</span><span class="n">Person</span><span class="o">.</span><span class="n">Person</span><span class="p">):</span>
+
+    <span class="s">"""docstring for Female"""</span>
+
+    <span class="k">def</span> <span class="nf">log_construct</span><span class="p">(</span><span class="n">class_name</span><span class="p">,</span> <span class="n">class_parent</span><span class="p">,</span> <span class="n">class_attr</span><span class="p">):</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">'==----==---contruct---===---'</span><span class="p">)</span>
+        <span class="n">upper_attr</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">class_attr</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">key</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">'__'</span><span class="p">):</span>  <span class="c"># 不能改变class自带的属性</span>
+                <span class="n">upper_attr</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">upper_attr</span><span class="p">[</span><span class="n">key</span><span class="o">.</span><span class="n">upper</span><span class="p">()]</span> <span class="o">=</span> <span class="n">value</span>
+
+        <span class="k">return</span> <span class="nb">type</span><span class="p">(</span><span class="n">class_name</span><span class="p">,</span> <span class="n">class_parent</span><span class="p">,</span> <span class="n">upper_attr</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">married</span><span class="p">):</span>
+        <span class="n">Person</span><span class="o">.</span><span class="n">Person</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__married</span> <span class="o">=</span> <span class="n">married</span>
+
+    <span class="n">__metaclass__</span> <span class="o">=</span> <span class="n">log_construct</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">married</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__married</span>
+
+    <span class="nd">@married.setter</span>
+    <span class="k">def</span> <span class="nf">married</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__married</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">get_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s">"_Female____"</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">prefix</span> <span class="o">=</span> <span class="n">Person</span><span class="o">.</span><span class="n">Person</span><span class="o">.</span><span class="n">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">prefix</span> <span class="o">+</span> <span class="s">",married is : </span><span class="si">%</span><span class="s">s"</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MARRIED</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">'__main__'</span><span class="p">:</span>
+    <span class="n">felame</span> <span class="o">=</span> <span class="n">Female</span><span class="p">(</span><span class="s">'ketao1989'</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+    <span class="n">felame</span><span class="o">.</span><span class="n">age</span> <span class="o">=</span> <span class="mi">100</span>
+    <span class="k">print</span> <span class="n">felame</span>
+
+    <span class="k">print</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">Female</span><span class="p">,</span> <span class="s">'MARRIED'</span><span class="p">)</span>
+
+    <span class="k">print</span> <span class="n">Female</span>
+    <span class="k">print</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">Female</span><span class="p">,</span> <span class="s">'job'</span><span class="p">)</span>
+    <span class="n">felame</span><span class="o">.</span><span class="n">job</span> <span class="o">=</span> <span class="s">'dev'</span>
+    <span class="k">print</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">felame</span><span class="p">,</span> <span class="s">'job'</span><span class="p">)</span>
+    <span class="k">print</span> <span class="n">felame</span><span class="o">.</span><span class="n">name</span>
+
+    <span class="n">felame1</span> <span class="o">=</span> <span class="n">Female</span><span class="p">(</span><span class="s">'ketao'</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
+    <span class="k">print</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">Female</span><span class="p">,</span> <span class="s">'job'</span><span class="p">)</span>
+    <span class="k">print</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">felame1</span><span class="p">,</span> <span class="s">'job'</span><span class="p">)</span>
+    <span class="k">print</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">felame</span><span class="p">,</span> <span class="s">'job'</span><span class="p">)</span>
+    <span class="k">print</span> <span class="n">felame</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__class__</span>
+    <span class="k">print</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">felame</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="k">lambda</span> <span class="n">obj</span><span class="p">:</span> <span class="n">obj</span><span class="o">.</span><span class="n">__dict__</span><span class="p">)</span>
+    <span class="n">json_str</span> <span class="o">=</span> <span class="s">'{"_Person__name": "ketao1989", "_Person__age": 100, "job": "dev", "_Female__married": false}'</span>
+    <span class="n">felame2</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json_str</span><span class="p">)</span>
+    <span class="k">print</span> <span class="n">felame2</span>
+
+
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Notes : 在Female类中，继承需要写成<code class="highlighter-rouge">Person.Person</code>的形式，前面的<code class="highlighter-rouge">Person</code>是module,后面的 <code class="highlighter-rouge">Person</code>才是类。</p>
+
+    <p>此外，使用metaClass方式更改属性时，只会修改该类自己的属性，而不会更改其继承的父类的属性名。</p>
+  </blockquote>
+</blockquote>
+
+        </article>
+        <hr>
+
+        
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+        
+
+        <div class="post-recent">
+    <div class="pre">
+        
+        <p><strong>上一篇</strong> <a href="/2015/02/17/Python-Tutoril-Python-Functional-Programing/">Python 教程学习之 Python 函数式编程</a></p>
+        
+    </div>
+    <div class="nex">
+
+        
+        <p><strong>下一篇</strong> <a href="/2015/04/29/LogBack-Implemention-And-Slf4j-Mdc/">Slf4j MDC 使用和 基于 Logback 的实现分析</a></p>
+        
+    </div>
+</div>
+
+
+        <h2 id="comments">Comments</h2>
+        
+
+
+<div id="disqus_thread"></div>
+<script>
+    /**
+     * RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     * LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+
+    var disqus_config = function() {
+        this.page.url = 'http://localhost:4000/2015/02/26/Python-Tutoril-Python-Object-Oriented-Programming/'; // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = 'http://localhost:4000/2015/02/26/Python-Tutoril-Python-Object-Oriented-Programming/'; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+
+    (function() { // DON'T EDIT BELOW THIS LINE
+        var d = document,
+            s = d.createElement('script');
+
+        s.src = '//taocoder.disqus.com/embed.js';
+
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+
+
+
+    </div>
+    <button class="anchor"><i class="fa fa-anchor"></i></button>
+    <div class="right">
+        <div class="wrap">
+
+            <!-- Content -->
+            <div class="side content">
+                <div>
+                    Content
+                </div>
+                <ul id="content-side" class="content-ul">
+                    
+                    <li><a href="#comments">Comments</a></li>
+                </ul>
+            </div>
+            <!-- 其他div框放到这里 -->
+            <!-- <div class="side">bbbb</div> -->
+        </div>
+    </div>
+</div>
+<script>
+/**
+ * target _blank
+ */
+(function() {
+    var aTags = document.querySelectorAll('article a:not([id])')
+    for (var i = 0; i < aTags.length; i++) {
+        aTags[i].setAttribute('target', '_blank')
+    }
+}());
+</script>
+<script src="/js/pageContent.js " charset="utf-8"></script>
+
+
+    <footer class="site-footer">
+
+
+    <div class="wrapper">
+
+        <p class="description">
+             本站保留着一点点技术积蓄！ 
+        </p>
+        <p class="contact">
+            Contact me at: 
+            <a href="https://github.com/ketao1989" title="GitHub"><i class="fa fa-github" aria-hidden="true"></i></a>  
+            <a href="mailto:ketao1989@126.com" title="email"><i class="fa fa-envelope-o" aria-hidden="true"></i></a>  
+            <a href="http://weibo.com/柯小小西" title="Weibo"><i class="fa fa-weibo" aria-hidden="true"></i></a>       
+        </p>
+        <p>
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次，本站访客数<span id="busuanzi_value_site_uv"></span>人次，本文总阅读量<span id="busuanzi_value_page_pv"></span>次
+        </p>
+        <p class="power">
+            <span>
+                Site powered by <a href="https://jekyllrb.com/">Jekyll</a> & <a href="https://pages.github.com/">Github Pages</a>.
+            </span>
+            <span>
+                Theme designed by <a href="https://github.com/Gaohaoyang">HyG</a>.
+            </span>
+        </p>
+    </div>
+</footer>
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+    <div class="back-to-top">
+    <a href="#top" data-scroll>
+        <i class="fa fa-arrow-up" aria-hidden="true"></i>
+    </a>
+</div>
+
+    <script src=" /js/main.js " charset="utf-8"></script>
+    <script src=" /js/smooth-scroll.min.js " charset="utf-8"></script>
+    <script type="text/javascript">
+      smoothScroll.init({
+        speed: 500, // Integer. How fast to complete the scroll in milliseconds
+        easing: 'easeInOutCubic', // Easing pattern to use
+        offset: 20, // Integer. How far to offset the scrolling anchor location in pixels
+      });
+    </script>
+    <!-- <script src=" /js/scroll.min.js " charset="utf-8"></script> -->
+  </body>
+
+</html>

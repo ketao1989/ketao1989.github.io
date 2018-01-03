@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Ubuntu Chrome启动失败解决方法</title>
+    <meta name="description" content="前言使用Ubuntu系统时，由于系统是默认安装的，所以机器名没有修改成一个合适的名字。在Ubuntu下通过命令sudo vim /etc/hostname来修改成自己想要的命令，然后注销用户，重新进入系统。接着，就出现了一个很奇怪的问题，我的桌面上的chrome图标不能点击进入，一直都是无响应状态，但是其他浏览器...">
+
+    <link rel="shortcut icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://at.alicdn.com/t/font_8v3czwksspqlg14i.css">
+    <link rel="stylesheet" href="/css/main.css ">
+    <link rel="canonical" href="http://localhost:4000/2014/06/10/Ubuntu-Chrome-Start-Fail-Resolve/">
+    <link rel="alternate" type="application/rss+xml" title="柯小小西" href="http://localhost:4000/feed.xml ">
+
+
+    <script>
+    // 百度统计代码
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?a9b0f47a0e50b02dafb8a7088436a9bc";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+    </script>
+
+
+
+
+</head>
+
+
+  <body>
+
+    <header id="top">
+    <div class="wrapper">
+        <a href="/" class="brand">柯小小西</a>
+        <small>留着一点点技术积蓄</small>
+        <button id="headerMenu" class="menu"><i class="fa fa-bars"></i></button>
+        <nav id="headerNav">
+            <ul>
+                <li>
+                    
+                    <a href="/">
+                    
+                        <i class="fa fa-home"></i>Home
+                    </a>
+                </li>
+
+                
+                    
+                    <li>
+                        
+                        <a href="/archive/">
+                        
+                            <i class="fa fa-archive"></i>Archives
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/category/">
+                        
+                            <i class="fa fa-th-list"></i>Categories
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/tag/">
+                        
+                            <i class="fa fa-tags"></i>Tags
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/about/">
+                        
+                            <i class="fa fa-heart"></i>About
+                        </a>
+                    </li>
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+        <div class="page clearfix" post>
+    <div class="left">
+        <h1>Ubuntu Chrome启动失败解决方法</h1>
+        <div class="label">
+
+            <div class="label-card">
+                <i class="fa fa-calendar"></i>2014-06-10
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+            
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Linux" title="Category: Linux" rel="category">Linux</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+            </div>
+
+            <div class="label-card">
+            
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+            </div>
+
+        </div>
+        <hr>
+        <article itemscope itemtype="http://schema.org/BlogPosting">
+        <h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p>使用<code class="highlighter-rouge">Ubuntu</code>系统时，由于系统是默认安装的，所以机器名没有修改成一个合适的名字。在<code class="highlighter-rouge">Ubuntu</code>下通过命令<code class="highlighter-rouge">sudo vim /etc/hostname</code>来修改成自己想要的命令，然后注销用户，重新进入系统。</p>
+
+<p>接着，就出现了一个很奇怪的问题，我的桌面上的chrome图标不能点击进入，一直都是无响应状态，但是其他浏览器，比如自带的<code class="highlighter-rouge">Firefox</code>就可以正常启动和使用。</p>
+
+<h2 id="chrome启动失败解决方法"><a id="Chrome">Chrome启动失败解决方法</a></h2>
+
+<p>点击<code class="highlighter-rouge">chrome</code>图标不管用，并且看不到任何出错信息，无法定位问题出在哪里。只好，从<code class="highlighter-rouge">终端</code>使用<code class="highlighter-rouge">google-chrome</code>命令来启动<code class="highlighter-rouge">chrome</code>浏览器客户端了。于是，出现以下错误信息：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ketao@ketao-Latitude:~<span class="nv">$ </span>google-chrome
+
+<span class="o">[</span>5901:5901:0610/183033:ERROR:process_singleton_linux.cc<span class="o">(</span>309<span class="o">)]</span> 其他计算机 <span class="o">(</span>ketao-Latitude-E5430-non-vPro<span class="o">)</span> 的另一个 Google Chrome 进程 <span class="o">(</span>7578<span class="o">)</span> 好像正在使用此个人资料。Chrome 已锁定此个人资料以防止其受损。如果您确定其他进程目前未使用此个人资料，请为其解锁并重新启动 Chrome。
+
+<span class="o">[</span>5901:5901:0610/183033:ERROR:simple_message_box_views.cc<span class="o">(</span>208<span class="o">)]</span> Unable to show a dialog outside the UI thread message loop: Google Chrome - 其他计算机 <span class="o">(</span>ketao-Latitude-E5430-non-vPro<span class="o">)</span> 的另一个 Google Chrome 进程 <span class="o">(</span>7578<span class="o">)</span> 好像正在使用此个人资料。Chrome 已锁定此个人资料以防止其受损。如果您确定其他进程目前未使用此个人资料，请为其解锁并重新启动 Chrome。
+
+</code></pre></div></div>
+
+<!-- more -->
+
+<blockquote>
+  <blockquote>
+    <p>Note：显然，上面的错误信息告诉我们，尼玛，<code class="highlighter-rouge">chrome</code>会记录我们在计算机上的操作数据在本地，然后我们修改主机名后，导致老数据被锁住了，这样新的主机名下chrome无法获取用户对应的浏览器数据，因此chrome无法正常启动，并且在UI上还无法看到相关错误，导致假死现象出现。</p>
+  </blockquote>
+</blockquote>
+
+<h3 id="解决方法">解决方法：</h3>
+
+<p>先把本机上的<code class="highlighter-rouge">chrome</code>卸载掉，当然这不会把那些被锁定的数据也一并删除掉，不然我也不会写一篇博客记录下。因此，接下来，你需要删除掉自个目录下的残留的<code class="highlighter-rouge">chrome</code>用户数据。</p>
+
+<p>在当前用户目录下面执行命令：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ketao@ketao-Latitude:~<span class="nv">$ </span><span class="nb">cd</span> .config/
+ketao@ketao-Latitude:~/.config<span class="nv">$ </span><span class="nb">ls
+</span>chromium        gedit             monitors.xml     Trolltech.conf
+compiz-1        gnome-session     nautilus         ubuntu-ui-toolkit
+dconf           google-chrome     pulse            update-notifier
+enchant         gtk-2.0           ReText project   upstart
+evolution       gtk-3.0           software-center  user-dirs.dirs
+fcitx           ibus              SogouPY          user-dirs.locale
+fcitx-qimpanel  libaccounts-glib  SogouPY.users    VirtualBox
+ketao@ketao-Latitude:~/.config<span class="nv">$ </span><span class="nb">rm</span> <span class="nt">-rf</span> chromium/
+ketao@ketao-Latitude:~/.config<span class="nv">$ </span><span class="nb">rm</span> <span class="nt">-rf</span> google-chrome/
+</code></pre></div></div>
+
+<p>然后，重装<code class="highlighter-rouge">chrome</code>浏览器，安装成功之后，就可以启动<code class="highlighter-rouge">chrome</code>了。</p>
+
+<h2 id="小结"><a id="Finally">小结</a></h2>
+
+<p>一般，如果程序出现问题，通过重装都无法解决的，都是应用在用户目录下面添加来一些配置文件，并且这些文件在应用卸载之后并不会删除，所以会出现重装失败的问题。</p>
+
+        </article>
+        <hr>
+
+        
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+        
+
+        <div class="post-recent">
+    <div class="pre">
+        
+        <p><strong>上一篇</strong> <a href="/2014/06/04/Ubuntu-Software-Configure-and-Install/">Ubuntu Subversion软件安装和配置</a></p>
+        
+    </div>
+    <div class="nex">
+
+        
+        <p><strong>下一篇</strong> <a href="/2014/06/24/Linux-Software-Install-Understand/">深入理解软件包的配置、编译与安装</a></p>
+        
+    </div>
+</div>
+
+
+        <h2 id="comments">Comments</h2>
+        
+
+
+<div id="disqus_thread"></div>
+<script>
+    /**
+     * RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     * LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+
+    var disqus_config = function() {
+        this.page.url = 'http://localhost:4000/2014/06/10/Ubuntu-Chrome-Start-Fail-Resolve/'; // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = 'http://localhost:4000/2014/06/10/Ubuntu-Chrome-Start-Fail-Resolve/'; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+
+    (function() { // DON'T EDIT BELOW THIS LINE
+        var d = document,
+            s = d.createElement('script');
+
+        s.src = '//taocoder.disqus.com/embed.js';
+
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+
+
+
+    </div>
+    <button class="anchor"><i class="fa fa-anchor"></i></button>
+    <div class="right">
+        <div class="wrap">
+
+            <!-- Content -->
+            <div class="side content">
+                <div>
+                    Content
+                </div>
+                <ul id="content-side" class="content-ul">
+                    
+                    <li><a href="#comments">Comments</a></li>
+                </ul>
+            </div>
+            <!-- 其他div框放到这里 -->
+            <!-- <div class="side">bbbb</div> -->
+        </div>
+    </div>
+</div>
+<script>
+/**
+ * target _blank
+ */
+(function() {
+    var aTags = document.querySelectorAll('article a:not([id])')
+    for (var i = 0; i < aTags.length; i++) {
+        aTags[i].setAttribute('target', '_blank')
+    }
+}());
+</script>
+<script src="/js/pageContent.js " charset="utf-8"></script>
+
+
+    <footer class="site-footer">
+
+
+    <div class="wrapper">
+
+        <p class="description">
+             本站保留着一点点技术积蓄！ 
+        </p>
+        <p class="contact">
+            Contact me at: 
+            <a href="https://github.com/ketao1989" title="GitHub"><i class="fa fa-github" aria-hidden="true"></i></a>  
+            <a href="mailto:ketao1989@126.com" title="email"><i class="fa fa-envelope-o" aria-hidden="true"></i></a>  
+            <a href="http://weibo.com/柯小小西" title="Weibo"><i class="fa fa-weibo" aria-hidden="true"></i></a>       
+        </p>
+        <p>
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次，本站访客数<span id="busuanzi_value_site_uv"></span>人次，本文总阅读量<span id="busuanzi_value_page_pv"></span>次
+        </p>
+        <p class="power">
+            <span>
+                Site powered by <a href="https://jekyllrb.com/">Jekyll</a> & <a href="https://pages.github.com/">Github Pages</a>.
+            </span>
+            <span>
+                Theme designed by <a href="https://github.com/Gaohaoyang">HyG</a>.
+            </span>
+        </p>
+    </div>
+</footer>
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+    <div class="back-to-top">
+    <a href="#top" data-scroll>
+        <i class="fa fa-arrow-up" aria-hidden="true"></i>
+    </a>
+</div>
+
+    <script src=" /js/main.js " charset="utf-8"></script>
+    <script src=" /js/smooth-scroll.min.js " charset="utf-8"></script>
+    <script type="text/javascript">
+      smoothScroll.init({
+        speed: 500, // Integer. How fast to complete the scroll in milliseconds
+        easing: 'easeInOutCubic', // Easing pattern to use
+        offset: 20, // Integer. How far to offset the scrolling anchor location in pixels
+      });
+    </script>
+    <!-- <script src=" /js/scroll.min.js " charset="utf-8"></script> -->
+  </body>
+
+</html>

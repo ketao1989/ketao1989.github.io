@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>深入浅出Java服务端原理之基础篇</title>
+    <meta name="description" content="  上篇文章介绍了深入浅出RPC一些原理知识，这里将继续深入讲讲关于RPC网络服务技术。本文的目标，是让对Java网络服务端开发感兴趣的新人，可以一步步深入了解一个高性能服务所需要的相关知识体系。  当然，高性能高并发的服务端开发，涉及的知识点和手段众多，比如linux网络和内核参数调优等。本文只关注代码开发层级...">
+
+    <link rel="shortcut icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://at.alicdn.com/t/font_8v3czwksspqlg14i.css">
+    <link rel="stylesheet" href="/css/main.css ">
+    <link rel="canonical" href="http://localhost:4000/2017/03/29/java-server-in-action/">
+    <link rel="alternate" type="application/rss+xml" title="柯小小西" href="http://localhost:4000/feed.xml ">
+
+
+    <script>
+    // 百度统计代码
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?a9b0f47a0e50b02dafb8a7088436a9bc";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+    </script>
+
+
+
+
+</head>
+
+
+  <body>
+
+    <header id="top">
+    <div class="wrapper">
+        <a href="/" class="brand">柯小小西</a>
+        <small>留着一点点技术积蓄</small>
+        <button id="headerMenu" class="menu"><i class="fa fa-bars"></i></button>
+        <nav id="headerNav">
+            <ul>
+                <li>
+                    
+                    <a href="/">
+                    
+                        <i class="fa fa-home"></i>Home
+                    </a>
+                </li>
+
+                
+                    
+                    <li>
+                        
+                        <a href="/archive/">
+                        
+                            <i class="fa fa-archive"></i>Archives
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/category/">
+                        
+                            <i class="fa fa-th-list"></i>Categories
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/tag/">
+                        
+                            <i class="fa fa-tags"></i>Tags
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/about/">
+                        
+                            <i class="fa fa-heart"></i>About
+                        </a>
+                    </li>
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+        <div class="page clearfix" post>
+    <div class="left">
+        <h1>深入浅出Java服务端原理之基础篇</h1>
+        <div class="label">
+
+            <div class="label-card">
+                <i class="fa fa-calendar"></i>2017-03-29
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+            
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#java" title="Category: java" rel="category">java</a>&nbsp;
+    
+        <a href="/category/#socket" title="Category: socket" rel="category">socket</a>&nbsp;
+    
+        <a href="/category/#thrift" title="Category: thrift" rel="category">thrift</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+            </div>
+
+            <div class="label-card">
+            
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+            </div>
+
+        </div>
+        <hr>
+        <article itemscope itemtype="http://schema.org/BlogPosting">
+        <blockquote>
+  <p>上篇文章介绍了<a href="http://ketao1989.github.io/2016/12/10/rpc-theory-in-action/">深入浅出RPC一些原理知识</a>，这里将继续深入讲讲关于RPC网络服务技术。本文的目标，是让对Java网络服务端开发感兴趣的新人，可以一步步深入了解一个高性能服务所需要的相关知识体系。</p>
+
+  <p>当然，高性能高并发的服务端开发，涉及的知识点和手段众多，比如linux网络和内核参数调优等。本文只关注代码开发层级的介绍和深入。</p>
+</blockquote>
+
+<h2 id="前言">前言</h2>
+
+<p>本文中，所谓 <code class="highlighter-rouge">服务端</code>指的是，基于client/server服务组件中的server端。在网络世界里，基本上任何一个用户交互都涉及客户端和服务器端网络通信；尤其是，当存在对服务端大量请求时，如果让服务器持续对外服务过程中，抗住更多的并发请求，是一个互联网开发同学十分关心和必备的技能。</p>
+
+<p>本文中，首先会基于Java网络API开发一个<code class="highlighter-rouge">HelloWorld</code>版本的server端版本。<br />
+接下来，会不断的在前一个server版本上进行优化和升级，使得其可以响应更多的网络连接请求。 <br />
+在此期间，会引入一些概念，比如IO同步异步、阻塞非阻塞。<br />
+最后，我们要站在巨人的肩膀上，基于Netty来开发一个生产级别的server端应用。</p>
+
+<!-- more -->
+
+<h2 id="网络协议介绍">网络协议介绍</h2>
+
+<blockquote>
+  <p>服务器开发，是基于网络协议基础上的，虽然Java 网络API已经封装了协议细节，但是在分析程序运行中出现的一些网络问题，优化服务通信性能时，还是很有用的。</p>
+
+  <p>这里主要介绍传输层的两大协议：TCP和UDP协议。（深入的介绍，请参考 《TCP/IP 详解 卷1：协议》这本经典书籍。）一般应用定制所谓自定义的网络协议，基本上都是基于传输层来实现的。</p>
+</blockquote>
+
+<h3 id="tcp-协议">TCP 协议</h3>
+
+<blockquote>
+  <p>传输层主要有两大协议：面向连接的TCP (Transmission Control Protocol)协议和面向无连接的UDP (User Datagram Protocol)协议。相对于UDP协议，TCP为了保证连接的可靠性，其协议实现细节是相当复杂的。</p>
+</blockquote>
+
+<h4 id="三次握手四次握手">三次握手/四次握手</h4>
+
+<p>既然TCP是面向连接的协议，那就存在如何建立连接以及如何断开连接的问题。</p>
+
+<blockquote>
+  <p>在介绍TCP连接协议前，需要特别指出：TCP所谓的处在连接状态<code class="highlighter-rouge">ESTABLISHED</code>，只是说明在通信双方建立的<code class="highlighter-rouge">连接状态表</code>中，当前的TCP链路是连接的。而且，通信双方的状态表，并不保证是一致的。
+所以，在使用TCP协议的业务里，都需要有一个定时器来发送一个特殊的段给对等方检测当前链路是否依然处于连接状态，也就是<code class="highlighter-rouge">存活检测</code>。在后面的介绍中，还会有应用级别的<code class="highlighter-rouge">存活检测</code>。</p>
+</blockquote>
+
+<p>首先，在所有的介绍TCP协议的文章里都会有的握手图（来自网络，参考文献1）：</p>
+
+<p><img src="/images/2017/tcp_open_close.jpeg" alt="Alt text" /></p>
+
+<p>所谓三次握手，就是在通信双方建立TCP连接的时候，需要双方共发送3个数据包来确认双方为通信都准备OK。</p>
+
+<ol>
+  <li>第一次握手。客户端client首先初始化一个SYN序列号x，一般第一次客户端和服务端握手时，SYN初始化为0，随后每次都会加上传输数据的字节作为对端新的SYN序列号。Client将产生的SYN序列化发送给Server，并将自己的状态置为<code class="highlighter-rouge">SYN_SENT</code>。</li>
+  <li>第二次握手。服务端Server接收到Client发送过来的连接请求包，由于在建立TCP连接的请求包中并没有有效数据(设置FIN和SYN这种标志位的包，是不计算有效数据的)，所以Server发送的握手包中，SYN序列号为0（Server对这次建立连接也是第一次），以及ACK确认号1=0+1。此外，服务器Server将自己的状态设置为<code class="highlighter-rouge">SYN_RCVD</code>。</li>
+  <li>第三次握手。客户端Client接收到Server发送回来的确认包，根据服务端ACK号和SYN号，发送自己的最后一个连接数据包，其中和第二次握手相似，SYN序列号为1，ACK为1=0+1。并将自己的连接状态设置为<code class="highlighter-rouge">ESTABLISHED</code>。</li>
+</ol>
+
+<p>在TCP通信过程中，ACK数据，是根据对方SYN序列号，再加上本次数据包有效数据大小来计算的，而下次对端发送SYN序列号的值就是其收到的ACK值。SYN 和 ACK的逻辑，保证了TCP重传机制。</p>
+
+<blockquote>
+  <p>在了解TCP建立连接进行的三次握手过程之后，肯定会有疑问，为什么是3次，而不是2次或者4次呢？</p>
+
+  <p>3次考虑，是在满足日常应用场景中，所需要的最少次数。1次肯定不行，如果是2次呢？假设 C 向 S 发送连接请求，当时这个请求没有到达 S 。然后 C 重新发送一个连接请求，S接收到并且发送响应包，然后连接建立。正常数据交换完了之后，关闭连接。但是，这个时候，第一次的连接请求发送了过来，S 建立连接，一直处于等待数据交互中。 
+ 或者，C 向 S 发送连接请求， 然后 S 会发送一个响应包，可能 C 可能没有收到这个响应包。这个时候，S 可能以为 C 收到了ACK包，然后S给C发送数据分组包，但是 C 一直在等待 S 的ACK应答分组包，并把 S 的数据分组报丢弃。
+ 其实，2次握手，最重要的是，在双方都以为建立连接的情况下，可能存在无法对S的序列号达成一致。但是，3次握手，就可以确认好 C 和 S 的初始序列号一致。</p>
+
+  <p>以上可以阅读参考文献2。</p>
+</blockquote>
+
+<p>所谓的四次握手（也有叫做四次挥手的），就是处在连接状态的通信双方，正常断开连接所需要进行的四次数据包交互流程。由于TCP是全双工，因此通信双方都需要进行关闭，所以会进行4次握手。</p>
+<ol>
+  <li>第一次握手。客户端将发送FIN包给服务端，关闭连接。FIN包中，FIN序列号和ACK值与前面数据组交互一样。此时，客户端处于<code class="highlighter-rouge">FIN_WAIT_1</code>状态。</li>
+  <li>第二次握手。服务端收到客户端的FIN包之后，只会发回一个ACK包，表示收到关闭连接请求。此时，服务端处于<code class="highlighter-rouge">CLOSE_WAIT</code>状态</li>
+  <li>第三次握手。作为全双工链路，服务端也需要发送FIN包来关闭自己这方的连接链路。由于ACK已经发送，所以这一次只需要发送FIN序列号。此时，服务端处于<code class="highlighter-rouge">LAST_ACK</code>状态。</li>
+  <li>第四次握手。客户端现在收到了服务端发送的FIN包，客户端发送ACK表示自己收到了服务端的关闭请求。此时，客户端处于<code class="highlighter-rouge">TIME_WAIT</code>状态；而服务端收到客户端ACK包之后，则设置自己状态为<code class="highlighter-rouge">CLOSED</code>。客户端的<code class="highlighter-rouge">TIME_WAIT</code>状态会停留两倍的MSL时长。</li>
+</ol>
+
+<blockquote>
+  <p>MSL指的是报文段的最大生存时间，如果报文段在网络通信中存活时间超过MSL时间，还没有被接收，那么会被丢弃。关于<code class="highlighter-rouge">TIME_WAIT</code>深入学习可以参考文献3</p>
+</blockquote>
+
+<h4 id="tcp-重传机制">TCP 重传机制</h4>
+
+<blockquote>
+  <p>TCP重传机制，是TCP协议保证数据可靠性的一个重要的机制。在网络环境不好的情况下，重传机制可以对上层应用层，屏蔽掉因为各种网络问题导致超时数据丢失而进行重试的策略细节。但是，正式由于屏蔽，导致很多时间排查问题时会忽略掉这点。</p>
+
+  <p>此外，其实在很多系统设计过程中，重传重试相关的需求还是蛮多的。学习TCP重传机制，可以给我们在设计实现自己的应用系统时提供一些借鉴。</p>
+</blockquote>
+
+<p>TCP重传机制，需要确认什么时候需要重传，以及重传哪些数据包。</p>
+
+<p>TCP需要重传，肯定是在数据包丢失之后才需要重传，将发送端认为服务端未收到的报文重新发送给接收端。但是，在不可靠的网络环境下，你根本就无法确认数据包是否丢失，通过TCP ACK机制只能确保哪些数据报文被通信对方收到，但是由于接收报文是乱序的，所以当前未收到的报文可能在未来某个时候被ACK回来，也可能就真的被丢失了。</p>
+
+<p>因此，TCP在发送报文之后，会开启一个定时器，然后如果在计算的超时时间内未收到ACK，则重传。所以，TCP重传机制，有的时候也被称为 TCP超时重传机制。</p>
+
+<p>超时重传机制，包含两个重要的时间参数。</p>
+<ul>
+  <li>往返时间RTT。其是发送端发送TCP包开始计算，到接收到该包ACK数据结束，这期间所消耗的时间。</li>
+  <li>超时重传时间RTO。其是，发送端发送TCP包之后，确认包丢失，然后决定重新发送该包的时间。</li>
+</ul>
+
+<p>显然，我们需要的是RTO时间，根据这个时间我们来确认是否应该超时重传了。但是RTO是动态计算出来的，也就是我们需要根据当前网络状况的不同，计算出RTO时间。因此，就说到了RTT，异常的超时时间，根据正常包往返时间来动态计算，是比较合理的。RTO初始的计算方式，就是取若干次RTT的平均时间，最小200ms，后面随着重传次数的变化，RTO也会调整。</p>
+
+<blockquote>
+  <p>因此，整个流程是这样子的：发送端发送TCP报文，并且启动该报文对应的重传计时器，如果收到了ACK报文，则结束计时器，并且获得最新一次的RTT，计算RTO；如果没有收到ACK报文，并且这时间已经超过当前RTO设置，则重传报文，并且RTO时间倍增。如果，倍增之后，ACK报文还未收到，则继续倍增，直到收到或者到达设置的最大RTO超时时间。</p>
+
+  <p>在LINUX中，重传此时一般为15次。</p>
+</blockquote>
+
+<p>此外，还有一种也会触发报文重传。比如，发送端先后发送了A：<code class="highlighter-rouge">seq=100,size=100</code>；B：<code class="highlighter-rouge">seq=200,size=200</code>；C：<code class="highlighter-rouge">seq=400,size=150</code> 三个报文，然后接收方，返回了A’：<code class="highlighter-rouge">ack=200</code>；B’=<code class="highlighter-rouge">ack=200</code>；C’=<code class="highlighter-rouge">ack=200</code>。那么这个时候，就不会等待RTO超时了，而是发送端会认为接收端明显没有收到seq=200的报文，立刻触发<code class="highlighter-rouge">快速重传机制</code>，发送丢失的数据报文。</p>
+
+<h4 id="tcp-滑动窗口">TCP 滑动窗口</h4>
+
+<blockquote>
+  <p>除了重传机制，TCP另一大亮点，就是滑动窗口。其滑动窗口可以很好的保护系统可靠性，避免大流量数据导致大量传输失败，限制传输速度以及网络带宽和服务器资源的有效利用。在实际应用系统设计中，也可以充分借鉴参考。</p>
+</blockquote>
+
+<p>TCP 使用接收方接收窗口来控制通信的数据流速率，从而达到拥塞控制，避免通信过程中不必要的丢包处理。</p>
+
+<p>首先来看下TCP报文头结构：</p>
+
+<p><img src="/images/2017/tcp_header.gif" alt="Alt text" /></p>
+
+<p>如上图所示，在20字节长的报文头里面，有16bit是接收方用来告诉客户端其可接收数据的大小，发送方根据这个数据，来控制发送给接收方的数据长度。</p>
+
+<p>看一个简单的例子了解下：</p>
+
+<p><img src="/images/2017/tcp_window.png" alt="Alt text" /></p>
+
+<p>首先，在和接收端最后一次通信的时候，发送端从TCP报头中获取了剩余窗口为500，表示发送端可以发送500字节的数据给接收方；
+然后，发送端发送400字节数据，其中seq=1到seq=200之间的数据已经ACK确认，seq=201到seq=400发送出去但是还未被确认。于是，可发送滑动窗口头部从<code class="highlighter-rouge">1--&gt;201</code>，尾部从<code class="highlighter-rouge">500--&gt;700</code>，如上图(b)；
+接着发送端收到了接收端seq=201到seq=400的ACK报文，这个时候，滑动窗口继续向后滑动。</p>
+
+<blockquote>
+  <p>需要指出一种特殊的情形，就是当发送端发送数据过快，接收端还未来得及处理时，就会出现接收端返回报头中窗口为0的情形，这就是<code class="highlighter-rouge">Zero Window</code>。显然，这种情况，发送端会停止发送数据，知道窗口不为0。然后就有了<code class="highlighter-rouge">ZWP</code>技术，当自己的大小不为0，接收端ACK他的窗口大小给发送端 。</p>
+</blockquote>
+
+<p>但是，基于滑动窗口会出现一个问题，就是当接收端处理速度比较慢，可能每次就只能处理很小字节的报文，然后告诉发送端，其剩余窗口为很小的数字。但是，一个TCP+IP头是40个字节，显然，如果窗口不为0就发送报文给接收端，是不可取的。</p>
+
+<p>那如何避免在窗口很小的时候，频繁发送小传输报文给接收端呢？在TCP中，称为Silly Window Syndrome(糊涂窗口综合症)。解决方案可以是在特定时刻接收端ACK窗口为0或者发送端累计一部分报文之后在发送给接收端。</p>
+
+<p>一般，我们在发送端控制比较方便。因此，就出现了<code class="highlighter-rouge">Nagle算法</code>。首先引入MSS概念：</p>
+<ul>
+  <li>MSS：Maximum Segment Size，也就是最大分段大小。为了达到最佳的传输效能，TCP协议在建立连接的时候通常要协商双方的MSS值，这个值TCP协议在实现的时候往往用MTU（最大数据包大小，以太网的MTU为1500）代替（需要减去IP数据包包头的大小20Bytes和TCP数据段的包头20Bytes），所以一般MSS值1460。</li>
+</ul>
+
+<p>Nagle 算法的规则：</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code> [1]如果包长度达到 MSS ，则允许发送；
+ [2]如果该包含有 FIN ，则允许发送；
+ [3]设置了 TCP_NODELAY 选项，则允许发送；
+ [4]设置 TCP_CORK 选项时，若所有发出去的小数据包（包长度小于 MSS ）均被确认，则允许发送；
+ [5]上述条件都未满足，但发生了超时（一般为 200ms ），则立即发送。
+</code></pre></div></div>
+<blockquote>
+  <p>从上面的规则可以看到，我们再开发应用层代码的时候，如果应用场景需要实时发送各种小报文数据，则需要将Socket的TCP_NODELAY设置为true，否则可能会由于报文太小，而导致数据一直未发送出去。</p>
+</blockquote>
+
+<p>滑动窗口目前看来，控制发送端发送速率来保护接收端系统是足够了的；但是，滑动窗口，还需要满足解决网络拥塞控制，因此需要更进一步。</p>
+
+<p>上文介绍过TCP通过采样了RTT时间然后计算出RTO，作为重传超时时间。但是，如果网络上的延时突然增加，那么，TCP对这个事做出的应对只有重传数据，显然，重传会导致网络的负担更重，于是会导致更大的延迟以及更多的丢包，最后，这个情况就会进入恶性循环被不断地放大。试想一下，如果一个网络内有成千上万的TCP连接都这么行事，那么马上就会形成“网络风暴”，TCP这个协议就会拖垮整个网络。</p>
+
+<p>因此，就出现TCP Reno算法，包含4个部分：</p>
+<ol>
+  <li>慢热启动算法 – Slow Start。就是在发送端刚刚接入网络的时候，不会立刻将发送报文量提升到很大的值，而是慢慢试探网络，以每个RTT<code class="highlighter-rouge">X2</code>的指数来提速，或者当收到一个ACK则<code class="highlighter-rouge">+1</code>提速。在Linux 3.0 中，初始的发送大小为10个MSS。</li>
+  <li>拥塞避免算法 – Congestion Avoidance。当指数增长到最大阈值ssthresh=65535，则会对发送速率进行调整ssthresh为当前速率/2。然后回到慢启动过程。此外，很可能在这个时候会出现RTO超时情况，然后进入快速重传。</li>
+  <li>快速重传 - Fast Retransimit。调整ssthresh为当前速率/2，并且当前速率也调整为当前速率/2。然后进入拥塞避免阶段。</li>
+  <li>快速恢复算法 – Fast Recovery。</li>
+</ol>
+
+<p>基于以上的算法来调整发送端发送报文的速率，可以很好感知网络当前的负载情况，将网络延时导致重传超时作为一个影响因子，来控制网络拥塞。</p>
+
+<blockquote>
+  <p>其实，在使用很多工具的时候，都会明显感觉到<code class="highlighter-rouge">Reno</code>算法的存在。比如在下载文件的时候，下载速度都是逐步增加到一定速率。
+ 关于TCP具体拥塞算法，可以参加文献4</p>
+</blockquote>
+
+<h4 id="tcp-存活检测">TCP 存活检测</h4>
+
+<blockquote>
+  <p>上面讲的东西，都比较理论，应用开发中相对用的比较少。这里，介绍一个在开发应用层网络程序时，需要考虑的知识点。</p>
+</blockquote>
+
+<p>在前文中说过，TCP由于其内部只是维护了本身的状态表，并不能实时通知当前网络断开的消息。之所以，TCP不去提供这个实时通知网络变化的原因，有2个：</p>
+<ol>
+  <li>这样会消耗掉大量的网络带宽，试想若存在着大量的不成熟的网络应用程序，网络带宽一定会消耗殆尽；</li>
+  <li>在TCP设计之初，美国国防部设计TCP就是为了让在网络中断的情况下仍然通过其它途径维持通信的能力。
+不过，在Linux中，提供了<code class="highlighter-rouge">KEEP_ALIVE</code>机制去检测TCP的存活状态。</li>
+</ol>
+
+<p>这种KEEP_ALIVE机制下，TCP会在连接空闲一定时间间隔（一般时间为 7200 s，失败后重试 10 次，每次超时时间 75 s。）后发送一个特殊的段给通信对方，若对方系统依然运行，对应端口对外接收数据，则会响应并发送一个ACK消息。</p>
+
+<p>KEEP_ALIVE 可以很好的检测连接是否存活。但是在实际应用中，其存在两个问题：</p>
+<ol>
+  <li>TCP默认的间隔时间有点过长，在我们日常环境中，使用这种默认时间来检测连接是否存活，是不行的。</li>
+  <li>TCP KEEP_ALIVE方式的存活检测，只是针对连接，而不是针对通信双方应用系统的。也就是，即使检测的连接是活跃的，但是可能对应的系统已经100%CPU，无法接收真实的应用处理了。</li>
+</ol>
+
+<p>因此，一般的应用服务器实现中，都是使用自己的心跳机制来保证应用的存活。</p>
+
+<blockquote>
+  <p>应用心跳存活机制，是由应用定时周期发送心跳包给对方，这里就涉及到频率的问题了。如果时间设置的太长，则起不到实时感知网络是否端口。如果时间太短，则会导致数据量过大，增加网络和接收方负担。
+此外，在移动智能设备占主导地位的今天，移动网络的不稳定，流量和电量的消耗，都要求心跳频率不能太频繁。</p>
+
+  <p>因此，在APP端，一般如果应用正在前台使用，则心跳会相对频繁，比如30s一次，如果app被推到后台时，则心跳间隔时间可以调整大点，比如10分钟一次。</p>
+</blockquote>
+
+<h3 id="udp-协议">UDP 协议</h3>
+
+<p>相对于TCP协议，UDP协议非常简单。UDP是面向无连接的，不需要在传送数据之前通过握手协议来建立连接；UDP是不可靠的协议，其不保证数据最后被交付到目的主机，因此也就没有ACK报文来告知发送端发送的数据是否成功。</p>
+
+<p>此外，UDP如名字那样，面向报文的，也就是UDP包不会进行拆分或合并，没有TCP的拥塞控制和重传机制。重要的一点是，UDP报文头只占用8个字节，而TCP需要占用20个字节。</p>
+
+<blockquote>
+  <p>在TCP中，我们谈到，说TCP的连接其实只是在其双方内存表里面有个一对一连接状态的维护，并不是真的建立了一条链路。而，UDP无连接的，也只是说在UDP中不存在一个一对一连接链路状态的维护，UDP可以通过socket给多个UDP端发送数据，也可以接受多个UDP端发送过来的数据，如果UDP客户端和服务端都只接收和发送该一个socket的数据，那么可以说，其实“虚连接”的。</p>
+
+  <p>不过需要注意的是，在TCP中，基于这个连接上有一堆的机制和算法来保证连接可靠性，这个是UDP没有的。所以TCP和UDP最大的不同，是一个是可靠的协议，一个是非可靠的。</p>
+</blockquote>
+
+<p>UDP的不可靠，使得其适应一些特殊的应用场景。</p>
+<ol>
+  <li>实时要求高的场景。比如视频通信。在视频直播过程中，用户是可以接受一些帧的数据包的丢失，相对而言，其无法接受一些过时的数据重放，因此业务基于UDP协议进行一些额外补充，满足一些实时性要求高的业务。</li>
+  <li>在很早以前，由于国内的网络不是很好，导致TCP协议并不能很好的发挥其稳定性的特性，并且UDP无连接以及报头小等特性，使得服务器可以支持更高的用户量。具体可以参考文献5。</li>
+</ol>
+
+<blockquote>
+  <p>虽然，QQ使用的是UDP通信，TCP一个链路维护其他信息；但是对于现如今，这种设计模式并不一定性价比最高。所以，微信的通信，就是基于TCP来完成的，而不是UDP协议。</p>
+</blockquote>
+
+<h2 id="java-server入门">Java Server入门</h2>
+
+<blockquote>
+  <p>基于Java JDK提供的网络API开发简单的服务器是很便捷的，其封装的API接口对于开发者而已，非常易用。</p>
+</blockquote>
+
+<h3 id="echo-服务端">ECHO 服务端</h3>
+
+<p>和其他很多文章介绍网络编程一样，这里我们也首先实现一个echo服务器示例。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">startServer</span><span class="o">(</span><span class="kt">int</span> <span class="n">port</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="c1">//创建serverSocket来监听port</span>
+            <span class="n">ServerSocket</span> <span class="n">serverSocket</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ServerSocket</span><span class="o">(</span><span class="n">port</span><span class="o">,</span> <span class="mi">1</span><span class="o">);</span>
+            <span class="k">while</span> <span class="o">(</span><span class="kc">true</span><span class="o">)</span> <span class="o">{</span>
+
+                <span class="c1">// 建立一个socket连接</span>
+                <span class="n">Socket</span> <span class="n">socket</span> <span class="o">=</span> <span class="n">serverSocket</span><span class="o">.</span><span class="na">accept</span><span class="o">();</span>
+                <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"new connect......"</span><span class="o">);</span>
+
+                <span class="k">try</span> <span class="o">(</span><span class="n">InputStream</span> <span class="n">is</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="na">getInputStream</span><span class="o">();</span> <span class="n">OutputStream</span> <span class="n">os</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="na">getOutputStream</span><span class="o">())</span> <span class="o">{</span>
+
+                    <span class="c1">// 连接成功，返回连接成功消息给客户端</span>
+                    <span class="n">os</span><span class="o">.</span><span class="na">write</span><span class="o">((</span><span class="s">"SERVER CONN OK!"</span> <span class="o">+</span> <span class="k">new</span> <span class="n">Date</span><span class="o">().</span><span class="na">toString</span><span class="o">()</span> <span class="o">+</span> <span class="s">"\n\r"</span><span class="o">).</span><span class="na">getBytes</span><span class="o">(</span><span class="n">Charset</span><span class="o">.</span><span class="na">defaultCharset</span><span class="o">()));</span>
+                    <span class="n">os</span><span class="o">.</span><span class="na">flush</span><span class="o">();</span>
+
+                    <span class="kt">byte</span><span class="o">[]</span> <span class="n">data</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">byte</span><span class="o">[</span><span class="mi">16</span><span class="o">];</span>
+                    <span class="kt">int</span> <span class="n">len</span><span class="o">;</span>
+
+                    <span class="k">while</span> <span class="o">((</span><span class="n">len</span> <span class="o">=</span> <span class="n">is</span><span class="o">.</span><span class="na">read</span><span class="o">(</span><span class="n">data</span><span class="o">))</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
+
+                        <span class="c1">// 读取数据，将数据打印出来</span>
+                        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="k">new</span> <span class="n">String</span><span class="o">(</span><span class="n">data</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="n">len</span><span class="o">,</span> <span class="n">Charset</span><span class="o">.</span><span class="na">defaultCharset</span><span class="o">()));</span>
+                        <span class="c1">// echo反馈给客户端</span>
+                        <span class="n">os</span><span class="o">.</span><span class="na">write</span><span class="o">(</span><span class="n">data</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="n">len</span><span class="o">);</span>
+                        <span class="n">os</span><span class="o">.</span><span class="na">flush</span><span class="o">();</span>
+                    <span class="o">}</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">IOException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+<blockquote>
+  <p>代码展示的是一个单线程同步阻塞方式处理网络Socket IO操作的echo服务器版本，所以当客户端连接上服务器之后，其他客户端是不能同时操作网络IO的。</p>
+
+  <p>此外，需要特别说明在 <code class="highlighter-rouge">public ServerSocket(int port, int backlog) throws IOException</code>方法中的backlog，在测试的时候，可以更清楚知道该参数含义：网络连接的等待队列的最大长度。</p>
+</blockquote>
+
+<p>我们使用 Telnet模拟客户端进行测试，结果如下图所示：</p>
+
+<p><img src="/images/2017/socket_backlog.png" alt="Alt text" /></p>
+
+<blockquote>
+  <p>在代码中，我们将backlog设为1，所以，如上图，当我们1个网络IO操作处理中，1个处在网络连接等待队列中，最后1个网络连接请求由于等待队列已满，从而<code class="highlighter-rouge">创建网络连接操作超时</code>而导致最终失败，所以会出现<code class="highlighter-rouge">Operation timed out</code>。</p>
+</blockquote>
+
+<p>因此，我们看出来了这个版本的显著的缺点，就是无法同时处理多个网络请求。</p>
+
+<h3 id="多线程版本-echo服务端">多线程版本 ECHO服务端</h3>
+
+<p>显然，服务器只能同时处理单个客户端网络请求，肯定是不行的。从代码上分析，程序阻塞的地方，是服务器从socket流中获取数据，然后处理数据返回数据等同步阻塞的IO操作。由于是单线程来处理这些IO操作，所以线程阻塞，就会导致其他网络请求无法响应处理，因此，显然的，就会才有多线程来避免这个问题。</p>
+
+<blockquote>
+  <p>在实现多线程处理请求的时候，一般才有线程池来完成；并且，线程池的大小还需要进行一个限制，避免请求量过大，导致机器资源耗尽不可用。</p>
+</blockquote>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ThreadPoolServer</span> <span class="o">{</span>
+
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">ExecutorService</span> <span class="n">EXECUTOR_SERVICE</span> <span class="o">=</span> <span class="n">createDefaultExecutorService</span><span class="o">();</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">ThreadPoolServer</span> <span class="n">server</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ThreadPoolServer</span><span class="o">();</span>
+        <span class="n">server</span><span class="o">.</span><span class="na">startServer</span><span class="o">(</span><span class="mi">8080</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">startServer</span><span class="o">(</span><span class="kt">int</span> <span class="n">port</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="n">ServerSocket</span> <span class="n">serverSocket</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ServerSocket</span><span class="o">(</span><span class="n">port</span><span class="o">,</span> <span class="mi">4</span><span class="o">);</span>
+
+            <span class="c1">// 设置超时无限大，保证在accept不阻塞</span>
+            <span class="n">serverSocket</span><span class="o">.</span><span class="na">setSoTimeout</span><span class="o">(</span><span class="mi">0</span><span class="o">);</span>
+
+            <span class="k">for</span> <span class="o">(;</span> <span class="o">;</span> <span class="o">)</span> <span class="o">{</span>
+                <span class="n">Socket</span> <span class="n">socket</span> <span class="o">=</span> <span class="n">serverSocket</span><span class="o">.</span><span class="na">accept</span><span class="o">();</span>
+               <span class="c1">// 读超时设置无限大，保证不会断开client</span>
+                <span class="n">socket</span><span class="o">.</span><span class="na">setSoTimeout</span><span class="o">(</span><span class="mi">0</span><span class="o">);</span>
+                <span class="k">try</span> <span class="o">{</span>
+                    <span class="n">EXECUTOR_SERVICE</span><span class="o">.</span><span class="na">execute</span><span class="o">(</span><span class="k">new</span> <span class="n">ProcessorRunnable</span><span class="o">(</span><span class="n">socket</span><span class="o">));</span>
+                <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Throwable</span> <span class="n">t</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="n">socket</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">IOException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+
+    <span class="kd">private</span> <span class="kd">static</span> <span class="n">ExecutorService</span> <span class="nf">createDefaultExecutorService</span><span class="o">()</span> <span class="o">{</span>
+        <span class="n">SynchronousQueue</span><span class="o">&lt;</span><span class="n">Runnable</span><span class="o">&gt;</span> <span class="n">executorQueue</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SynchronousQueue</span><span class="o">&lt;</span><span class="n">Runnable</span><span class="o">&gt;();</span>
+        <span class="k">return</span> <span class="k">new</span> <span class="nf">ThreadPoolExecutor</span><span class="o">(</span><span class="mi">8</span><span class="o">,</span> <span class="mi">16</span><span class="o">,</span> <span class="mi">60</span><span class="o">,</span> <span class="n">TimeUnit</span><span class="o">.</span><span class="na">SECONDS</span><span class="o">,</span> <span class="n">executorQueue</span><span class="o">);</span>
+    <span class="o">}</span>
+    
+    <span class="kd">public</span> <span class="kd">class</span> <span class="nc">ProcessorRunnable</span> <span class="kd">implements</span> <span class="n">Runnable</span> <span class="o">{</span>
+
+        <span class="kd">private</span> <span class="n">Socket</span> <span class="n">socket</span><span class="o">;</span>
+
+        <span class="kd">public</span> <span class="nf">ProcessorRunnable</span><span class="o">(</span><span class="n">Socket</span> <span class="n">socket</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">this</span><span class="o">.</span><span class="na">socket</span> <span class="o">=</span> <span class="n">socket</span><span class="o">;</span>
+        <span class="o">}</span>
+        <span class="nd">@Override</span>
+        <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+            <span class="k">try</span> <span class="o">(</span><span class="n">InputStream</span> <span class="n">is</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="na">getInputStream</span><span class="o">();</span> <span class="n">OutputStream</span> <span class="n">os</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="na">getOutputStream</span><span class="o">())</span> <span class="o">{</span>
+                <span class="c1">// 同上文代码示例</span>
+                <span class="n">processData</span><span class="o">(</span><span class="n">is</span><span class="o">,</span><span class="n">os</span><span class="o">);</span>
+            <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">IOException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+            <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+                <span class="c1">// 处理完成最后，如果socket是打开的，需要进行关闭</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">socket</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">socket</span><span class="o">.</span><span class="na">isConnected</span><span class="o">())</span> <span class="o">{</span>
+                    <span class="n">socket</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+        <span class="o">}}}</span>
+</code></pre></div></div>
+
+<blockquote>
+  <p>上面示例除了增加多线程支持多客户端同时访问外，实现的时候，对一些实现进行了优化和完善。比如线程池，socket资源关闭，超时设置等。</p>
+</blockquote>
+
+<h4 id="设置-so_timeout参数">设置 SO_TIMEOUT参数</h4>
+
+<p><strong>SO_TIMEOUT</strong>是设置socket超时时间的。在server的代码中，ServerSocket.setSoTimeout(int) 和Socket.setSoTimeout(int)是不一样的。在ServerSocket中超时时间指的是accept新连接的超时时间，当服务器等待指定时间还未有新的连接请求过来，则会抛出SocketTimeout异常，并且停止接收新的socket连接请求，但是现有的socket连接读写操作服务器还会继续处理。如下所示：</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">java</span><span class="o">.</span><span class="na">net</span><span class="o">.</span><span class="na">SocketTimeoutException</span><span class="o">:</span> <span class="n">Accept</span> <span class="n">timed</span> <span class="n">out</span>
+	<span class="n">at</span> <span class="n">java</span><span class="o">.</span><span class="na">net</span><span class="o">.</span><span class="na">PlainSocketImpl</span><span class="o">.</span><span class="na">socketAccept</span><span class="o">(</span><span class="n">Native</span> <span class="n">Method</span><span class="o">)</span>
+	<span class="n">at</span> <span class="n">java</span><span class="o">.</span><span class="na">net</span><span class="o">.</span><span class="na">AbstractPlainSocketImpl</span><span class="o">.</span><span class="na">accept</span><span class="o">(</span><span class="n">AbstractPlainSocketImpl</span><span class="o">.</span><span class="na">java</span><span class="o">:</span><span class="mi">409</span><span class="o">)</span>
+	<span class="n">at</span> <span class="n">java</span><span class="o">.</span><span class="na">net</span><span class="o">.</span><span class="na">ServerSocket</span><span class="o">.</span><span class="na">implAccept</span><span class="o">(</span><span class="n">ServerSocket</span><span class="o">.</span><span class="na">java</span><span class="o">:</span><span class="mi">545</span><span class="o">)</span>
+	<span class="n">at</span> <span class="n">java</span><span class="o">.</span><span class="na">net</span><span class="o">.</span><span class="na">ServerSocket</span><span class="o">.</span><span class="na">accept</span><span class="o">(</span><span class="n">ServerSocket</span><span class="o">.</span><span class="na">java</span><span class="o">:</span><span class="mi">513</span><span class="o">)</span>
+</code></pre></div></div>
+<p>与之不同，Socket的超时时间则是读read超时，当和服务器建立连接的客户端在超时时间内未写入新的数据到服务端，则服务器会抛出SocketTimeout异常，同时断开连接，客户端会出现<code class="highlighter-rouge">Connection closed by foreign host</code>类似的错误信息。抛出异常堆栈信息，如下所示：</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">java</span><span class="o">.</span><span class="na">net</span><span class="o">.</span><span class="na">SocketTimeoutException</span><span class="o">:</span> <span class="n">Read</span> <span class="n">timed</span> <span class="n">out</span>
+	<span class="n">at</span> <span class="n">java</span><span class="o">.</span><span class="na">net</span><span class="o">.</span><span class="na">SocketInputStream</span><span class="o">.</span><span class="na">socketRead0</span><span class="o">(</span><span class="n">Native</span> <span class="n">Method</span><span class="o">)</span>
+	<span class="n">at</span> <span class="n">java</span><span class="o">.</span><span class="na">net</span><span class="o">.</span><span class="na">SocketInputStream</span><span class="o">.</span><span class="na">socketRead</span><span class="o">(</span><span class="n">SocketInputStream</span><span class="o">.</span><span class="na">java</span><span class="o">:</span><span class="mi">116</span><span class="o">)</span>
+	<span class="n">at</span> <span class="n">java</span><span class="o">.</span><span class="na">net</span><span class="o">.</span><span class="na">SocketInputStream</span><span class="o">.</span><span class="na">read</span><span class="o">(</span><span class="n">SocketInputStream</span><span class="o">.</span><span class="na">java</span><span class="o">:</span><span class="mi">171</span><span class="o">)</span>
+	<span class="n">at</span> <span class="n">java</span><span class="o">.</span><span class="na">net</span><span class="o">.</span><span class="na">SocketInputStream</span><span class="o">.</span><span class="na">read</span><span class="o">(</span><span class="n">SocketInputStream</span><span class="o">.</span><span class="na">java</span><span class="o">:</span><span class="mi">141</span><span class="o">)</span>
+	<span class="n">at</span> <span class="n">java</span><span class="o">.</span><span class="na">net</span><span class="o">.</span><span class="na">SocketInputStream</span><span class="o">.</span><span class="na">read</span><span class="o">(</span><span class="n">SocketInputStream</span><span class="o">.</span><span class="na">java</span><span class="o">:</span><span class="mi">127</span><span class="o">)</span>
+</code></pre></div></div>
+
+<blockquote>
+  <p>在很多时候，我们都会给服务器的socket读设置一个超时时间，来避免由于客户端bug而导致一直占用服务器socket连接资源不释放问题，比如我们使用ssh客户端登录线上机器的时候，时间长了就会被断开连接。那如果客户端真的是期望和服务器一直保持连接该怎么办？定时发送心跳来维持连接，所以，我们一般通过修改ssh配置文件定时发送心跳包来保证不被服务器断开连接。</p>
+</blockquote>
+
+<h4 id="executor使用说明">Executor使用说明</h4>
+
+<p>在服务器开发使用多线程模型的时候，服务器在收到客户端请求后，建立好socket连接，然后从线程池中获取一个线程来操作网络流IO。但是，在正常环境下，肯定不能无限的创建线程来支持客户端的请求，这个时候，就需要设置一个最大的线程数来保护服务器。</p>
+
+<p>此外，当客户端请求处理逻辑发现线程池的初始线程数的线程都被消耗完，则依照线程池逻辑会临时放到Queue中等待线程释放，或者队列满进而在最大线程数之内创建新的线程来支持客户端请求处理。因此，就可能会有IO操作一直等待处理而不反馈给客户端（这种case对于需要及时响应的客户端请求，是很不推荐的，所以在HSF，thrift这些RPC框架中，都采用SynchronousQueue来避免这个问题）。</p>
+
+<p><strong>SynchronousQueue</strong>是一个阻塞队列，但是这个队列比较特殊，其每一次插入操作都必须等待另外一个线程去获取移除操作，才能结束阻塞返回。SynchronousQueue内部使用<code class="highlighter-rouge">TransferQueue</code>/<code class="highlighter-rouge">TransferStack</code>来实现，内部逻辑比较复杂，感兴趣的可以去看JDK源码。</p>
+
+<blockquote>
+  <p>SynchronousQueue 其内部只会有一个元素（姑且这么认为，实际上其是不存储元素的）。当队列为空的时候，生产者将队列head指向新创建的node节点，在node上面waiter属性则设置为该生成者占用的线程，并且node的数据类型为DATA，阻塞线程等待消费；然后，需要消费数据的线程检查到head不为null，并且node类型为DATA，则消费该node，并且unpark掉处于阻塞的生成者线程。
+当SynchronousQueue的head为null时，消费者需要获取node进行消费，则创建一个node节点，设置waiter为消费者线程，类型为REQUEST，将head指向node节点；然后生产者有生产数据的需求时，则unpark掉处于阻塞的消费者线程。</p>
+</blockquote>
+
+<h2 id="参考文献">参考文献</h2>
+
+<ol>
+  <li>TCP 的那些事儿(<a href="http://coolshell.cn/articles/11564.html">http://coolshell.cn/articles/11564.html</a>)</li>
+  <li>TCP 为什么是三次握手，为什么不是两次或四次？(<a href="https://www.zhihu.com/question/24853633">https://www.zhihu.com/question/24853633</a>)</li>
+  <li>再叙TIME_WAIT(<a href="https://huoding.com/2013/12/31/316">https://huoding.com/2013/12/31/316</a>)</li>
+  <li>从TCP三次握手说起–浅析TCP协议中的疑难杂症(<a href="http://wetest.qq.com/lab/view/81.html">http://wetest.qq.com/lab/view/81.html</a>)</li>
+  <li>QQ 为什么以 UDP 协议为主，以 TCP 协议为辅？ (<a href="https://www.zhihu.com/question/20292749">https://www.zhihu.com/question/20292749</a>)</li>
+  <li>微信对网络影响的技术试验及分析(<a href="http://www.52im.net/forum.php?mod=viewthread&amp;tid=195&amp;ctid=10">http://www.52im.net/forum.php?mod=viewthread&amp;tid=195&amp;ctid=10</a>)</li>
+  <li>thrift server整理后的项目源码(<a href="https://github.com/ketao1989/JavaThrift">https://github.com/ketao1989/JavaThrift</a>)</li>
+  <li>关于Java网络API中设置Socket连接超时分析 (<a href="http://cuisuqiang.iteye.com/blog/1725348">http://cuisuqiang.iteye.com/blog/1725348</a>)</li>
+  <li>Java 半关闭导致Connect reset异常分析(<a href="http://xiaoz5919.iteye.com/blog/1685138">http://xiaoz5919.iteye.com/blog/1685138</a>)</li>
+</ol>
+
+
+        </article>
+        <hr>
+
+        
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+        
+
+        <div class="post-recent">
+    <div class="pre">
+        
+        <p><strong>上一篇</strong> <a href="/2016/12/10/rpc-theory-in-action/">深入浅出RPC原理</a></p>
+        
+    </div>
+    <div class="nex">
+
+        
+    </div>
+</div>
+
+
+        <h2 id="comments">Comments</h2>
+        
+
+
+<div id="disqus_thread"></div>
+<script>
+    /**
+     * RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     * LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+
+    var disqus_config = function() {
+        this.page.url = 'http://localhost:4000/2017/03/29/java-server-in-action/'; // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = 'http://localhost:4000/2017/03/29/java-server-in-action/'; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+
+    (function() { // DON'T EDIT BELOW THIS LINE
+        var d = document,
+            s = d.createElement('script');
+
+        s.src = '//taocoder.disqus.com/embed.js';
+
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+
+
+
+    </div>
+    <button class="anchor"><i class="fa fa-anchor"></i></button>
+    <div class="right">
+        <div class="wrap">
+
+            <!-- Content -->
+            <div class="side content">
+                <div>
+                    Content
+                </div>
+                <ul id="content-side" class="content-ul">
+                    
+                    <li><a href="#comments">Comments</a></li>
+                </ul>
+            </div>
+            <!-- 其他div框放到这里 -->
+            <!-- <div class="side">bbbb</div> -->
+        </div>
+    </div>
+</div>
+<script>
+/**
+ * target _blank
+ */
+(function() {
+    var aTags = document.querySelectorAll('article a:not([id])')
+    for (var i = 0; i < aTags.length; i++) {
+        aTags[i].setAttribute('target', '_blank')
+    }
+}());
+</script>
+<script src="/js/pageContent.js " charset="utf-8"></script>
+
+
+    <footer class="site-footer">
+
+
+    <div class="wrapper">
+
+        <p class="description">
+             本站保留着一点点技术积蓄！ 
+        </p>
+        <p class="contact">
+            Contact me at: 
+            <a href="https://github.com/ketao1989" title="GitHub"><i class="fa fa-github" aria-hidden="true"></i></a>  
+            <a href="mailto:ketao1989@126.com" title="email"><i class="fa fa-envelope-o" aria-hidden="true"></i></a>  
+            <a href="http://weibo.com/柯小小西" title="Weibo"><i class="fa fa-weibo" aria-hidden="true"></i></a>       
+        </p>
+        <p>
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次，本站访客数<span id="busuanzi_value_site_uv"></span>人次，本文总阅读量<span id="busuanzi_value_page_pv"></span>次
+        </p>
+        <p class="power">
+            <span>
+                Site powered by <a href="https://jekyllrb.com/">Jekyll</a> & <a href="https://pages.github.com/">Github Pages</a>.
+            </span>
+            <span>
+                Theme designed by <a href="https://github.com/Gaohaoyang">HyG</a>.
+            </span>
+        </p>
+    </div>
+</footer>
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+    <div class="back-to-top">
+    <a href="#top" data-scroll>
+        <i class="fa fa-arrow-up" aria-hidden="true"></i>
+    </a>
+</div>
+
+    <script src=" /js/main.js " charset="utf-8"></script>
+    <script src=" /js/smooth-scroll.min.js " charset="utf-8"></script>
+    <script type="text/javascript">
+      smoothScroll.init({
+        speed: 500, // Integer. How fast to complete the scroll in milliseconds
+        easing: 'easeInOutCubic', // Easing pattern to use
+        offset: 20, // Integer. How far to offset the scrolling anchor location in pixels
+      });
+    </script>
+    <!-- <script src=" /js/scroll.min.js " charset="utf-8"></script> -->
+  </body>
+
+</html>

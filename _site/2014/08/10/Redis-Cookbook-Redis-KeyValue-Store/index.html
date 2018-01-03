@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Redis Cookbook 之 Redis 键值对存储服务</title>
+    <meta name="description" content="问题许多的应用服务都需要存储关于使用，配置或者其他相关的信息的临时数据，这些数据结构并不适合存储在关系数据库中。通常情况下，开发者会是MySQL或者其他RDBMS来存储这种数据。在这里，我们将使用Redis和它内建的数据结构，以一种更轻量级、更快速、更宽松的方式完成存储应用临时数据的功能。解决方法Redis本身的...">
+
+    <link rel="shortcut icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://at.alicdn.com/t/font_8v3czwksspqlg14i.css">
+    <link rel="stylesheet" href="/css/main.css ">
+    <link rel="canonical" href="http://localhost:4000/2014/08/10/Redis-Cookbook-Redis-KeyValue-Store/">
+    <link rel="alternate" type="application/rss+xml" title="柯小小西" href="http://localhost:4000/feed.xml ">
+
+
+    <script>
+    // 百度统计代码
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?a9b0f47a0e50b02dafb8a7088436a9bc";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+    </script>
+
+
+
+
+</head>
+
+
+  <body>
+
+    <header id="top">
+    <div class="wrapper">
+        <a href="/" class="brand">柯小小西</a>
+        <small>留着一点点技术积蓄</small>
+        <button id="headerMenu" class="menu"><i class="fa fa-bars"></i></button>
+        <nav id="headerNav">
+            <ul>
+                <li>
+                    
+                    <a href="/">
+                    
+                        <i class="fa fa-home"></i>Home
+                    </a>
+                </li>
+
+                
+                    
+                    <li>
+                        
+                        <a href="/archive/">
+                        
+                            <i class="fa fa-archive"></i>Archives
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/category/">
+                        
+                            <i class="fa fa-th-list"></i>Categories
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/tag/">
+                        
+                            <i class="fa fa-tags"></i>Tags
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/about/">
+                        
+                            <i class="fa fa-heart"></i>About
+                        </a>
+                    </li>
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+        <div class="page clearfix" post>
+    <div class="left">
+        <h1>Redis Cookbook 之 Redis 键值对存储服务</h1>
+        <div class="label">
+
+            <div class="label-card">
+                <i class="fa fa-calendar"></i>2014-08-10
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+            
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Redis" title="Category: Redis" rel="category">Redis</a>&nbsp;
+    
+        <a href="/category/#Redis Cookbook" title="Category: Redis Cookbook" rel="category">Redis Cookbook</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+            </div>
+
+            <div class="label-card">
+            
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+            </div>
+
+        </div>
+        <hr>
+        <article itemscope itemtype="http://schema.org/BlogPosting">
+        <h2 id="问题"><a id="Problem">问题</a></h2>
+
+<p>许多的应用服务都需要存储关于使用，配置或者其他相关的信息的临时数据，这些数据结构并不适合存储在关系数据库中。
+通常情况下，开发者会是MySQL或者其他RDBMS来存储这种数据。在这里，我们将使用Redis和它内建的数据结构，以一种更轻量级、更快速、更宽松的方式完成存储应用临时数据的功能。</p>
+
+<h2 id="解决方法"><a id="Solution">解决方法</a></h2>
+
+<p>Redis本身的定位并不仅仅是<code class="highlighter-rouge">key/value</code>存储服务，同时也可以作为存储数据结构的服务器。这意味着，在传统的<code class="highlighter-rouge">key/value</code>存储功能之上，它还提供给你一些存储和操作应用数据的方式。
+我们将使用这些数据结构和命令来存储应用示例数据：比如，我们在一些<code class="highlighter-rouge">regular keys</code>里面存储有用的计数器，在<code class="highlighter-rouge">Redis hashes</code>里面存储用户对象，以及使用<code class="highlighter-rouge">sets</code>实现朋友圈（像Google+）。</p>
+
+<h2 id="讨论"><a id="Discussion">讨论</a></h2>
+
+<h3 id="存储应用使用计数器">存储应用使用计数器</h3>
+
+<p>首先，让我们开始存储一些非常基础的事情：计数器。想象我们运营一个商业的社交网络，然后想要追踪<code class="highlighter-rouge">profile/page</code>的访问数据。我们可以在RDBMS的存储我们页数据的表里面增加一列，
+但是希望我们的流量足够高以至于每次更新这一列会带来一些麻烦。因此，我们需要更快的工具来更新和查询，所以我们使用Redis来代替。</p>
+
+<p>由于Redis命令的原子性，我们知道如果我们存储一个计数器的key，则我们可以使用命令，比如：<code class="highlighter-rouge">INCR(或者INCRBY)和DECR(或者DECRBY)</code>，来增加增加或者减少它包含的值。所以，通过为我们的数据设计一个合适的命名保证我们的计数器单次操作成本微乎其微。</p>
+
+<p>Redis系统内实际上并没有约定的方法来组织keys，但是许多人（包括作者）都喜欢使用<code class="highlighter-rouge">冒号：</code>来区分关键字从而创建keys，因此在这里也这样约定。为了存储我们的社交网络页面访问数据，我们可以有一个像<code class="highlighter-rouge">visits:pageid:totals</code>的命名，比如页面id为635，则命名为<code class="highlighter-rouge">visits:635:totals</code>。如果我们已经在一些地方存储访问数据，我们可以首先根据这些数据产生redis的keys，并且设置对应的值，比如：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	SET visits:1:totals 21389 
+	SET visits:2:totals 1367894 
+	(...)
+</code></pre></div></div>
+
+<p>当访问一个给定的页面，一个简单地<code class="highlighter-rouge">INCR</code>命令将更新Redis中的计数器：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	INCR visits:635:totals
+</code></pre></div></div>
+
+<p>然后我们可以获取任何页面在任何时候的访问次数，这只需要通过简单地<code class="highlighter-rouge">GET</code>命令：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	GET visits:635:totals
+</code></pre></div></div>
+
+<p>你也可以让你的命令更智能，比如你可以在人们查看页面的时候，显示当前该页面被访问的次数给他看。当然，你也可以计算他自己访问的次数，所以你甚至不需要执行最后的<code class="highlighter-rouge">GET</code>命令：你可以利用<code class="highlighter-rouge">INCR</code>命令返回值的特点，因为<code class="highlighter-rouge">INCR</code>命令会返回自增之后的计数值。一个简单地关于访问和计数器的伪代码如下所示：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	1. 访问者访问页面.
+	2. 我们 INCR 相关页面的访问计数器 (比如：INCR visits:635:totals）		3. 我们获取INCR命令的返回值。
+	4. 我们展示返回的值在用户页面上。
+</code></pre></div></div>
+
+<p>这种方式我们保证用户在查看页面的时候，常常可以看见实时计数值，以及他自己访问的计数–着所有都可以使用Redis命令。</p>
+
+<!-- more -->
+
+<h3 id="存储对象数据在hashes内">存储对象数据在hashes内</h3>
+
+<p>Redis关于hashes的实现对于存储对象数据应用来说是一个很好的方案。在下面的例子里，我们将调查我们怎样使用<code class="highlighter-rouge">hashes</code>来在给定系统上存储用户相关的信息。</p>
+
+<p>我们将开始设计一个key命名来存储我们的用户。在此之前，我们使用分号来分割我们的关键字，进而产生意义丰富的key。为了达到这个案例的目的，我们将构建一个简单的key，形如：<code class="highlighter-rouge">users:alias</code>，其中<code class="highlighter-rouge">alias</code>是二进制安全的字符串。所以，为了存储一个叫做<code class="highlighter-rouge">John Doe</code>的用户，我们将建一个hash叫做<code class="highlighter-rouge">users:jdoe</code>。</p>
+
+<p>我们也假设我们将要存储关于用户的许多属性，比如全名、邮件地址、电话号码、以及访问我们英语的次数。我们将使用Redis的<code class="highlighter-rouge">hash管理命令</code>–像<code class="highlighter-rouge">HSET</code>、<code class="highlighter-rouge">HGET</code>和<code class="highlighter-rouge">HINCRBY</code>–存储用户的这些信息。</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	redis&gt; hset users:jdoe name "John Doe" 
+	(integer) 1
+	
+	redis&gt; hset users:jdoe email "jdoe@test.com" 
+	(integer) 1
+	
+	redis&gt; hset users:jdoe phone "+1555313940" 
+	(integer) 1
+	
+	redis&gt; hincrby users:jdoe visits 1 
+	(integer) 1
+</code></pre></div></div>
+
+<p>随着我们hash的建立，我们可以在合适的地方通过<code class="highlighter-rouge">HGET</code>获取简单地属性值或者通过<code class="highlighter-rouge">HGETALL</code>命令所有hash对象数据，如同下面的示例：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	redis&gt; hget users:jdoe email 
+	"jdoe@test.com"
+
+	redis&gt; hgetall users:jdoe
+	1) "name"
+	2) "John Doe"
+	3) "email"
+	4) "jdoe@test.com" 5) "phone"
+	6) "+1555313940" 7) "visits"
+	8) "1"
+</code></pre></div></div>
+
+<p>还有辅助的命令，比如<code class="highlighter-rouge">HKEYS</code>，该命令返回一个特定的hash里面存储的所有keys；<code class="highlighter-rouge">HVALS</code>，该命令仅仅返回values。当从你应用的Redis中检索数据时，你可能会发现使用<code class="highlighter-rouge">HGETALL</code>或者其他命令很有用，这其实取决于你想怎样检索你的数据。</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	redis&gt; hkeys users:jdoe 
+	1) "name"
+	2) "email"
+	3) "phone"
+	4) "visits"
+
+	redis&gt; hvals users:jdoe 
+	1) "John Doe"
+	2) "jdoe@test.com"
+	3) "+1555313940"
+	4) "1"
+</code></pre></div></div>
+
+<p>关于我们用户hash的其他命令列表，你可以详细阅读 <code class="highlighter-rouge">Redis official documentation for hash commands</code>，这里面包含他自己的使用<code class="highlighter-rouge">hashes</code>管理数据的示例。</p>
+
+<h3 id="使用sets存储用户的朋友圈">使用sets存储用户的朋友圈</h3>
+
+<p>为了完成Redis特有的方式存储数据，我们看看怎么样使用Redis支持的sets来创建和google+相似的朋友圈功能。sets天生就适应朋友圈，因为sets代码数据的集合，并且有一些天生的功能来做一些有趣的事情，比如交集和并集。</p>
+
+<p>首先，让我们定义一个朋友圈的命名。我们想要为我们每一个用户存储一些朋友圈，所以我们的key需要包含用户和实际的朋友圈。举个例子，<code class="highlighter-rouge">John Doe</code>的家庭圈可能有一个key像<code class="highlighter-rouge">circle:jdoe:family</code>样子。相似地，他的足球训练朋友可能在key为<code class="highlighter-rouge">circle:jdoe:soccer</code>的set里面。这里没有key设计的设置规则，所以常常以一种对我们应用有意义的方式来设计它们。</p>
+
+<p>现在，我们知道存储我们sets里面的keys，接下来，我们来创建<code class="highlighter-rouge">John Doe</code>的家庭集和足球朋友集。在集合本身里面，我们可以通过用户id来获取Redis里其他的keys。如果我们想要获取属于<code class="highlighter-rouge">John Doe</code>家庭圈用户的列表，和它们的用户信息，我们可以使用我们set的操作结果，然后为每一个用户提取真实的hashes（使用hashes来存储用户信息）。</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	redis&gt; sadd circle:jdoe:family users:anna 
+	(integer) 1
+
+	redis&gt; sadd circle:jdoe:family users:richard
+	(integer) 1 
+	
+	redis&gt; sadd circle:jdoe:family users:mike
+	(integer) 1 
+	
+	redis&gt; sadd circle:jdoe:soccer users:mike
+	(integer) 1 
+	
+	redis&gt; sadd circle:jdoe:soccer users:adam
+	(integer) 1 
+	
+	redis&gt; sadd circle:jdoe:soccer users:toby
+	(integer) 1 
+	
+	redis&gt; sadd circle:jdoe:soccer users:apollo
+	(integer) 1
+</code></pre></div></div>
+
+<p>需要记住的是，在上面的例子里，我们需要规范化我们set的成员通过使用实际的id数值而不是<code class="highlighter-rouge"> users:name</code>。虽然上面的例子工作得很好，但它可能为了性能原因牺牲一些可读性而获取更快的速度和更高的内存使用效率。</p>
+
+<p>现在我们有一个set叫做<code class="highlighter-rouge">circle:jdoe:family</code>,带有三个值（分别是：users:anna, users:richard, and users:mike），第二个叫做<code class="highlighter-rouge">	circle:jdoe:soccer</code>,带有四个值（分别是：users:mike, users:adam, users:toby, and users:apollo）。它们的值仅仅只是字符串，但是通过使用字符串对我们来说是有意义的（这和我们设计用户的hashes很相似），我们可以使用<code class="highlighter-rouge">SMEMBERS</code>命令的结果进而获取特点用户的信息。如下面的例子：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	redis&gt; smembers circle:jdoe:family 
+	1) "users:richard"
+	2) "users:mike"
+	3) "users:anna"
+
+	redis&gt; hgetall users:mike 
+	(...)
+</code></pre></div></div>
+
+<p>现在，我们已经知道了怎么在sets里面存储信息了，我们可以扩展这个只是，做一些有趣的事情，比如获取属于这两个sets里面的人，或者获取一个<code class="highlighter-rouge">John Doe</code>添加到我们系统朋友圈中的完整的用户列表。</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	redis&gt; sinter circle:jdoe:family circle:jdoe:soccer 
+	1) "users:mike"
+
+	redis&gt; sunion circle:jdoe:family circle:jdoe:soccer 
+	1) "users:anna"
+	2) "users:mike"
+	3) "users:apollo" 
+	4) "users:adam"
+	5) "users:richard" 
+	6) "users:toby"
+</code></pre></div></div>
+
+<p>根据我们的结果，<code class="highlighter-rouge">Mike</code>在<code class="highlighter-rouge">John Doe</code>的家庭圈和足球圈里面，通过两个圈的并集，我们也可以获取完整地成员列表。</p>
+
+<p>如你所见，Redis sets使得RDBMS一些查询变得非常简单。Redis完成得非常的快，使得对于那些管理集合操作的应用来说，<code class="highlighter-rouge">Redis sets</code>是一个理想的候选者。朋友圈就是一个例子，此外像 推荐或者甚至文本搜素也很适合。在随后的案例里面，将会看到更深入的例子。</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>SET key value
+	Sets the key to hold the given value. Existing data is overwritten (even if of a dif- ferent data type).	
+
+GET key
+	Returns the content held by the key. Works only with string values.
+
+INCR key
+	Increments the integer stored at key by 1.
+
+INCRBY key value
+	Performs the same operation as INCR, but incrementing by value instead.	
+DECR key
+	Decrements the integer stored at key by 1.
+
+DECRBY key value
+	Performs the same operation as DECR, but decrementing by value instead
+</code></pre></div></div>
+
+
+        </article>
+        <hr>
+
+        
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+        
+
+        <div class="post-recent">
+    <div class="pre">
+        
+        <p><strong>上一篇</strong> <a href="/2014/08/10/Redis-CookBook-Redis-Data-Types/">Redis Cookbook 之 Redis数据类型</a></p>
+        
+    </div>
+    <div class="nex">
+
+        
+        <p><strong>下一篇</strong> <a href="/2014/08/11/Redis-Cookbook-Implementing-OAuth/">Redis Cookbook 之 基于Redis 实现Oauth协议</a></p>
+        
+    </div>
+</div>
+
+
+        <h2 id="comments">Comments</h2>
+        
+
+
+<div id="disqus_thread"></div>
+<script>
+    /**
+     * RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     * LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+
+    var disqus_config = function() {
+        this.page.url = 'http://localhost:4000/2014/08/10/Redis-Cookbook-Redis-KeyValue-Store/'; // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = 'http://localhost:4000/2014/08/10/Redis-Cookbook-Redis-KeyValue-Store/'; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+
+    (function() { // DON'T EDIT BELOW THIS LINE
+        var d = document,
+            s = d.createElement('script');
+
+        s.src = '//taocoder.disqus.com/embed.js';
+
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+
+
+
+    </div>
+    <button class="anchor"><i class="fa fa-anchor"></i></button>
+    <div class="right">
+        <div class="wrap">
+
+            <!-- Content -->
+            <div class="side content">
+                <div>
+                    Content
+                </div>
+                <ul id="content-side" class="content-ul">
+                    
+                    <li><a href="#comments">Comments</a></li>
+                </ul>
+            </div>
+            <!-- 其他div框放到这里 -->
+            <!-- <div class="side">bbbb</div> -->
+        </div>
+    </div>
+</div>
+<script>
+/**
+ * target _blank
+ */
+(function() {
+    var aTags = document.querySelectorAll('article a:not([id])')
+    for (var i = 0; i < aTags.length; i++) {
+        aTags[i].setAttribute('target', '_blank')
+    }
+}());
+</script>
+<script src="/js/pageContent.js " charset="utf-8"></script>
+
+
+    <footer class="site-footer">
+
+
+    <div class="wrapper">
+
+        <p class="description">
+             本站保留着一点点技术积蓄！ 
+        </p>
+        <p class="contact">
+            Contact me at: 
+            <a href="https://github.com/ketao1989" title="GitHub"><i class="fa fa-github" aria-hidden="true"></i></a>  
+            <a href="mailto:ketao1989@126.com" title="email"><i class="fa fa-envelope-o" aria-hidden="true"></i></a>  
+            <a href="http://weibo.com/柯小小西" title="Weibo"><i class="fa fa-weibo" aria-hidden="true"></i></a>       
+        </p>
+        <p>
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次，本站访客数<span id="busuanzi_value_site_uv"></span>人次，本文总阅读量<span id="busuanzi_value_page_pv"></span>次
+        </p>
+        <p class="power">
+            <span>
+                Site powered by <a href="https://jekyllrb.com/">Jekyll</a> & <a href="https://pages.github.com/">Github Pages</a>.
+            </span>
+            <span>
+                Theme designed by <a href="https://github.com/Gaohaoyang">HyG</a>.
+            </span>
+        </p>
+    </div>
+</footer>
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+    <div class="back-to-top">
+    <a href="#top" data-scroll>
+        <i class="fa fa-arrow-up" aria-hidden="true"></i>
+    </a>
+</div>
+
+    <script src=" /js/main.js " charset="utf-8"></script>
+    <script src=" /js/smooth-scroll.min.js " charset="utf-8"></script>
+    <script type="text/javascript">
+      smoothScroll.init({
+        speed: 500, // Integer. How fast to complete the scroll in milliseconds
+        easing: 'easeInOutCubic', // Easing pattern to use
+        offset: 20, // Integer. How far to offset the scrolling anchor location in pixels
+      });
+    </script>
+    <!-- <script src=" /js/scroll.min.js " charset="utf-8"></script> -->
+  </body>
+
+</html>

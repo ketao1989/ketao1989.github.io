@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Java一些小Tips</title>
+    <meta name="description" content="插播广告：ubuntu系统的sublime text 3 中文无法输入，需要修复一些so库。参考：http://jingyan.baidu.com/article/f3ad7d0ff8731609c3345b3b.html前言虽然java开发已经快两年了，但是对于java内部一些小的技巧和坑还是会有些不了解。这里...">
+
+    <link rel="shortcut icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://at.alicdn.com/t/font_8v3czwksspqlg14i.css">
+    <link rel="stylesheet" href="/css/main.css ">
+    <link rel="canonical" href="http://localhost:4000/2014/11/24/java-some-tips/">
+    <link rel="alternate" type="application/rss+xml" title="柯小小西" href="http://localhost:4000/feed.xml ">
+
+
+    <script>
+    // 百度统计代码
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?a9b0f47a0e50b02dafb8a7088436a9bc";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+    </script>
+
+
+
+
+</head>
+
+
+  <body>
+
+    <header id="top">
+    <div class="wrapper">
+        <a href="/" class="brand">柯小小西</a>
+        <small>留着一点点技术积蓄</small>
+        <button id="headerMenu" class="menu"><i class="fa fa-bars"></i></button>
+        <nav id="headerNav">
+            <ul>
+                <li>
+                    
+                    <a href="/">
+                    
+                        <i class="fa fa-home"></i>Home
+                    </a>
+                </li>
+
+                
+                    
+                    <li>
+                        
+                        <a href="/archive/">
+                        
+                            <i class="fa fa-archive"></i>Archives
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/category/">
+                        
+                            <i class="fa fa-th-list"></i>Categories
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/tag/">
+                        
+                            <i class="fa fa-tags"></i>Tags
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/about/">
+                        
+                            <i class="fa fa-heart"></i>About
+                        </a>
+                    </li>
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+        <div class="page clearfix" post>
+    <div class="left">
+        <h1>Java一些小Tips</h1>
+        <div class="label">
+
+            <div class="label-card">
+                <i class="fa fa-calendar"></i>2014-11-24
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+            
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Java" title="Category: Java" rel="category">Java</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+            </div>
+
+            <div class="label-card">
+            
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+            </div>
+
+        </div>
+        <hr>
+        <article itemscope itemtype="http://schema.org/BlogPosting">
+        <p>插播广告：ubuntu系统的sublime text 3 中文无法输入，需要修复一些so库。参考：<a href="http://jingyan.baidu.com/article/f3ad7d0ff8731609c3345b3b.html">http://jingyan.baidu.com/article/f3ad7d0ff8731609c3345b3b.html</a></p>
+
+<h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p>虽然java开发已经快两年了，但是对于java内部一些小的技巧和坑还是会有些不了解。这里记录下。</p>
+
+<h2 id="java-integer并发问题"><a id="Integer">java Integer并发问题</a></h2>
+
+<p>前段时间看书，顺带提到说<code class="highlighter-rouge">Integer.valueOf( )会导致死锁问题</code>很是惊讶。于是，查看了JDK源码，果然如此。</p>
+
+<p>JDK代码对把-128 到127 之间的整数转换成<code class="highlighter-rouge">Integer</code>的时候，并不会new一个新的Integer对象，而是从 内部的<code class="highlighter-rouge">IntegerCache</code>中直接获取已经创建好的对象（第一次调用时会创建这个<code class="highlighter-rouge">IntegerCache</code>）。</p>
+
+<blockquote>
+  <blockquote>
+    <p>由于内部<code class="highlighter-rouge">IntegerCache</code>共用，所以在不同的地方对同一个数值调用<code class="highlighter-rouge">valueOf</code>获取cache中同一个对象，这样很可能会导致死锁。此外，关于整数范围可以使用VM初始设置（-XX:AutoBoxCacheMax=<size>，但是不能比127小）</size></p>
+  </blockquote>
+</blockquote>
+
+<h3 id="valueof方法实现代码">valueOf方法实现代码</h3>
+
+<p><code class="highlighter-rouge">valueOf</code>方法实际上就是调用<code class="highlighter-rouge">IntegerCache</code>获取对应下标的对象，而<code class="highlighter-rouge">IntegerCache</code>实际上就是一个Integer对象数组。关于<code class="highlighter-rouge">IntegerCache</code>实现如下所示：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="kd">private</span> <span class="kd">static</span> <span class="kd">class</span> <span class="nc">IntegerCache</span> <span class="o">{</span>
+        <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">low</span> <span class="o">=</span> <span class="o">-</span><span class="mi">128</span><span class="o">;</span>
+        <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">high</span><span class="o">;</span>
+        <span class="kd">static</span> <span class="kd">final</span> <span class="n">Integer</span> <span class="n">cache</span><span class="o">[];</span>
+
+        <span class="kd">static</span> <span class="o">{</span>
+            <span class="c1">// high value may be configured by property</span>
+            <span class="kt">int</span> <span class="n">h</span> <span class="o">=</span> <span class="mi">127</span><span class="o">;</span>
+            <span class="n">String</span> <span class="n">integerCacheHighPropValue</span> <span class="o">=</span>
+                <span class="n">sun</span><span class="o">.</span><span class="na">misc</span><span class="o">.</span><span class="na">VM</span><span class="o">.</span><span class="na">getSavedProperty</span><span class="o">(</span><span class="s">"java.lang.Integer.IntegerCache.high"</span><span class="o">);</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">integerCacheHighPropValue</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="n">parseInt</span><span class="o">(</span><span class="n">integerCacheHighPropValue</span><span class="o">);</span>
+                <span class="n">i</span> <span class="o">=</span> <span class="n">Math</span><span class="o">.</span><span class="na">max</span><span class="o">(</span><span class="n">i</span><span class="o">,</span> <span class="mi">127</span><span class="o">);</span>
+                <span class="c1">// Maximum array size is Integer.MAX_VALUE</span>
+                <span class="n">h</span> <span class="o">=</span> <span class="n">Math</span><span class="o">.</span><span class="na">min</span><span class="o">(</span><span class="n">i</span><span class="o">,</span> <span class="n">Integer</span><span class="o">.</span><span class="na">MAX_VALUE</span> <span class="o">-</span> <span class="o">(-</span><span class="n">low</span><span class="o">)</span> <span class="o">-</span><span class="mi">1</span><span class="o">);</span> 
+            <span class="o">}</span>
+            <span class="n">high</span> <span class="o">=</span> <span class="n">h</span><span class="o">;</span>
+
+            <span class="n">cache</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Integer</span><span class="o">[(</span><span class="n">high</span> <span class="o">-</span> <span class="n">low</span><span class="o">)</span> <span class="o">+</span> <span class="mi">1</span><span class="o">];</span><span class="c1">//大小为正负两边总的数量</span>
+            <span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="n">low</span><span class="o">;</span>
+            <span class="k">for</span><span class="o">(</span><span class="kt">int</span> <span class="n">k</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">k</span> <span class="o">&lt;</span> <span class="n">cache</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">k</span><span class="o">++)</span>
+                <span class="n">cache</span><span class="o">[</span><span class="n">k</span><span class="o">]</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Integer</span><span class="o">(</span><span class="n">j</span><span class="o">++);</span>
+        <span class="o">}</span>
+
+        <span class="kd">private</span> <span class="nf">IntegerCache</span><span class="o">()</span> <span class="o">{}</span>
+    <span class="o">}</span>
+
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>之所以会导致死锁，主要原因是因为当两个线程不断的调用valueOf时，比如一个为 <code class="highlighter-rouge">Integer a=Integer.valueOf(10) + Integer.valueOf(20)</code>，另外一个线程调用<code class="highlighter-rouge">Integer b= Integer.valueOf(20) +Integer.valueOf(10)</code>，while中不停的调用，就可能出现死锁异常。</p>
+
+  </blockquote>
+</blockquote>
+
+<!-- more -->
+
+<h2 id="string-可变性方法"><a id="StringChange">String 可变性方法</a></h2>
+
+<h3 id="string属性">String属性</h3>
+
+<p>在一般的代码逻辑中，String 显然是不可以改变的，其实际上是一个final属性的值类型。也就是说，我们申明一个变量为String 常量，只要不替换变量的String引用，其具体字符串内容是不会改变的。但是，一个有趣的方法可以改变这些。</p>
+
+<p>###改变String 值</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="cm">/*************************************************************************
+    &gt; File Name: StringChange.java
+    &gt; Author: ketao1989
+    &gt; Mail: ketao1989@gmail.com
+    &gt; Created Time: 2014年12月10日 星期三 20时48分37秒
+ ************************************************************************/</span>
+<span class="kn">import</span> <span class="nn">java.lang.reflect.Field</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">StringChange</span> <span class="o">{</span>
+    
+    <span class="kd">private</span> <span class="kd">static</span> <span class="n">Field</span> <span class="n">valueField</span><span class="o">;</span>
+    
+    <span class="kd">static</span> <span class="o">{</span>
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="n">valueField</span> <span class="o">=</span> <span class="n">String</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getDeclaredField</span><span class="o">(</span><span class="s">"value"</span><span class="o">);</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">valueField</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">valueField</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>                                                            
+            <span class="o">}</span>
+            <span class="c1">// (1)</span>
+            <span class="n">valueField</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="s">"Immutable String"</span><span class="o">,</span> <span class="s">"Change Now！"</span><span class="o">.</span><span class="na">toCharArray</span><span class="o">());</span> 
+                                                
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+                                    
+        <span class="o">}</span>
+                
+    <span class="o">}</span>
+    
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Immutable String"</span><span class="o">);</span>
+    <span class="o">}</span>
+
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Note: 其实就是一个反射特性的有趣应用。其内部运行流程为：当运行(1)的时候，应用会去String池中寻找该字符串常量对应的引用，如果没有则新建一个，并且会把引用对应的值更改为新设置的值<code class="highlighter-rouge">Change Now！</code>。</p>
+
+    <p>然后在程序运行main的时候，会去String池中寻找<code class="highlighter-rouge">Immutable String</code>对应的引用，但是这个引用内部的值以及被更改为<code class="highlighter-rouge">Change Now！</code>，所以打印的时候就会输出<code class="highlighter-rouge">Change Now！</code>.</p>
+
+  </blockquote>
+</blockquote>
+
+<h2 id="volatile-非线程安全性"><a id="VolatileUnsafe">volatile 非线程安全性</a></h2>
+
+<h3 id="volatile-属性">volatile 属性</h3>
+
+<p><code class="highlighter-rouge">volatile</code> 在java中是一种力度比较轻的synchronized，使用简单，相应编码也比较少；显然，其对应的同步功能也会比synchronized少一部分。</p>
+
+<p>在一般地代码使用过程中，经常会存在一些错误的使用方法，由于涉及多线程的方面的使用，有时候测试不严谨，就会存在一些线上不易发现的错误数据。</p>
+
+<p><code class="highlighter-rouge">volatile</code>变量保证的是，定义属性字段在java内存模型中数据一致性，也就是说，当其他线程操作更新了该属性字段，所有读取该属性字段的线程都会去全局内存上去获取最新值。关于内存模型一致性参考下面这张图就可以明白了，文章可以看看改图对应的博文：<a href="http://www.infoq.com/cn/articles/java-memory-model-1">深入理解Java内存模型</a></p>
+
+<p><img src="/images/2014/11/jmm.png" /></p>
+
+<h3 id="volatile-非线程安全">volatile 非线程安全</h3>
+
+<p>虽然，<code class="highlighter-rouge">volatile</code>虽然保证内存一致性，但是并不是线程安全的，这两个特性是不对应的。下面给出一个代码说明：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="cm">/**
+ * @author: ketao Date: 14/12/14 Time: 下午8:21
+ * @version: \$Id$
+ */</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">VolatileUnsafe</span> <span class="o">{</span>
+
+    <span class="kd">static</span> <span class="kd">volatile</span> <span class="kt">int</span> <span class="n">COUNT</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+
+        <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">100</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+            <span class="k">new</span> <span class="nf">Thread</span><span class="o">(</span><span class="k">new</span> <span class="n">Runnable</span><span class="o">()</span> <span class="o">{</span>
+                <span class="nd">@Override</span>
+                <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+
+                    <span class="n">stopSecond</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+                    <span class="n">COUNT</span> <span class="o">+=</span> <span class="mi">100</span><span class="o">;</span>
+                <span class="o">}</span>
+            <span class="o">}).</span><span class="na">start</span><span class="o">();</span>
+        <span class="o">}</span>
+
+        <span class="n">stopSecond</span><span class="o">(</span><span class="mi">1000</span><span class="o">);</span>
+        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"100 times increase sum is :"</span> <span class="o">+</span> <span class="n">COUNT</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">stopSecond</span><span class="o">(</span><span class="kt">int</span> <span class="n">a</span><span class="o">)</span> <span class="o">{</span>
+
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="n">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="n">a</span> <span class="o">*</span> <span class="mi">10</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">InterruptedException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>代码写的很简单，但是足以说明 <code class="highlighter-rouge">volatile</code>确实是无法保证线程安全性的。</p>
+
+<p><code class="highlighter-rouge">volatile</code>确实可以保证线程变量内存一致性，但是对于上述这种多线程对变量更新操作的问题是无法保证的。在代码执行的时候，每个线程启动有先后，但是在sleep的时候，很多线程都取得了最新的值，这些值计算完了之后会写入内存，但是这个时候如果变量值改变了，线程并不知道，因为<code class="highlighter-rouge">volatile</code>只能保证读变量时是内存中最新的值，写的时候写入共享内存中；但是无法保证写入的时候去判断先前获取的值是否还是计算完之后还是最新的，因此也就无法保证线程安全性。</p>
+
+<p>综上所述，<code class="highlighter-rouge">volatile</code>是无法保证线程安全性的；如果有这种需求，请使用<code class="highlighter-rouge">AtomicXxx</code>或者<code class="highlighter-rouge">synchronized</code>属性来实现。</p>
+
+<p>此外，关于<code class="highlighter-rouge">volatile</code>变量一些优点和使用技巧，请参考IBM计数博客：<a href="http://www.ibm.com/developerworks/cn/java/j-jtp06197.html">Java 理论与实践: 正确使用 Volatile 变量</a></p>
+
+<h2 id="mathabs-可能返回负数"><a id="MathAbs">Math.abs 可能返回负数</a></h2>
+
+<p>在有些应用场景下，我们需要对数值进行绝对值操作，保证是正数返回，一般我们都是使用<code class="highlighter-rouge">Math.abs()</code>函数来完成。但是，在使用kafka进行分区自定义的时候，我们实现是对key进行hash操作，然后对当前分区取mod，由于要求返回的分区必须是整数，所以hash后特别进行了abs操作，结果竟然发现还有负值出现。</p>
+
+<p>然后，Google发现，abs在某种情况下，竟然会返回负值。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="cm">/**
+     * Returns the absolute value of an {@code int} value.
+     * If the argument is not negative, the argument is returned.
+     * If the argument is negative, the negation of the argument is returned.
+     *
+     * &lt;p&gt;Note that if the argument is equal to the value of
+     * {@link Integer#MIN_VALUE}, the most negative representable
+     * {@code int} value, the result is that same value, which is
+     * negative.
+     *
+     * @param   a   the argument whose absolute value is to be determined
+     * @return  the absolute value of the argument.
+     */</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">int</span> <span class="nf">abs</span><span class="o">(</span><span class="kt">int</span> <span class="n">a</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="o">(</span><span class="n">a</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">?</span> <span class="o">-</span><span class="n">a</span> <span class="o">:</span> <span class="n">a</span><span class="o">;</span>
+    <span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>从上面的jdk源码注释中，可以看出，当 a的值为<code class="highlighter-rouge">Integer#MIN_VALUE</code>时，返回原值。原因是因为 int 值的范围是 <code class="highlighter-rouge">-2^31 ~ 2^31-1</code>，也就是说最小的负数，没有对应的正整数，所以jdk实现中只有原样返回了。</p>
+
+<p>实现中，由于 <code class="highlighter-rouge">Integer#MIN_VALUE</code> 二进制表示为 <code class="highlighter-rouge">10000000000000000000000000000000</code>，取负数之后，还是<code class="highlighter-rouge">10000000000000000000000000000000</code>,所以，原值返回了。</p>
+
+<p>如果有兴趣，你可以写个小代码测试下。^_^</p>
+
+<h2 id="java-向上取证"><a id="IntMath">java 向上取证</a></h2>
+
+<p>在开发的时候，经常有<code class="highlighter-rouge">对两个整数向上取整</code>，一般我们都会把问题收缩到两个正整数取整，下来来看下<code class="highlighter-rouge">Guava</code>的时候吧：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">static</span> <span class="kt">int</span> <span class="nf">divide</span><span class="o">(</span><span class="kt">int</span> <span class="n">p</span><span class="o">,</span> <span class="kt">int</span> <span class="n">q</span><span class="o">,</span> <span class="n">RoundingMode</span> <span class="n">mode</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">checkNotNull</span><span class="o">(</span><span class="n">mode</span><span class="o">);</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">q</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">throw</span> <span class="k">new</span> <span class="nf">ArithmeticException</span><span class="o">(</span><span class="s">"/ by zero"</span><span class="o">);</span> <span class="c1">// for GWT</span>
+    <span class="o">}</span>
+    <span class="kt">int</span> <span class="n">div</span> <span class="o">=</span> <span class="n">p</span> <span class="o">/</span> <span class="n">q</span><span class="o">;</span>
+    <span class="kt">int</span> <span class="n">rem</span> <span class="o">=</span> <span class="n">p</span> <span class="o">-</span> <span class="n">q</span> <span class="o">*</span> <span class="n">div</span><span class="o">;</span> <span class="c1">// equal to p % q</span>
+
+    <span class="k">if</span> <span class="o">(</span><span class="n">rem</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="n">div</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="cm">/*
+     * signum 如果p,q都是整数或者负数的时候，这个值为1, and -1 otherwise.
+     */</span>
+    <span class="kt">int</span> <span class="n">signum</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">|</span> <span class="o">((</span><span class="n">p</span> <span class="o">^</span> <span class="n">q</span><span class="o">)</span> <span class="o">&gt;&gt;</span> <span class="o">(</span><span class="n">Integer</span><span class="o">.</span><span class="na">SIZE</span> <span class="o">-</span> <span class="mi">1</span><span class="o">));</span><span class="c1">// 根据pq来看两个正负属性</span>
+    <span class="kt">boolean</span> <span class="n">increment</span><span class="o">;</span>
+    <span class="k">switch</span> <span class="o">(</span><span class="n">mode</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">case</span> <span class="nl">UNNECESSARY:</span>
+        <span class="n">checkRoundingUnnecessary</span><span class="o">(</span><span class="n">rem</span> <span class="o">==</span> <span class="mi">0</span><span class="o">);</span>
+        <span class="c1">// fall through</span>
+      <span class="k">case</span> <span class="nl">DOWN:</span>
+        <span class="n">increment</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+        <span class="k">break</span><span class="o">;</span>
+      <span class="k">case</span> <span class="nl">UP:</span>
+        <span class="n">increment</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+        <span class="k">break</span><span class="o">;</span>
+      <span class="k">case</span> <span class="nl">CEILING:</span>
+        <span class="n">increment</span> <span class="o">=</span> <span class="n">signum</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">;</span>
+        <span class="k">break</span><span class="o">;</span>
+      <span class="k">case</span> <span class="nl">FLOOR:</span>
+        <span class="n">increment</span> <span class="o">=</span> <span class="n">signum</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="o">;</span>
+        <span class="k">break</span><span class="o">;</span>
+      <span class="k">case</span> <span class="nl">HALF_EVEN:</span>
+      <span class="k">case</span> <span class="nl">HALF_DOWN:</span>
+      <span class="k">case</span> <span class="nl">HALF_UP:</span>
+        <span class="kt">int</span> <span class="n">absRem</span> <span class="o">=</span> <span class="n">abs</span><span class="o">(</span><span class="n">rem</span><span class="o">);</span>
+        <span class="kt">int</span> <span class="n">cmpRemToHalfDivisor</span> <span class="o">=</span> <span class="n">absRem</span> <span class="o">-</span> <span class="o">(</span><span class="n">abs</span><span class="o">(</span><span class="n">q</span><span class="o">)</span> <span class="o">-</span> <span class="n">absRem</span><span class="o">);</span>
+        <span class="c1">// subtracting two nonnegative ints can't overflow</span>
+        <span class="c1">// cmpRemToHalfDivisor has the same sign as compare(abs(rem), abs(q) / 2).</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">cmpRemToHalfDivisor</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span> <span class="c1">// exactly on the half mark</span>
+          <span class="n">increment</span> <span class="o">=</span> <span class="o">(</span><span class="n">mode</span> <span class="o">==</span> <span class="n">HALF_UP</span> <span class="o">||</span> <span class="o">(</span><span class="n">mode</span> <span class="o">==</span> <span class="n">HALF_EVEN</span> <span class="o">&amp;</span> <span class="o">(</span><span class="n">div</span> <span class="o">&amp;</span> <span class="mi">1</span><span class="o">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="o">));</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+          <span class="n">increment</span> <span class="o">=</span> <span class="n">cmpRemToHalfDivisor</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">;</span> <span class="c1">// closer to the UP value</span>
+        <span class="o">}</span>
+        <span class="k">break</span><span class="o">;</span>
+      <span class="k">default</span><span class="o">:</span>
+        <span class="k">throw</span> <span class="k">new</span> <span class="nf">AssertionError</span><span class="o">();</span>
+    <span class="o">}</span>
+    <span class="k">return</span> <span class="n">increment</span> <span class="o">?</span> <span class="n">div</span> <span class="o">+</span> <span class="n">signum</span> <span class="o">:</span> <span class="n">div</span><span class="o">;</span>
+  <span class="o">}</span>
+
+
+<span class="c1">// 具体实现参考guava的这个类</span>
+  <span class="kd">public</span> <span class="kd">enum</span> <span class="n">RoundingMode</span> <span class="o">{</span>
+    <span class="n">UP</span><span class="o">(</span><span class="n">BigDecimal</span><span class="o">.</span><span class="na">ROUND_UP</span><span class="o">),</span>
+    <span class="n">DOWN</span><span class="o">(</span><span class="n">BigDecimal</span><span class="o">.</span><span class="na">ROUND_DOWN</span><span class="o">),</span>
+    <span class="n">CEILING</span><span class="o">(</span><span class="n">BigDecimal</span><span class="o">.</span><span class="na">ROUND_CEILING</span><span class="o">),</span>
+    <span class="n">FLOOR</span><span class="o">(</span><span class="n">BigDecimal</span><span class="o">.</span><span class="na">ROUND_FLOOR</span><span class="o">),</span>
+    <span class="n">HALF_UP</span><span class="o">(</span><span class="n">BigDecimal</span><span class="o">.</span><span class="na">ROUND_HALF_UP</span><span class="o">),</span>
+    <span class="n">HALF_DOWN</span><span class="o">(</span><span class="n">BigDecimal</span><span class="o">.</span><span class="na">ROUND_HALF_DOWN</span><span class="o">),</span>
+    <span class="n">HALF_EVEN</span><span class="o">(</span><span class="n">BigDecimal</span><span class="o">.</span><span class="na">ROUND_HALF_EVEN</span><span class="o">),</span>
+    <span class="n">UNNECESSARY</span><span class="o">(</span><span class="n">BigDecimal</span><span class="o">.</span><span class="na">ROUND_UNNECESSARY</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+        </article>
+        <hr>
+
+        
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+        
+
+        <div class="post-recent">
+    <div class="pre">
+        
+        <p><strong>上一篇</strong> <a href="/2014/10/22/Dubbo-Provider-Groups-Bug-Analyse/">Dubbo provider 多组名注册问题分析</a></p>
+        
+    </div>
+    <div class="nex">
+
+        
+        <p><strong>下一篇</strong> <a href="/2014/11/26/Java-Implement-One-Algorithm-by-Day/">一天一算法之java实现</a></p>
+        
+    </div>
+</div>
+
+
+        <h2 id="comments">Comments</h2>
+        
+
+
+<div id="disqus_thread"></div>
+<script>
+    /**
+     * RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     * LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+
+    var disqus_config = function() {
+        this.page.url = 'http://localhost:4000/2014/11/24/java-some-tips/'; // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = 'http://localhost:4000/2014/11/24/java-some-tips/'; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+
+    (function() { // DON'T EDIT BELOW THIS LINE
+        var d = document,
+            s = d.createElement('script');
+
+        s.src = '//taocoder.disqus.com/embed.js';
+
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+
+
+
+    </div>
+    <button class="anchor"><i class="fa fa-anchor"></i></button>
+    <div class="right">
+        <div class="wrap">
+
+            <!-- Content -->
+            <div class="side content">
+                <div>
+                    Content
+                </div>
+                <ul id="content-side" class="content-ul">
+                    
+                    <li><a href="#comments">Comments</a></li>
+                </ul>
+            </div>
+            <!-- 其他div框放到这里 -->
+            <!-- <div class="side">bbbb</div> -->
+        </div>
+    </div>
+</div>
+<script>
+/**
+ * target _blank
+ */
+(function() {
+    var aTags = document.querySelectorAll('article a:not([id])')
+    for (var i = 0; i < aTags.length; i++) {
+        aTags[i].setAttribute('target', '_blank')
+    }
+}());
+</script>
+<script src="/js/pageContent.js " charset="utf-8"></script>
+
+
+    <footer class="site-footer">
+
+
+    <div class="wrapper">
+
+        <p class="description">
+             本站保留着一点点技术积蓄！ 
+        </p>
+        <p class="contact">
+            Contact me at: 
+            <a href="https://github.com/ketao1989" title="GitHub"><i class="fa fa-github" aria-hidden="true"></i></a>  
+            <a href="mailto:ketao1989@126.com" title="email"><i class="fa fa-envelope-o" aria-hidden="true"></i></a>  
+            <a href="http://weibo.com/柯小小西" title="Weibo"><i class="fa fa-weibo" aria-hidden="true"></i></a>       
+        </p>
+        <p>
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次，本站访客数<span id="busuanzi_value_site_uv"></span>人次，本文总阅读量<span id="busuanzi_value_page_pv"></span>次
+        </p>
+        <p class="power">
+            <span>
+                Site powered by <a href="https://jekyllrb.com/">Jekyll</a> & <a href="https://pages.github.com/">Github Pages</a>.
+            </span>
+            <span>
+                Theme designed by <a href="https://github.com/Gaohaoyang">HyG</a>.
+            </span>
+        </p>
+    </div>
+</footer>
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+    <div class="back-to-top">
+    <a href="#top" data-scroll>
+        <i class="fa fa-arrow-up" aria-hidden="true"></i>
+    </a>
+</div>
+
+    <script src=" /js/main.js " charset="utf-8"></script>
+    <script src=" /js/smooth-scroll.min.js " charset="utf-8"></script>
+    <script type="text/javascript">
+      smoothScroll.init({
+        speed: 500, // Integer. How fast to complete the scroll in milliseconds
+        easing: 'easeInOutCubic', // Easing pattern to use
+        offset: 20, // Integer. How far to offset the scrolling anchor location in pixels
+      });
+    </script>
+    <!-- <script src=" /js/scroll.min.js " charset="utf-8"></script> -->
+  </body>
+
+</html>

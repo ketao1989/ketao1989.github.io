@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Dubbo provider 多组名注册问题分析</title>
+    <meta name="description" content="前言最近线上遇到一个很奇怪的现象，就是一个dubbo 服务被注册到了好几个group下面，并且这些group都是我们应用中，通过dubbo:registry来配置的。但是，显然这不是我们应用所期待的结果，因此，首先，我们需要修复这个问题；其次，我们需要找出原因。1.1 问题定位首先看配置：&lt;?xml ver...">
+
+    <link rel="shortcut icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://at.alicdn.com/t/font_8v3czwksspqlg14i.css">
+    <link rel="stylesheet" href="/css/main.css ">
+    <link rel="canonical" href="http://localhost:4000/2014/10/22/Dubbo-Provider-Groups-Bug-Analyse/">
+    <link rel="alternate" type="application/rss+xml" title="柯小小西" href="http://localhost:4000/feed.xml ">
+
+
+    <script>
+    // 百度统计代码
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?a9b0f47a0e50b02dafb8a7088436a9bc";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+    </script>
+
+
+
+
+</head>
+
+
+  <body>
+
+    <header id="top">
+    <div class="wrapper">
+        <a href="/" class="brand">柯小小西</a>
+        <small>留着一点点技术积蓄</small>
+        <button id="headerMenu" class="menu"><i class="fa fa-bars"></i></button>
+        <nav id="headerNav">
+            <ul>
+                <li>
+                    
+                    <a href="/">
+                    
+                        <i class="fa fa-home"></i>Home
+                    </a>
+                </li>
+
+                
+                    
+                    <li>
+                        
+                        <a href="/archive/">
+                        
+                            <i class="fa fa-archive"></i>Archives
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/category/">
+                        
+                            <i class="fa fa-th-list"></i>Categories
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/tag/">
+                        
+                            <i class="fa fa-tags"></i>Tags
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/about/">
+                        
+                            <i class="fa fa-heart"></i>About
+                        </a>
+                    </li>
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+        <div class="page clearfix" post>
+    <div class="left">
+        <h1>Dubbo provider 多组名注册问题分析</h1>
+        <div class="label">
+
+            <div class="label-card">
+                <i class="fa fa-calendar"></i>2014-10-22
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+            
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Java" title="Category: Java" rel="category">Java</a>&nbsp;
+    
+        <a href="/category/#Dubbo" title="Category: Dubbo" rel="category">Dubbo</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+            </div>
+
+            <div class="label-card">
+            
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+            </div>
+
+        </div>
+        <hr>
+        <article itemscope itemtype="http://schema.org/BlogPosting">
+        <h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p>最近线上遇到一个很奇怪的现象，就是一个dubbo 服务被注册到了好几个<code class="highlighter-rouge">group</code>下面，并且这些<code class="highlighter-rouge">group</code>都是我们应用中，通过<code class="highlighter-rouge">dubbo:registry</code>来配置的。但是，显然这不是我们应用所期待的结果，因此，首先，我们需要修复这个问题；其次，我们需要找出原因。</p>
+
+<h3 id="11-问题定位">1.1 问题定位</h3>
+
+<p>首先看配置：</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="cp">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
+<span class="nt">&lt;beans</span> <span class="na">xmlns:xsi=</span><span class="s">"http://www.w3.org/2001/XMLSchema-instance"</span>
+       <span class="na">xmlns:dubbo=</span><span class="s">"http://code.alibabatech.com/schema/dubbo"</span>
+       <span class="na">xmlns=</span><span class="s">"http://www.springframework.org/schema/beans"</span>
+       <span class="na">xsi:schemaLocation=</span><span class="s">"http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+        http://code.alibabatech.com/schema/dubbo
+        http://code.alibabatech.com/schema/dubbo/dubbo.xsd"</span><span class="nt">&gt;</span>
+
+    <span class="nt">&lt;dubbo:registry</span> <span class="na">id=</span><span class="s">"crm-message-registry"</span> <span class="na">group=</span><span class="s">"crm-message"</span>
+                    <span class="na">address=</span><span class="s">"${qunar-public.zookeeper.address}"</span> <span class="na">protocol=</span><span class="s">"zookeeper"</span><span class="nt">/&gt;</span>
+
+    <span class="nt">&lt;dubbo:protocol</span> <span class="na">name=</span><span class="s">"dubbo"</span> <span class="na">port=</span><span class="s">"${dubbo.protocol} "</span><span class="nt">/&gt;</span>
+
+    <span class="nt">&lt;dubbo:service</span> <span class="na">interface=</span><span class="s">"com.qxx.scm.message.api.IPushMessageBiz"</span>
+                   <span class="na">ref=</span><span class="s">"pushMessageBiz"</span> <span class="na">timeout=</span><span class="s">"6000"</span> <span class="na">version=</span><span class="s">"1.0.1"</span> <span class="nt">/&gt;</span>
+                   
+    <span class="nt">&lt;/beans&gt;</span>
+    
+</code></pre></div></div>
+
+<p>从上面的配置可以看到，我们实际上是有<code class="highlighter-rouge">dubbo:registry</code>，并且在其中也设置了<code class="highlighter-rouge">group</code>属性。</p>
+
+<!-- more -->
+
+<p>接下来，拿该xml配置和以前的 <code class="highlighter-rouge">dubbo provider</code>的配置进行比较，发现在<code class="highlighter-rouge">dubbo:service</code>的属性配置里面，缺少了指定<code class="highlighter-rouge">registry</code>的配置，猜想应该是该配置的缺失，导致应用把该<code class="highlighter-rouge">service</code>对应的服务，注册到了多个group下面。因此，为了正式推测，更改配置如下：</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="cp">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
+<span class="nt">&lt;beans</span> <span class="na">xmlns:xsi=</span><span class="s">"http://www.w3.org/2001/XMLSchema-instance"</span>
+       <span class="na">xmlns:dubbo=</span><span class="s">"http://code.alibabatech.com/schema/dubbo"</span>
+       <span class="na">xmlns=</span><span class="s">"http://www.springframework.org/schema/beans"</span>
+       <span class="na">xsi:schemaLocation=</span><span class="s">"http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+        http://code.alibabatech.com/schema/dubbo
+        http://code.alibabatech.com/schema/dubbo/dubbo.xsd"</span><span class="nt">&gt;</span>
+
+    <span class="nt">&lt;dubbo:registry</span> <span class="na">id=</span><span class="s">"crm-message-registry"</span> <span class="na">group=</span><span class="s">"crm-message"</span>
+                    <span class="na">address=</span><span class="s">"${qxx-public.zookeeper.address}"</span> <span class="na">protocol=</span><span class="s">"zookeeper"</span><span class="nt">/&gt;</span>
+
+    <span class="nt">&lt;dubbo:protocol</span> <span class="na">name=</span><span class="s">"dubbo"</span> <span class="na">port=</span><span class="s">"${dubbo.protocol} "</span><span class="nt">/&gt;</span>
+    
+    <span class="nt">&lt;dubbo:service</span> <span class="na">interface=</span><span class="s">"com.qxx.scm.message.api.IPushMessageBiz"</span>
+                   <span class="na">ref=</span><span class="s">"pushMessageBiz"</span> <span class="na">timeout=</span><span class="s">"6000"</span> <span class="na">version=</span><span class="s">"1.0.1"</span> <span class="na">registry=</span><span class="s">"crm-message-registry"</span><span class="nt">/&gt;</span>
+ 
+    <span class="nt">&lt;/beans&gt;</span>
+    
+</code></pre></div></div>
+
+<p>启动应用，发现果然问题解决了。</p>
+
+<h3 id="12-问题产生原因">1.2 问题产生原因</h3>
+
+<p>在<code class="highlighter-rouge">dubbo:service</code>没有明确设置<code class="highlighter-rouge">registry</code>，不会导致启动失败，或者注册不上，而是会在应用配置中声明的所有组名下面注册对应服务。于是，去dubbo的github：<a href="http://alibaba.github.io/dubbo-doc-static/Developer+Guide-zh.htm">http://alibaba.github.io/dubbo-doc-static/Developer+Guide-zh.htm</a>  上去看看wiki有木有说明。关于注册说明，如：<a href="http://alibaba.github.io/dubbo-doc-static/RegistryFactory+SPI-zh.htm">http://alibaba.github.io/dubbo-doc-static/RegistryFactory+SPI-zh.htm</a>.</p>
+
+<p>其中，文档关于配置说明如下：</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="nt">&lt;dubbo:registry</span> <span class="na">id=</span><span class="s">"xxx1"</span> <span class="na">address=</span><span class="s">"xxx://ip:port"</span> <span class="nt">/&gt;</span> <span class="c">&lt;!-- 定义注册中心 --&gt;</span>
+<span class="nt">&lt;dubbo:service</span> <span class="na">registry=</span><span class="s">"xxx1"</span> <span class="nt">/&gt;</span> <span class="c">&lt;!-- 引用注册中心，如果没有配置registry属性，将在ApplicationContext中自动扫描registry配置 --&gt;</span>
+<span class="nt">&lt;dubbo:provider</span> <span class="na">registry=</span><span class="s">"xxx1"</span> <span class="nt">/&gt;</span> <span class="c">&lt;!-- 引用注册中心缺省值，当&lt;dubbo:service&gt;没有配置registry属性时，使用此配置 --&gt;</span>
+
+</code></pre></div></div>
+
+<p>ok，到这里就明白了，<code class="highlighter-rouge">dubbo</code>在我们配置<code class="highlighter-rouge">&lt;dubbo:service&gt;</code>中没有指定registry时，会看看对应的<code class="highlighter-rouge">&lt;dubbo:provider&gt;</code>有木有配置<code class="highlighter-rouge">registry</code>,如果没有，则<em>在ApplicationContext中自动扫描registry配置</em>获取注册中心列表，然后进行注册。</p>
+
+<h2 id="dubbo注册分析"><a id="Registry">dubbo注册分析</a></h2>
+
+<p><code class="highlighter-rouge">dubbo</code>是阿里巴巴公司开源的一个高性能优秀的服务框架，使得应用可通过高性能的 RPC 实现服务的输出和输入功能，可以和 Spring框架无缝集成。当然，作为一个优秀的RPC框架，其涉及到服务注册和服务事件的订阅及发布。</p>
+
+<h3 id="21-dubbo配置解析">2.1 dubbo配置解析</h3>
+
+<p>在Spring 中使用dubbo，会采用xml方式对dubbo相关属性进行配置，其加入了自己的命名空间，如<code class="highlighter-rouge">xmlns:dubbo="http://code.alibabatech.com/schema/dubbo"</code>，因此，你会知道必然存在一个继承实现<code class="highlighter-rouge">org.springframework.beans.factory.xml.NamespaceHandlerSupport</code>来完成自定义配置的解析工作，部分代码如下：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">DubboNamespaceHandler</span> <span class="kd">extends</span> <span class="n">NamespaceHandlerSupport</span> <span class="o">{</span>
+
+	<span class="kd">static</span> <span class="o">{</span>
+		<span class="n">Version</span><span class="o">.</span><span class="na">checkDuplicate</span><span class="o">(</span><span class="n">DubboNamespaceHandler</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+	<span class="o">}</span>
+
+	<span class="kd">public</span> <span class="kt">void</span> <span class="nf">init</span><span class="o">()</span> <span class="o">{</span>
+	    <span class="n">registerBeanDefinitionParser</span><span class="o">(</span><span class="s">"application"</span><span class="o">,</span> <span class="k">new</span> <span class="n">DubboBeanDefinitionParser</span><span class="o">(</span><span class="n">ApplicationConfig</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="kc">true</span><span class="o">));</span>
+        <span class="n">registerBeanDefinitionParser</span><span class="o">(</span><span class="s">"registry"</span><span class="o">,</span> <span class="k">new</span> <span class="n">DubboBeanDefinitionParser</span><span class="o">(</span><span class="n">RegistryConfig</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="kc">true</span><span class="o">));</span>
+        <span class="n">registerBeanDefinitionParser</span><span class="o">(</span><span class="s">"provider"</span><span class="o">,</span> <span class="k">new</span> <span class="n">DubboBeanDefinitionParser</span><span class="o">(</span><span class="n">ProviderConfig</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="kc">true</span><span class="o">));</span>
+        <span class="n">registerBeanDefinitionParser</span><span class="o">(</span><span class="s">"consumer"</span><span class="o">,</span> <span class="k">new</span> <span class="n">DubboBeanDefinitionParser</span><span class="o">(</span><span class="n">ConsumerConfig</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="kc">true</span><span class="o">));</span>
+        <span class="n">registerBeanDefinitionParser</span><span class="o">(</span><span class="s">"protocol"</span><span class="o">,</span> <span class="k">new</span> <span class="n">DubboBeanDefinitionParser</span><span class="o">(</span><span class="n">ProtocolConfig</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="kc">true</span><span class="o">));</span>
+        <span class="n">registerBeanDefinitionParser</span><span class="o">(</span><span class="s">"service"</span><span class="o">,</span> <span class="k">new</span> <span class="n">DubboBeanDefinitionParser</span><span class="o">(</span><span class="n">ServiceBean</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="kc">true</span><span class="o">));</span>
+        <span class="n">registerBeanDefinitionParser</span><span class="o">(</span><span class="s">"reference"</span><span class="o">,</span> <span class="k">new</span> <span class="n">DubboBeanDefinitionParser</span><span class="o">(</span><span class="n">ReferenceBean</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="kc">false</span><span class="o">));</span>
+    <span class="o">}</span>
+
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>可以看到<code class="highlighter-rouge">RegistryConfig.class</code>类，包含关于<code class="highlighter-rouge">注册中心</code>相关的属性变量配置；<code class="highlighter-rouge">ServiceBean.class</code>类，包含关于<code class="highlighter-rouge">对外服务</code>相关的属性变量配置。也就是说，通过<code class="highlighter-rouge">DubboBeanDefinitionParser</code>解析器会把对应xml节点解析成对应的对象实例。</p>
+
+<p>Spring的自定义标签代码实现和内部原理，可以google一下。</p>
+
+<blockquote>
+  <blockquote>
+    <p>说明：<code class="highlighter-rouge">DubboNamespaceHandler</code>在初始化的时候，会把所有，针对不同xml节点的对应解析其注册到Spring <code class="highlighter-rouge">NamespaceHandlerSupport</code>的 <code class="highlighter-rouge">BeanDefinitionParser</code> Map上来。这样，在Spring 初始化解析xml配置时，就可以完成对自定义标签的兼容和实例化了。</p>
+  </blockquote>
+</blockquote>
+
+<p>对于Dubbo 自定义解析器<code class="highlighter-rouge">DubboBeanDefinitionParser</code>的说明，如<a href="#End">附录</a>所示。</p>
+
+<h3 id="22-dubbo注册解析">2.2 dubbo注册解析</h3>
+
+<p>阿里的dubbo提供了多种注册机制，比如：<code class="highlighter-rouge">Redis</code>注册中心，<code class="highlighter-rouge">ZooKeeper</code>注册中心，或者使用<code class="highlighter-rouge">广播</code>的方式等。而目前使用的比较多的是使用<code class="highlighter-rouge">ZookeeperRegistry</code>方式。</p>
+
+<p>从代码结构可以看出，对于不同的注册机制，其主要流程还是一样的，只是在注册url的具体操作中，需要根据不同的部署实体来采用不同的注册操作。比如，对于<code class="highlighter-rouge">zookeeper</code>，则使用<code class="highlighter-rouge">zkclient</code>去连接zk注册中心；而对于<code class="highlighter-rouge">redis</code>，则直接使用<code class="highlighter-rouge">redis.clients.jedis.Jedis</code>在数据库上注册保持对应url。</p>
+
+<p>在抽象类的<code class="highlighter-rouge">AbstractRegistryFactory</code>中，提供了连接注册中心的一些方法：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+    <span class="c1">// 注册中心集合 Map&lt;RegistryAddress, Registry&gt;</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">Registry</span><span class="o">&gt;</span> <span class="n">REGISTRIES</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ConcurrentHashMap</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">Registry</span><span class="o">&gt;();</span>
+
+    <span class="cm">/**
+     * 获取所有注册中心
+     * 
+     * @return 所有注册中心
+     */</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="n">Collection</span><span class="o">&lt;</span><span class="n">Registry</span><span class="o">&gt;</span> <span class="nf">getRegistries</span><span class="o">()</span> <span class="o">{</span>
+
+        <span class="c1">// 这里获取应用中配置的所有注册中心，如果dubbo:service里面没有配置registry属性时，应该会调用这个方法</span>
+        <span class="k">return</span> <span class="n">Collections</span><span class="o">.</span><span class="na">unmodifiableCollection</span><span class="o">(</span><span class="n">REGISTRIES</span><span class="o">.</span><span class="na">values</span><span class="o">());</span>
+    <span class="o">}</span>
+    
+     <span class="cm">/**
+     * 连接注册中心
+     * @param url 注册中心地址，不允许为空
+     * @return
+     */</span>
+    <span class="kd">public</span> <span class="n">Registry</span> <span class="nf">getRegistry</span><span class="o">(</span><span class="n">URL</span> <span class="n">url</span><span class="o">)</span> <span class="o">{</span>
+    	<span class="n">url</span> <span class="o">=</span> <span class="n">url</span><span class="o">.</span><span class="na">setPath</span><span class="o">(</span><span class="n">RegistryService</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getName</span><span class="o">())</span>
+    			<span class="o">.</span><span class="na">addParameter</span><span class="o">(</span><span class="n">Constants</span><span class="o">.</span><span class="na">INTERFACE_KEY</span><span class="o">,</span> <span class="n">RegistryService</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getName</span><span class="o">())</span>
+    			<span class="o">.</span><span class="na">removeParameters</span><span class="o">(</span><span class="n">Constants</span><span class="o">.</span><span class="na">EXPORT_KEY</span><span class="o">,</span> <span class="n">Constants</span><span class="o">.</span><span class="na">REFER_KEY</span><span class="o">);</span>
+    	<span class="n">String</span> <span class="n">key</span> <span class="o">=</span> <span class="n">url</span><span class="o">.</span><span class="na">toServiceString</span><span class="o">();</span>
+        <span class="c1">// 锁定注册中心获取过程，保证注册中心单一实例</span>
+        <span class="n">LOCK</span><span class="o">.</span><span class="na">lock</span><span class="o">();</span>
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="n">Registry</span> <span class="n">registry</span> <span class="o">=</span> <span class="n">REGISTRIES</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">key</span><span class="o">);</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">registry</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                <span class="k">return</span> <span class="n">registry</span><span class="o">;</span>
+            <span class="o">}</span>
+            <span class="n">registry</span> <span class="o">=</span> <span class="n">createRegistry</span><span class="o">(</span><span class="n">url</span><span class="o">);</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">registry</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalStateException</span><span class="o">(</span><span class="s">"Can not create registry "</span> <span class="o">+</span> <span class="n">url</span><span class="o">);</span>
+            <span class="o">}</span>
+            <span class="c1">// 这里会把本应用所有不同的成功连接的注册配置放在全局concurrentMap中</span>
+            <span class="n">REGISTRIES</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">key</span><span class="o">,</span> <span class="n">registry</span><span class="o">);</span>
+            <span class="k">return</span> <span class="n">registry</span><span class="o">;</span>
+        <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+            <span class="c1">// 释放锁</span>
+            <span class="n">LOCK</span><span class="o">.</span><span class="na">unlock</span><span class="o">();</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+
+    <span class="kd">protected</span> <span class="kd">abstract</span> <span class="n">Registry</span> <span class="nf">createRegistry</span><span class="o">(</span><span class="n">URL</span> <span class="n">url</span><span class="o">);</span>
+
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Note：在Factory中会创建Registery对象，该对象中，会实现注册，取消注册，订阅，取消订阅等方法来提供给<code class="highlighter-rouge">service</code>和<code class="highlighter-rouge">reference</code>完成需要的注册和订阅服务。</p>
+  </blockquote>
+</blockquote>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="kd">public</span> <span class="kd">interface</span> <span class="nc">RegistryService</span> <span class="o">{</span>
+
+    <span class="cm">/**
+     * 注册数据，比如：提供者地址，消费者地址，路由规则，覆盖规则，等数据。
+     * 
+     * 注册需处理契约：&lt;br&gt;
+     * 1. 当URL设置了check=false时，注册失败后不报错，在后台定时重试，否则抛出异常。&lt;br&gt;
+     * 2. 当URL设置了dynamic=false参数，则需持久存储，否则，当注册者出现断电等情况异常退出时，需自动删除。&lt;br&gt;
+     * 3. 当URL设置了category=routers时，表示分类存储，缺省类别为providers，可按分类部分通知数据。&lt;br&gt;
+     * 4. 当注册中心重启，网络抖动，不能丢失数据，包括断线自动删除数据。&lt;br&gt;
+     * 5. 允许URI相同但参数不同的URL并存，不能覆盖。&lt;br&gt;
+     * 
+     * @param url 注册信息，不允许为空，如：dubbo://10.20.153.10/com.alibaba.foo.BarService?version=1.0.0&amp;application=kylin
+     */</span>
+    <span class="kt">void</span> <span class="nf">register</span><span class="o">(</span><span class="n">URL</span> <span class="n">url</span><span class="o">);</span>
+
+    <span class="cm">/**
+     * 取消注册.
+     * 
+     * 取消注册需处理契约：&lt;br&gt;
+     * 1. 如果是dynamic=false的持久存储数据，找不到注册数据，则抛IllegalStateException，否则忽略。&lt;br&gt;
+     * 2. 按全URL匹配取消注册。&lt;br&gt;
+     * 
+     * @param url 注册信息，不允许为空，如：dubbo://10.20.153.10/com.alibaba.foo.BarService?version=1.0.0&amp;application=kylin
+     */</span>
+    <span class="kt">void</span> <span class="nf">unregister</span><span class="o">(</span><span class="n">URL</span> <span class="n">url</span><span class="o">);</span>
+
+    <span class="cm">/**
+     * 订阅符合条件的已注册数据，当有注册数据变更时自动推送.
+     * 
+     * 订阅需处理契约：&lt;br&gt;
+     * 1. 当URL设置了check=false时，订阅失败后不报错，在后台定时重试。&lt;br&gt;
+     * 2. 当URL设置了category=routers，只通知指定分类的数据，多个分类用逗号分隔，并允许星号通配，表示订阅所有分类数据。&lt;br&gt;
+     * 3. 允许以interface,group,version,classifier作为条件查询，如：interface=com.alibaba.foo.BarService&amp;version=1.0.0&lt;br&gt;
+     * 4. 并且查询条件允许星号通配，订阅所有接口的所有分组的所有版本，或：interface=*&amp;group=*&amp;version=*&amp;classifier=*&lt;br&gt;
+     * 5. 当注册中心重启，网络抖动，需自动恢复订阅请求。&lt;br&gt;
+     * 6. 允许URI相同但参数不同的URL并存，不能覆盖。&lt;br&gt;
+     * 7. 必须阻塞订阅过程，等第一次通知完后再返回。&lt;br&gt;
+     * 
+     * @param url 订阅条件，不允许为空，如：consumer://10.20.153.10/com.alibaba.foo.BarService?version=1.0.0&amp;application=kylin
+     * @param listener 变更事件监听器，不允许为空
+     */</span>
+    <span class="kt">void</span> <span class="nf">subscribe</span><span class="o">(</span><span class="n">URL</span> <span class="n">url</span><span class="o">,</span> <span class="n">NotifyListener</span> <span class="n">listener</span><span class="o">);</span>
+
+    <span class="cm">/**
+     * 取消订阅.
+     * 
+     * 取消订阅需处理契约：&lt;br&gt;
+     * 1. 如果没有订阅，直接忽略。&lt;br&gt;
+     * 2. 按全URL匹配取消订阅。&lt;br&gt;
+     * 
+     * @param url 订阅条件，不允许为空，如：consumer://10.20.153.10/com.alibaba.foo.BarService?version=1.0.0&amp;application=kylin
+     * @param listener 变更事件监听器，不允许为空
+     */</span>
+    <span class="kt">void</span> <span class="nf">unsubscribe</span><span class="o">(</span><span class="n">URL</span> <span class="n">url</span><span class="o">,</span> <span class="n">NotifyListener</span> <span class="n">listener</span><span class="o">);</span>
+
+    <span class="cm">/**
+     * 查询符合条件的已注册数据，与订阅的推模式相对应，这里为拉模式，只返回一次结果。
+     * 
+     * @see com.alibaba.dubbo.registry.NotifyListener#notify(List)
+     * @param url 查询条件，不允许为空，如：consumer://10.20.153.10/com.alibaba.foo.BarService?version=1.0.0&amp;application=kylin
+     * @return 已注册信息列表，可能为空，含义同{@link com.alibaba.dubbo.registry.NotifyListener#notify(List&lt;URL&gt;)}的参数。
+     */</span>
+    <span class="n">List</span><span class="o">&lt;</span><span class="n">URL</span><span class="o">&gt;</span> <span class="nf">lookup</span><span class="o">(</span><span class="n">URL</span> <span class="n">url</span><span class="o">);</span>
+
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<h2 id="dubbo服务分析"><a id="Service">dubbo服务分析</a></h2>
+
+<p>从上面的解析配置文件，可以看到对于<code class="highlighter-rouge">&lt;dubbo:service&gt;</code>的解析，是使用<code class="highlighter-rouge">serviceBean</code>类来实现的。在<code class="highlighter-rouge">serviceConfig</code>（serviceBean的父类）类中对于service需要的一些属性进行说明，但是对于一些必须的属性没有设置会怎么样呢？！dubbo，首先会去上下文中，通过查找构造出对应的属性；当然如果构造不了，则返回null，这样在后期的时候就会抛出异常。</p>
+
+<h3 id="31-dubbo服务配置处理分析">3.1 dubbo服务配置处理分析</h3>
+
+<p>对于一些容错处理，也就是未配置的自动完善的方法，在<code class="highlighter-rouge">serviceBean</code>中完成。部分代码如下：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="cm">/**
+     * 应用事件监听器ApplicationListener的接口方法，用来对监听到的事件进行处理。
+     *
+     * 显然的观察者设计模式。事件驱动。
+     *
+     * @param event
+     */</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">onApplicationEvent</span><span class="o">(</span><span class="n">ApplicationEvent</span> <span class="n">event</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">ContextRefreshedEvent</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getName</span><span class="o">().</span><span class="na">equals</span><span class="o">(</span><span class="n">event</span><span class="o">.</span><span class="na">getClass</span><span class="o">().</span><span class="na">getName</span><span class="o">()))</span> <span class="o">{</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">isDelay</span><span class="o">()</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">isExported</span><span class="o">()</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">isUnexported</span><span class="o">())</span> <span class="o">{</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">logger</span><span class="o">.</span><span class="na">isInfoEnabled</span><span class="o">())</span> <span class="o">{</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">"The service ready on spring started. service: "</span> <span class="o">+</span> <span class="n">getInterface</span><span class="o">());</span>
+                <span class="o">}</span>
+                <span class="n">export</span><span class="o">();</span><span class="c1">// 暴露服务</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+    
+     <span class="cm">/**
+     * 这个方法很重要！
+     *
+     * 这里会构造 服务提供方相关的服务设置
+     *
+     * @throws Exception
+     */</span>
+    <span class="nd">@SuppressWarnings</span><span class="o">({</span> <span class="s">"unchecked"</span><span class="o">,</span> <span class="s">"deprecation"</span> <span class="o">})</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">afterPropertiesSet</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+
+        <span class="c1">// 在dubbo:service中没有配置Provider属性</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">getProvider</span><span class="o">()</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+
+            <span class="c1">// 从applicationContext中构造ProviderConfig类对象</span>
+            <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">ProviderConfig</span><span class="o">&gt;</span> <span class="n">providerConfigMap</span> <span class="o">=</span> <span class="n">applicationContext</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">?</span> <span class="kc">null</span> <span class="o">:</span> <span class="n">BeanFactoryUtils</span>
+                    <span class="o">.</span><span class="na">beansOfTypeIncludingAncestors</span><span class="o">(</span><span class="n">applicationContext</span><span class="o">,</span> <span class="n">ProviderConfig</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="kc">false</span><span class="o">,</span> <span class="kc">false</span><span class="o">);</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">providerConfigMap</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">providerConfigMap</span><span class="o">.</span><span class="na">size</span><span class="o">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+                <span class="c1">// 从applicationContext中构造ProtocolConfig类对象</span>
+                <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">ProtocolConfig</span><span class="o">&gt;</span> <span class="n">protocolConfigMap</span> <span class="o">=</span> <span class="n">applicationContext</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">?</span> <span class="kc">null</span> <span class="o">:</span> <span class="n">BeanFactoryUtils</span>
+                        <span class="o">.</span><span class="na">beansOfTypeIncludingAncestors</span><span class="o">(</span><span class="n">applicationContext</span><span class="o">,</span> <span class="n">ProtocolConfig</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="kc">false</span><span class="o">,</span> <span class="kc">false</span><span class="o">);</span>
+
+                <span class="c1">// 获取应用上下文中的所有providerConfig，然后保存到对应的service服务的protocol中</span>
+                <span class="k">if</span> <span class="o">((</span><span class="n">protocolConfigMap</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="n">protocolConfigMap</span><span class="o">.</span><span class="na">size</span><span class="o">()</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="n">providerConfigMap</span><span class="o">.</span><span class="na">size</span><span class="o">()</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="o">)</span> <span class="o">{</span> <span class="c1">// 兼容旧版本</span>
+                    <span class="n">List</span><span class="o">&lt;</span><span class="n">ProviderConfig</span><span class="o">&gt;</span> <span class="n">providerConfigs</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;</span><span class="n">ProviderConfig</span><span class="o">&gt;();</span>
+                    <span class="k">for</span> <span class="o">(</span><span class="n">ProviderConfig</span> <span class="n">config</span> <span class="o">:</span> <span class="n">providerConfigMap</span><span class="o">.</span><span class="na">values</span><span class="o">())</span> <span class="o">{</span>
+                        <span class="k">if</span> <span class="o">(</span><span class="n">config</span><span class="o">.</span><span class="na">isDefault</span><span class="o">()</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">config</span><span class="o">.</span><span class="na">isDefault</span><span class="o">().</span><span class="na">booleanValue</span><span class="o">())</span> <span class="o">{</span>
+                            <span class="n">providerConfigs</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">config</span><span class="o">);</span>
+                        <span class="o">}</span>
+                    <span class="o">}</span>
+                    <span class="k">if</span> <span class="o">(</span><span class="n">providerConfigs</span><span class="o">.</span><span class="na">size</span><span class="o">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+                        <span class="n">setProviders</span><span class="o">(</span><span class="n">providerConfigs</span><span class="o">);</span>
+                    <span class="o">}</span>
+                <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+                    <span class="n">ProviderConfig</span> <span class="n">providerConfig</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+
+                    <span class="c1">// 难以详细这个逻辑，for多次竟然只set一个变量，多个则又抛异常</span>
+                    <span class="k">for</span> <span class="o">(</span><span class="n">ProviderConfig</span> <span class="n">config</span> <span class="o">:</span> <span class="n">providerConfigMap</span><span class="o">.</span><span class="na">values</span><span class="o">())</span> <span class="o">{</span>
+                        <span class="k">if</span> <span class="o">(</span><span class="n">config</span><span class="o">.</span><span class="na">isDefault</span><span class="o">()</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="n">config</span><span class="o">.</span><span class="na">isDefault</span><span class="o">().</span><span class="na">booleanValue</span><span class="o">())</span> <span class="o">{</span><span class="c1">// 缺省状态，多次设置，则抛异常？？</span>
+                            <span class="k">if</span> <span class="o">(</span><span class="n">providerConfig</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                                <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalStateException</span><span class="o">(</span><span class="s">"Duplicate provider configs: "</span> <span class="o">+</span> <span class="n">providerConfig</span>
+                                        <span class="o">+</span> <span class="s">" and "</span> <span class="o">+</span> <span class="n">config</span><span class="o">);</span>
+                            <span class="o">}</span>
+                            <span class="n">providerConfig</span> <span class="o">=</span> <span class="n">config</span><span class="o">;</span>
+                        <span class="o">}</span>
+                    <span class="o">}</span>
+                    <span class="k">if</span> <span class="o">(</span><span class="n">providerConfig</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                        <span class="n">setProvider</span><span class="o">(</span><span class="n">providerConfig</span><span class="o">);</span>
+                    <span class="o">}</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+
+        <span class="c1">// 对Application为空进行判断，并且只有provider为空或者provider的application为空，才会从应用的上下文去构造</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">getApplication</span><span class="o">()</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="o">(</span><span class="n">getProvider</span><span class="o">()</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="n">getProvider</span><span class="o">().</span><span class="na">getApplication</span><span class="o">()</span> <span class="o">==</span> <span class="kc">null</span><span class="o">))</span> <span class="o">{</span>
+            <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">ApplicationConfig</span><span class="o">&gt;</span> <span class="n">applicationConfigMap</span> <span class="o">=</span> <span class="n">applicationContext</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">?</span> <span class="kc">null</span> <span class="o">:</span> <span class="n">BeanFactoryUtils</span>
+                    <span class="o">.</span><span class="na">beansOfTypeIncludingAncestors</span><span class="o">(</span><span class="n">applicationContext</span><span class="o">,</span> <span class="n">ApplicationConfig</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="kc">false</span><span class="o">,</span> <span class="kc">false</span><span class="o">);</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">applicationConfigMap</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">applicationConfigMap</span><span class="o">.</span><span class="na">size</span><span class="o">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">ApplicationConfig</span> <span class="n">applicationConfig</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+                <span class="k">for</span> <span class="o">(</span><span class="n">ApplicationConfig</span> <span class="n">config</span> <span class="o">:</span> <span class="n">applicationConfigMap</span><span class="o">.</span><span class="na">values</span><span class="o">())</span> <span class="o">{</span>
+                    <span class="k">if</span> <span class="o">(</span><span class="n">config</span><span class="o">.</span><span class="na">isDefault</span><span class="o">()</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="n">config</span><span class="o">.</span><span class="na">isDefault</span><span class="o">().</span><span class="na">booleanValue</span><span class="o">())</span> <span class="o">{</span>
+                        <span class="k">if</span> <span class="o">(</span><span class="n">applicationConfig</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                            <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalStateException</span><span class="o">(</span><span class="s">"Duplicate application configs: "</span> <span class="o">+</span> <span class="n">applicationConfig</span>
+                                    <span class="o">+</span> <span class="s">" and "</span> <span class="o">+</span> <span class="n">config</span><span class="o">);</span>
+                        <span class="o">}</span>
+                        <span class="n">applicationConfig</span> <span class="o">=</span> <span class="n">config</span><span class="o">;</span>
+                    <span class="o">}</span>
+                <span class="o">}</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">applicationConfig</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="n">setApplication</span><span class="o">(</span><span class="n">applicationConfig</span><span class="o">);</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">getModule</span><span class="o">()</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="o">(</span><span class="n">getProvider</span><span class="o">()</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="n">getProvider</span><span class="o">().</span><span class="na">getModule</span><span class="o">()</span> <span class="o">==</span> <span class="kc">null</span><span class="o">))</span> <span class="o">{</span>
+            <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">ModuleConfig</span><span class="o">&gt;</span> <span class="n">moduleConfigMap</span> <span class="o">=</span> <span class="n">applicationContext</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">?</span> <span class="kc">null</span> <span class="o">:</span> <span class="n">BeanFactoryUtils</span>
+                    <span class="o">.</span><span class="na">beansOfTypeIncludingAncestors</span><span class="o">(</span><span class="n">applicationContext</span><span class="o">,</span> <span class="n">ModuleConfig</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="kc">false</span><span class="o">,</span> <span class="kc">false</span><span class="o">);</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">moduleConfigMap</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">moduleConfigMap</span><span class="o">.</span><span class="na">size</span><span class="o">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">ModuleConfig</span> <span class="n">moduleConfig</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+                <span class="k">for</span> <span class="o">(</span><span class="n">ModuleConfig</span> <span class="n">config</span> <span class="o">:</span> <span class="n">moduleConfigMap</span><span class="o">.</span><span class="na">values</span><span class="o">())</span> <span class="o">{</span>
+                    <span class="k">if</span> <span class="o">(</span><span class="n">config</span><span class="o">.</span><span class="na">isDefault</span><span class="o">()</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="n">config</span><span class="o">.</span><span class="na">isDefault</span><span class="o">().</span><span class="na">booleanValue</span><span class="o">())</span> <span class="o">{</span>
+                        <span class="k">if</span> <span class="o">(</span><span class="n">moduleConfig</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                            <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalStateException</span><span class="o">(</span><span class="s">"Duplicate module configs: "</span> <span class="o">+</span> <span class="n">moduleConfig</span> <span class="o">+</span> <span class="s">" and "</span>
+                                    <span class="o">+</span> <span class="n">config</span><span class="o">);</span>
+                        <span class="o">}</span>
+                        <span class="n">moduleConfig</span> <span class="o">=</span> <span class="n">config</span><span class="o">;</span>
+                    <span class="o">}</span>
+                <span class="o">}</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">moduleConfig</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="n">setModule</span><span class="o">(</span><span class="n">moduleConfig</span><span class="o">);</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+
+        <span class="c1">// ok,这里就是注册中心的配置处理，对于service中没有配置registry属性的，dubbo会自己来完善</span>
+        <span class="c1">// 还记得上面的dubbo wiki文档的说明吗？会查看provider是否配置了registry，如果没有才会调用全局应用上下文的配置。</span>
+        <span class="c1">// 所以这里，会首先判断service是否配置registry，然后判断provider是否配置，然后在判断application是否配置registry，</span>
+        <span class="c1">// 然后才会从applicationContext中获取已经在spring 中注册了的registry列表，作为本service的配置。</span>
+        <span class="k">if</span> <span class="o">((</span><span class="n">getRegistries</span><span class="o">()</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="n">getRegistries</span><span class="o">().</span><span class="na">size</span><span class="o">()</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span>
+                <span class="o">&amp;&amp;</span> <span class="o">(</span><span class="n">getProvider</span><span class="o">()</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="n">getProvider</span><span class="o">().</span><span class="na">getRegistries</span><span class="o">()</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="n">getProvider</span><span class="o">().</span><span class="na">getRegistries</span><span class="o">()</span>
+                        <span class="o">.</span><span class="na">size</span><span class="o">()</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span>
+                <span class="o">&amp;&amp;</span> <span class="o">(</span><span class="n">getApplication</span><span class="o">()</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="n">getApplication</span><span class="o">().</span><span class="na">getRegistries</span><span class="o">()</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="n">getApplication</span><span class="o">()</span>
+                        <span class="o">.</span><span class="na">getRegistries</span><span class="o">().</span><span class="na">size</span><span class="o">()</span> <span class="o">==</span> <span class="mi">0</span><span class="o">))</span> <span class="o">{</span>
+            <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">RegistryConfig</span><span class="o">&gt;</span> <span class="n">registryConfigMap</span> <span class="o">=</span> <span class="n">applicationContext</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">?</span> <span class="kc">null</span> <span class="o">:</span> <span class="n">BeanFactoryUtils</span>
+                    <span class="o">.</span><span class="na">beansOfTypeIncludingAncestors</span><span class="o">(</span><span class="n">applicationContext</span><span class="o">,</span> <span class="n">RegistryConfig</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="kc">false</span><span class="o">,</span> <span class="kc">false</span><span class="o">);</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">registryConfigMap</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">registryConfigMap</span><span class="o">.</span><span class="na">size</span><span class="o">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">List</span><span class="o">&lt;</span><span class="n">RegistryConfig</span><span class="o">&gt;</span> <span class="n">registryConfigs</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;</span><span class="n">RegistryConfig</span><span class="o">&gt;();</span>
+                <span class="k">for</span> <span class="o">(</span><span class="n">RegistryConfig</span> <span class="n">config</span> <span class="o">:</span> <span class="n">registryConfigMap</span><span class="o">.</span><span class="na">values</span><span class="o">())</span> <span class="o">{</span>
+                    <span class="k">if</span> <span class="o">(</span><span class="n">config</span><span class="o">.</span><span class="na">isDefault</span><span class="o">()</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="n">config</span><span class="o">.</span><span class="na">isDefault</span><span class="o">().</span><span class="na">booleanValue</span><span class="o">())</span> <span class="o">{</span>
+                        <span class="n">registryConfigs</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">config</span><span class="o">);</span>
+                    <span class="o">}</span>
+                <span class="o">}</span>
+                <span class="c1">// 这里设置到了注册中心配置中，list哦。</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">registryConfigs</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">registryConfigs</span><span class="o">.</span><span class="na">size</span><span class="o">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="kd">super</span><span class="o">.</span><span class="na">setRegistries</span><span class="o">(</span><span class="n">registryConfigs</span><span class="o">);</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+        
+        <span class="c1">// ....................</span>
+        
+         <span class="k">if</span> <span class="o">(!</span><span class="n">isDelay</span><span class="o">())</span> <span class="o">{</span>
+            <span class="c1">// 不延迟，可以开始暴露服务了</span>
+            <span class="n">export</span><span class="o">();</span>
+        <span class="o">}</span>
+  <span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>具体，dubbo怎么把服务暴露出去，消费者怎样通过dubbo rpc调用服务等，不在本文所描述之内。后续会单独进行分析说明。</p>
+
+<h3 id="32-问题原因解析">3.2 问题原因解析</h3>
+
+<p>从上面的代码逻辑，可以明白之所以出现多组注册的问题原因了。</p>
+
+<p>回到代码中，在配置的dubbo xml文件里面，有三个不同的节点，<code class="highlighter-rouge">&lt;dubbo:registry&gt;</code>，<code class="highlighter-rouge">&lt;dubbo:protocol&gt;</code>和<code class="highlighter-rouge">&lt;dubbo:service&gt;</code>。由于<code class="highlighter-rouge">&lt;dubbo:service&gt;</code>中没有配置<code class="highlighter-rouge">registry</code>属性，所以按照dubbo的逻辑，会先查找<code class="highlighter-rouge">&lt;dubbo:provider&gt;</code>节点配置，但是因为配置文件中没有配置，所以接下来会查找<code class="highlighter-rouge">&lt;dubbo:application&gt;</code>节点，看看该节点下面是否有配置<code class="highlighter-rouge">registry</code>属性，依然没有配置该节点。</p>
+
+<p>这样，就走进了dubbo来配置相关registry属性的代码内部。</p>
+
+<p>代码会从spring的<code class="highlighter-rouge">applicationContext</code>中构造出<code class="highlighter-rouge">Map&lt;String, RegistryConfig&gt; </code>类型变量，然后获取<code class="highlighter-rouge">map.values()</code>从而拿到所有在spring中已经存在上下文中的注册信息了。这样，把结果（所有注册的registry信息）放到service配置中。</p>
+
+<blockquote>
+  <blockquote>
+    <p>Note：那么，为什么可以获取应用上下文环境中所有的<code class="highlighter-rouge">RegistryConfig</code>呢？还记得解析顺序吗！？最开始就是解析注册节点的数据哦！<code class="highlighter-rouge">registerBeanDefinitionParser("registry", new DubboBeanDefinitionParser(RegistryConfig.class, true));</code>早于<code class="highlighter-rouge">registerBeanDefinitionParser("service", new DubboBeanDefinitionParser(ServiceBean.class, true));</code>，此外，判断逻辑里面，其他节点数据解析，也是早于serviceBean的。</p>
+  </blockquote>
+</blockquote>
+
+<h2 id="附录"><a id="End">附录</a></h2>
+
+<p>dubbo 关于<code class="highlighter-rouge">DubboBeanDefinitionParser</code> 部分核心代码的注释说明：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">DubboBeanDefinitionParser</span> <span class="kd">implements</span> <span class="n">BeanDefinitionParser</span> <span class="o">{</span>
+
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">Logger</span> <span class="n">logger</span> <span class="o">=</span> <span class="n">LoggerFactory</span><span class="o">.</span><span class="na">getLogger</span><span class="o">(</span><span class="n">DubboBeanDefinitionParser</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+
+    <span class="kd">private</span> <span class="kd">final</span> <span class="n">Class</span><span class="o">&lt;?&gt;</span> <span class="n">beanClass</span><span class="o">;</span>
+
+    <span class="kd">private</span> <span class="kd">final</span> <span class="kt">boolean</span> <span class="n">required</span><span class="o">;</span>
+
+    <span class="kd">public</span> <span class="nf">DubboBeanDefinitionParser</span><span class="o">(</span><span class="n">Class</span><span class="o">&lt;?&gt;</span> <span class="n">beanClass</span><span class="o">,</span> <span class="kt">boolean</span> <span class="n">required</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">beanClass</span> <span class="o">=</span> <span class="n">beanClass</span><span class="o">;</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">required</span> <span class="o">=</span> <span class="n">required</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="n">BeanDefinition</span> <span class="nf">parse</span><span class="o">(</span><span class="n">Element</span> <span class="n">element</span><span class="o">,</span> <span class="n">ParserContext</span> <span class="n">parserContext</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="nf">parse</span><span class="o">(</span><span class="n">element</span><span class="o">,</span> <span class="n">parserContext</span><span class="o">,</span> <span class="n">beanClass</span><span class="o">,</span> <span class="n">required</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="nd">@SuppressWarnings</span><span class="o">(</span><span class="s">"unchecked"</span><span class="o">)</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="n">BeanDefinition</span> <span class="nf">parse</span><span class="o">(</span><span class="n">Element</span> <span class="n">element</span><span class="o">,</span> <span class="n">ParserContext</span> <span class="n">parserContext</span><span class="o">,</span> <span class="n">Class</span><span class="o">&lt;?&gt;</span> <span class="n">beanClass</span><span class="o">,</span>
+            <span class="kt">boolean</span> <span class="n">required</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">RootBeanDefinition</span> <span class="n">beanDefinition</span> <span class="o">=</span> <span class="k">new</span> <span class="n">RootBeanDefinition</span><span class="o">();</span>
+        <span class="n">beanDefinition</span><span class="o">.</span><span class="na">setBeanClass</span><span class="o">(</span><span class="n">beanClass</span><span class="o">);</span>
+        <span class="n">beanDefinition</span><span class="o">.</span><span class="na">setLazyInit</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span>
+        <span class="c1">// 解析 id标识</span>
+        <span class="n">String</span> <span class="n">id</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="na">getAttribute</span><span class="o">(</span><span class="s">"id"</span><span class="o">);</span>
+
+        <span class="c1">// 如果id标识为空，则获取name标识</span>
+        <span class="k">if</span> <span class="o">((</span><span class="n">id</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="n">id</span><span class="o">.</span><span class="na">length</span><span class="o">()</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="n">required</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">String</span> <span class="n">generatedBeanName</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="na">getAttribute</span><span class="o">(</span><span class="s">"name"</span><span class="o">);</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">generatedBeanName</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="n">generatedBeanName</span><span class="o">.</span><span class="na">length</span><span class="o">()</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+
+                <span class="c1">// 如果使用ProtocolConfig 为bean ，则为dubbo，配置为dubbo:protocol</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">ProtocolConfig</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">beanClass</span><span class="o">))</span> <span class="o">{</span>
+                    <span class="n">generatedBeanName</span> <span class="o">=</span> <span class="s">"dubbo"</span><span class="o">;</span>
+                <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+
+                    <span class="c1">// ok，这里是没有id和name标识，并且正常config bean，则使用interface的标识value值</span>
+                    <span class="c1">// 比如，一般我们写dubbo:service 可能会走到这个配置上。</span>
+                    <span class="n">generatedBeanName</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="na">getAttribute</span><span class="o">(</span><span class="s">"interface"</span><span class="o">);</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">generatedBeanName</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="n">generatedBeanName</span><span class="o">.</span><span class="na">length</span><span class="o">()</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">generatedBeanName</span> <span class="o">=</span> <span class="n">beanClass</span><span class="o">.</span><span class="na">getName</span><span class="o">();</span>
+            <span class="o">}</span>
+            <span class="n">id</span> <span class="o">=</span> <span class="n">generatedBeanName</span><span class="o">;</span>
+            <span class="kt">int</span> <span class="n">counter</span> <span class="o">=</span> <span class="mi">2</span><span class="o">;</span>
+            <span class="c1">// 如果存在该BeanDefinition，则重置id</span>
+            <span class="k">while</span> <span class="o">(</span><span class="n">parserContext</span><span class="o">.</span><span class="na">getRegistry</span><span class="o">().</span><span class="na">containsBeanDefinition</span><span class="o">(</span><span class="n">id</span><span class="o">))</span> <span class="o">{</span>
+                <span class="n">id</span> <span class="o">=</span> <span class="n">generatedBeanName</span> <span class="o">+</span> <span class="o">(</span><span class="n">counter</span><span class="o">++);</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+
+        <span class="c1">// ok，这里再次判断，检查是否重复id在bean里面</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">id</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">id</span><span class="o">.</span><span class="na">length</span><span class="o">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">parserContext</span><span class="o">.</span><span class="na">getRegistry</span><span class="o">().</span><span class="na">containsBeanDefinition</span><span class="o">(</span><span class="n">id</span><span class="o">))</span> <span class="o">{</span>
+                <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalStateException</span><span class="o">(</span><span class="s">"Duplicate spring bean id "</span> <span class="o">+</span> <span class="n">id</span><span class="o">);</span>
+            <span class="o">}</span>
+
+            <span class="c1">// 注册到spring 的bean Map中去，其中id为key</span>
+            <span class="n">parserContext</span><span class="o">.</span><span class="na">getRegistry</span><span class="o">().</span><span class="na">registerBeanDefinition</span><span class="o">(</span><span class="n">id</span><span class="o">,</span> <span class="n">beanDefinition</span><span class="o">);</span>
+            <span class="c1">// 然后把id和对应value 作为Property放入bean里面</span>
+            <span class="n">beanDefinition</span><span class="o">.</span><span class="na">getPropertyValues</span><span class="o">().</span><span class="na">addPropertyValue</span><span class="o">(</span><span class="s">"id"</span><span class="o">,</span> <span class="n">id</span><span class="o">);</span>
+        <span class="o">}</span>
+
+        <span class="c1">// 如果使用ProtocolConfig的配置类，dubbo:protocol</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">ProtocolConfig</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">beanClass</span><span class="o">))</span> <span class="o">{</span>
+            <span class="c1">// 拿到注册在parser环境里所有getBeanDefinitionNames，他实际上是bean map的key部分</span>
+            <span class="k">for</span> <span class="o">(</span><span class="n">String</span> <span class="n">name</span> <span class="o">:</span> <span class="n">parserContext</span><span class="o">.</span><span class="na">getRegistry</span><span class="o">().</span><span class="na">getBeanDefinitionNames</span><span class="o">())</span> <span class="o">{</span>
+                <span class="n">BeanDefinition</span> <span class="n">definition</span> <span class="o">=</span> <span class="n">parserContext</span><span class="o">.</span><span class="na">getRegistry</span><span class="o">().</span><span class="na">getBeanDefinition</span><span class="o">(</span><span class="n">name</span><span class="o">);</span>
+                <span class="n">PropertyValue</span> <span class="n">property</span> <span class="o">=</span> <span class="n">definition</span><span class="o">.</span><span class="na">getPropertyValues</span><span class="o">().</span><span class="na">getPropertyValue</span><span class="o">(</span><span class="s">"protocol"</span><span class="o">);</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">property</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="n">Object</span> <span class="n">value</span> <span class="o">=</span> <span class="n">property</span><span class="o">.</span><span class="na">getValue</span><span class="o">();</span>
+                    <span class="c1">// 如果id 为protocol</span>
+                    <span class="k">if</span> <span class="o">(</span><span class="n">value</span> <span class="k">instanceof</span> <span class="n">ProtocolConfig</span> <span class="o">&amp;&amp;</span> <span class="n">id</span><span class="o">.</span><span class="na">equals</span><span class="o">(((</span><span class="n">ProtocolConfig</span><span class="o">)</span> <span class="n">value</span><span class="o">).</span><span class="na">getName</span><span class="o">()))</span> <span class="o">{</span>
+                        <span class="n">definition</span><span class="o">.</span><span class="na">getPropertyValues</span><span class="o">().</span><span class="na">addPropertyValue</span><span class="o">(</span><span class="s">"protocol"</span><span class="o">,</span> <span class="k">new</span> <span class="n">RuntimeBeanReference</span><span class="o">(</span><span class="n">id</span><span class="o">));</span>
+                    <span class="o">}</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+        <span class="c1">// dubbo:service 对应的配置解析</span>
+        <span class="k">else</span> <span class="nf">if</span> <span class="o">(</span><span class="n">ServiceBean</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">beanClass</span><span class="o">))</span> <span class="o">{</span>
+            <span class="n">String</span> <span class="n">className</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="na">getAttribute</span><span class="o">(</span><span class="s">"class"</span><span class="o">);</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">className</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">className</span><span class="o">.</span><span class="na">length</span><span class="o">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">RootBeanDefinition</span> <span class="n">classDefinition</span> <span class="o">=</span> <span class="k">new</span> <span class="n">RootBeanDefinition</span><span class="o">();</span>
+                <span class="n">classDefinition</span><span class="o">.</span><span class="na">setBeanClass</span><span class="o">(</span><span class="n">ReflectUtils</span><span class="o">.</span><span class="na">forName</span><span class="o">(</span><span class="n">className</span><span class="o">));</span>
+                <span class="n">classDefinition</span><span class="o">.</span><span class="na">setLazyInit</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span>
+                <span class="n">parseProperties</span><span class="o">(</span><span class="n">element</span><span class="o">.</span><span class="na">getChildNodes</span><span class="o">(),</span> <span class="n">classDefinition</span><span class="o">);</span>
+                <span class="n">beanDefinition</span><span class="o">.</span><span class="na">getPropertyValues</span><span class="o">().</span><span class="na">addPropertyValue</span><span class="o">(</span><span class="s">"ref"</span><span class="o">,</span>
+                        <span class="k">new</span> <span class="nf">BeanDefinitionHolder</span><span class="o">(</span><span class="n">classDefinition</span><span class="o">,</span> <span class="n">id</span> <span class="o">+</span> <span class="s">"Impl"</span><span class="o">));</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+        <span class="c1">// provider配置</span>
+        <span class="k">else</span> <span class="nf">if</span> <span class="o">(</span><span class="n">ProviderConfig</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">beanClass</span><span class="o">))</span> <span class="o">{</span>
+            <span class="c1">// tag:service ;property:provider;ref:id</span>
+            <span class="c1">// parserContext</span>
+            <span class="n">parseNested</span><span class="o">(</span><span class="n">element</span><span class="o">,</span> <span class="n">parserContext</span><span class="o">,</span> <span class="n">ServiceBean</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="kc">true</span><span class="o">,</span> <span class="s">"service"</span><span class="o">,</span> <span class="s">"provider"</span><span class="o">,</span> <span class="n">id</span><span class="o">,</span> <span class="n">beanDefinition</span><span class="o">);</span>
+        <span class="o">}</span>
+
+        <span class="c1">// consumer配置，对于consumer，找到对应的reference 标识</span>
+        <span class="k">else</span> <span class="nf">if</span> <span class="o">(</span><span class="n">ConsumerConfig</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">beanClass</span><span class="o">))</span> <span class="o">{</span>
+            <span class="n">parseNested</span><span class="o">(</span><span class="n">element</span><span class="o">,</span> <span class="n">parserContext</span><span class="o">,</span> <span class="n">ReferenceBean</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="kc">false</span><span class="o">,</span> <span class="s">"reference"</span><span class="o">,</span> <span class="s">"consumer"</span><span class="o">,</span> <span class="n">id</span><span class="o">,</span> <span class="n">beanDefinition</span><span class="o">);</span>
+        <span class="o">}</span>
+
+        <span class="c1">// ok，以上都没有，接下来，正常解析了</span>
+        <span class="n">Set</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">props</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashSet</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;();</span>
+        <span class="n">ManagedMap</span> <span class="n">parameters</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+        <span class="k">for</span> <span class="o">(</span><span class="n">Method</span> <span class="n">setter</span> <span class="o">:</span> <span class="n">beanClass</span><span class="o">.</span><span class="na">getMethods</span><span class="o">())</span> <span class="o">{</span>
+            <span class="n">String</span> <span class="n">name</span> <span class="o">=</span> <span class="n">setter</span><span class="o">.</span><span class="na">getName</span><span class="o">();</span>
+
+            <span class="c1">// 找到set方法来设置beanclass对象的值</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">name</span><span class="o">.</span><span class="na">length</span><span class="o">()</span> <span class="o">&gt;</span> <span class="mi">3</span> <span class="o">&amp;&amp;</span> <span class="n">name</span><span class="o">.</span><span class="na">startsWith</span><span class="o">(</span><span class="s">"set"</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="n">Modifier</span><span class="o">.</span><span class="na">isPublic</span><span class="o">(</span><span class="n">setter</span><span class="o">.</span><span class="na">getModifiers</span><span class="o">())</span>
+                    <span class="o">&amp;&amp;</span> <span class="n">setter</span><span class="o">.</span><span class="na">getParameterTypes</span><span class="o">().</span><span class="na">length</span> <span class="o">==</span> <span class="mi">1</span><span class="o">)</span> <span class="o">{</span> <span class="c1">// 判断set方法</span>
+                <span class="n">Class</span><span class="o">&lt;?&gt;</span> <span class="n">type</span> <span class="o">=</span> <span class="n">setter</span><span class="o">.</span><span class="na">getParameterTypes</span><span class="o">()[</span><span class="mi">0</span><span class="o">];</span>
+
+                <span class="c1">// 获取属性的名称，并且把名称第一个大写字母 --&gt; 小写，并且各个驼峰使用‘_’连接</span>
+                <span class="n">String</span> <span class="n">property</span> <span class="o">=</span> <span class="n">StringUtils</span><span class="o">.</span><span class="na">camelToSplitName</span><span class="o">(</span><span class="n">name</span><span class="o">.</span><span class="na">substring</span><span class="o">(</span><span class="mi">3</span><span class="o">,</span> <span class="mi">4</span><span class="o">).</span><span class="na">toLowerCase</span><span class="o">()</span> <span class="o">+</span> <span class="n">name</span><span class="o">.</span><span class="na">substring</span><span class="o">(</span><span class="mi">4</span><span class="o">),</span>
+                        <span class="s">"-"</span><span class="o">);</span>
+                <span class="n">props</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">property</span><span class="o">);</span>
+                <span class="n">Method</span> <span class="n">getter</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+
+                <span class="c1">// 获取get或者is等取值方法</span>
+                <span class="k">try</span> <span class="o">{</span>
+                    <span class="n">getter</span> <span class="o">=</span> <span class="n">beanClass</span><span class="o">.</span><span class="na">getMethod</span><span class="o">(</span><span class="s">"get"</span> <span class="o">+</span> <span class="n">name</span><span class="o">.</span><span class="na">substring</span><span class="o">(</span><span class="mi">3</span><span class="o">),</span> <span class="k">new</span> <span class="n">Class</span><span class="o">&lt;?&gt;[</span><span class="mi">0</span><span class="o">]);</span>
+                <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">NoSuchMethodException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="k">try</span> <span class="o">{</span>
+                        <span class="n">getter</span> <span class="o">=</span> <span class="n">beanClass</span><span class="o">.</span><span class="na">getMethod</span><span class="o">(</span><span class="s">"is"</span> <span class="o">+</span> <span class="n">name</span><span class="o">.</span><span class="na">substring</span><span class="o">(</span><span class="mi">3</span><span class="o">),</span> <span class="k">new</span> <span class="n">Class</span><span class="o">&lt;?&gt;[</span><span class="mi">0</span><span class="o">]);</span>
+                    <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">NoSuchMethodException</span> <span class="n">e2</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="o">}</span>
+                <span class="o">}</span>
+
+                <span class="c1">// 如果没有get等取值方法，则不放到结果中，对于处理registry的bean，需要解析各个属性参数，比如address，port，timeout等</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">getter</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="o">!</span><span class="n">Modifier</span><span class="o">.</span><span class="na">isPublic</span><span class="o">(</span><span class="n">getter</span><span class="o">.</span><span class="na">getModifiers</span><span class="o">())</span> <span class="o">||</span> <span class="o">!</span><span class="n">type</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">getter</span><span class="o">.</span><span class="na">getReturnType</span><span class="o">()))</span> <span class="o">{</span>
+                    <span class="k">continue</span><span class="o">;</span>
+                <span class="o">}</span>
+                <span class="k">if</span> <span class="o">(</span><span class="s">"parameters"</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">property</span><span class="o">))</span> <span class="o">{</span>
+                    <span class="n">parameters</span> <span class="o">=</span> <span class="n">parseParameters</span><span class="o">(</span><span class="n">element</span><span class="o">.</span><span class="na">getChildNodes</span><span class="o">(),</span> <span class="n">beanDefinition</span><span class="o">);</span>
+                <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="s">"methods"</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">property</span><span class="o">))</span> <span class="o">{</span>
+                    <span class="n">parseMethods</span><span class="o">(</span><span class="n">id</span><span class="o">,</span> <span class="n">element</span><span class="o">.</span><span class="na">getChildNodes</span><span class="o">(),</span> <span class="n">beanDefinition</span><span class="o">,</span> <span class="n">parserContext</span><span class="o">);</span>
+                <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="s">"arguments"</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">property</span><span class="o">))</span> <span class="o">{</span>
+                    <span class="n">parseArguments</span><span class="o">(</span><span class="n">id</span><span class="o">,</span> <span class="n">element</span><span class="o">.</span><span class="na">getChildNodes</span><span class="o">(),</span> <span class="n">beanDefinition</span><span class="o">,</span> <span class="n">parserContext</span><span class="o">);</span>
+                <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+
+                    <span class="c1">// ok，来解析每个属性参数了</span>
+                    <span class="n">String</span> <span class="n">value</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="na">getAttribute</span><span class="o">(</span><span class="n">property</span><span class="o">);</span>
+                    <span class="k">if</span> <span class="o">(</span><span class="n">value</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                        <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="na">trim</span><span class="o">();</span>
+                        <span class="k">if</span> <span class="o">(</span><span class="n">value</span><span class="o">.</span><span class="na">length</span><span class="o">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+                            <span class="c1">// N/A配置，则采用new 新配置对象</span>
+                            <span class="k">if</span> <span class="o">(</span><span class="s">"registry"</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">property</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="n">RegistryConfig</span><span class="o">.</span><span class="na">NO_AVAILABLE</span><span class="o">.</span><span class="na">equalsIgnoreCase</span><span class="o">(</span><span class="n">value</span><span class="o">))</span> <span class="o">{</span>
+                                <span class="n">RegistryConfig</span> <span class="n">registryConfig</span> <span class="o">=</span> <span class="k">new</span> <span class="n">RegistryConfig</span><span class="o">();</span>
+                                <span class="n">registryConfig</span><span class="o">.</span><span class="na">setAddress</span><span class="o">(</span><span class="n">RegistryConfig</span><span class="o">.</span><span class="na">NO_AVAILABLE</span><span class="o">);</span>
+                                <span class="n">beanDefinition</span><span class="o">.</span><span class="na">getPropertyValues</span><span class="o">().</span><span class="na">addPropertyValue</span><span class="o">(</span><span class="n">property</span><span class="o">,</span> <span class="n">registryConfig</span><span class="o">);</span>
+                            <span class="o">}</span>
+                            <span class="c1">// 多注册中心配置？？</span>
+                            <span class="k">else</span> <span class="nf">if</span> <span class="o">(</span><span class="s">"registry"</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">property</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="n">value</span><span class="o">.</span><span class="na">indexOf</span><span class="o">(</span><span class="sc">','</span><span class="o">)</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
+                                <span class="n">parseMultiRef</span><span class="o">(</span><span class="s">"registries"</span><span class="o">,</span> <span class="n">value</span><span class="o">,</span> <span class="n">beanDefinition</span><span class="o">,</span> <span class="n">parserContext</span><span class="o">);</span>
+                            <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="s">"provider"</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">property</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="n">value</span><span class="o">.</span><span class="na">indexOf</span><span class="o">(</span><span class="sc">','</span><span class="o">)</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
+                                <span class="n">parseMultiRef</span><span class="o">(</span><span class="s">"providers"</span><span class="o">,</span> <span class="n">value</span><span class="o">,</span> <span class="n">beanDefinition</span><span class="o">,</span> <span class="n">parserContext</span><span class="o">);</span>
+                            <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="s">"protocol"</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">property</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="n">value</span><span class="o">.</span><span class="na">indexOf</span><span class="o">(</span><span class="sc">','</span><span class="o">)</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
+                                <span class="n">parseMultiRef</span><span class="o">(</span><span class="s">"protocols"</span><span class="o">,</span> <span class="n">value</span><span class="o">,</span> <span class="n">beanDefinition</span><span class="o">,</span> <span class="n">parserContext</span><span class="o">);</span>
+                            <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+                                <span class="n">Object</span> <span class="n">reference</span><span class="o">;</span>
+                                <span class="k">if</span> <span class="o">(</span><span class="n">isPrimitive</span><span class="o">(</span><span class="n">type</span><span class="o">))</span> <span class="o">{</span>
+                                    <span class="k">if</span> <span class="o">(</span><span class="s">"async"</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">property</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="s">"false"</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">value</span><span class="o">)</span> <span class="o">||</span> <span class="s">"timeout"</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">property</span><span class="o">)</span>
+                                            <span class="o">&amp;&amp;</span> <span class="s">"0"</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">value</span><span class="o">)</span> <span class="o">||</span> <span class="s">"delay"</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">property</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="s">"0"</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">value</span><span class="o">)</span>
+                                            <span class="o">||</span> <span class="s">"version"</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">property</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="s">"0.0.0"</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">value</span><span class="o">)</span>
+                                            <span class="o">||</span> <span class="s">"stat"</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">property</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="s">"-1"</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">value</span><span class="o">)</span>
+                                            <span class="o">||</span> <span class="s">"reliable"</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">property</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="s">"false"</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">value</span><span class="o">))</span> <span class="o">{</span>
+                                        <span class="c1">// 兼容旧版本xsd中的default值</span>
+                                        <span class="n">value</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+                                    <span class="o">}</span>
+                                    <span class="n">reference</span> <span class="o">=</span> <span class="n">value</span><span class="o">;</span>
+                                <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="s">"protocol"</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">property</span><span class="o">)</span>
+                                        <span class="o">&amp;&amp;</span> <span class="n">ExtensionLoader</span><span class="o">.</span><span class="na">getExtensionLoader</span><span class="o">(</span><span class="n">Protocol</span><span class="o">.</span><span class="na">class</span><span class="o">).</span><span class="na">hasExtension</span><span class="o">(</span><span class="n">value</span><span class="o">)</span>
+                                        <span class="o">&amp;&amp;</span> <span class="o">(!</span><span class="n">parserContext</span><span class="o">.</span><span class="na">getRegistry</span><span class="o">().</span><span class="na">containsBeanDefinition</span><span class="o">(</span><span class="n">value</span><span class="o">)</span> <span class="o">||</span> <span class="o">!</span><span class="n">ProtocolConfig</span><span class="o">.</span><span class="na">class</span>
+                                                <span class="o">.</span><span class="na">getName</span><span class="o">().</span><span class="na">equals</span><span class="o">(</span>
+                                                        <span class="n">parserContext</span><span class="o">.</span><span class="na">getRegistry</span><span class="o">().</span><span class="na">getBeanDefinition</span><span class="o">(</span><span class="n">value</span><span class="o">)</span>
+                                                                <span class="o">.</span><span class="na">getBeanClassName</span><span class="o">())))</span> <span class="o">{</span>
+                                    <span class="k">if</span> <span class="o">(</span><span class="s">"dubbo:provider"</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">element</span><span class="o">.</span><span class="na">getTagName</span><span class="o">()))</span> <span class="o">{</span>
+                                        <span class="n">logger</span><span class="o">.</span><span class="na">warn</span><span class="o">(</span><span class="s">"Recommended replace &lt;dubbo:provider protocol=\""</span> <span class="o">+</span> <span class="n">value</span>
+                                                <span class="o">+</span> <span class="s">"\" ... /&gt; to &lt;dubbo:protocol name=\""</span> <span class="o">+</span> <span class="n">value</span> <span class="o">+</span> <span class="s">"\" ... /&gt;"</span><span class="o">);</span>
+                                    <span class="o">}</span>
+                                    <span class="c1">// 兼容旧版本配置</span>
+                                    <span class="n">ProtocolConfig</span> <span class="n">protocol</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ProtocolConfig</span><span class="o">();</span>
+                                    <span class="n">protocol</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="n">value</span><span class="o">);</span>
+                                    <span class="n">reference</span> <span class="o">=</span> <span class="n">protocol</span><span class="o">;</span>
+                                <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="s">"monitor"</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">property</span><span class="o">)</span>
+                                        <span class="o">&amp;&amp;</span> <span class="o">(!</span><span class="n">parserContext</span><span class="o">.</span><span class="na">getRegistry</span><span class="o">().</span><span class="na">containsBeanDefinition</span><span class="o">(</span><span class="n">value</span><span class="o">)</span> <span class="o">||</span> <span class="o">!</span><span class="n">MonitorConfig</span><span class="o">.</span><span class="na">class</span>
+                                                <span class="o">.</span><span class="na">getName</span><span class="o">().</span><span class="na">equals</span><span class="o">(</span>
+                                                        <span class="n">parserContext</span><span class="o">.</span><span class="na">getRegistry</span><span class="o">().</span><span class="na">getBeanDefinition</span><span class="o">(</span><span class="n">value</span><span class="o">)</span>
+                                                                <span class="o">.</span><span class="na">getBeanClassName</span><span class="o">())))</span> <span class="o">{</span>
+                                    <span class="c1">// 兼容旧版本配置</span>
+                                    <span class="n">reference</span> <span class="o">=</span> <span class="n">convertMonitor</span><span class="o">(</span><span class="n">value</span><span class="o">);</span>
+                                <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="s">"onreturn"</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">property</span><span class="o">))</span> <span class="o">{</span>
+                                    <span class="kt">int</span> <span class="n">index</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="na">lastIndexOf</span><span class="o">(</span><span class="s">"."</span><span class="o">);</span>
+                                    <span class="n">String</span> <span class="n">returnRef</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="na">substring</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="n">index</span><span class="o">);</span>
+                                    <span class="n">String</span> <span class="n">returnMethod</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="na">substring</span><span class="o">(</span><span class="n">index</span> <span class="o">+</span> <span class="mi">1</span><span class="o">);</span>
+                                    <span class="n">reference</span> <span class="o">=</span> <span class="k">new</span> <span class="n">RuntimeBeanReference</span><span class="o">(</span><span class="n">returnRef</span><span class="o">);</span>
+                                    <span class="n">beanDefinition</span><span class="o">.</span><span class="na">getPropertyValues</span><span class="o">().</span><span class="na">addPropertyValue</span><span class="o">(</span><span class="s">"onreturnMethod"</span><span class="o">,</span> <span class="n">returnMethod</span><span class="o">);</span>
+                                <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="s">"onthrow"</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">property</span><span class="o">))</span> <span class="o">{</span>
+                                    <span class="kt">int</span> <span class="n">index</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="na">lastIndexOf</span><span class="o">(</span><span class="s">"."</span><span class="o">);</span>
+                                    <span class="n">String</span> <span class="n">throwRef</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="na">substring</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="n">index</span><span class="o">);</span>
+                                    <span class="n">String</span> <span class="n">throwMethod</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="na">substring</span><span class="o">(</span><span class="n">index</span> <span class="o">+</span> <span class="mi">1</span><span class="o">);</span>
+                                    <span class="n">reference</span> <span class="o">=</span> <span class="k">new</span> <span class="n">RuntimeBeanReference</span><span class="o">(</span><span class="n">throwRef</span><span class="o">);</span>
+                                    <span class="n">beanDefinition</span><span class="o">.</span><span class="na">getPropertyValues</span><span class="o">().</span><span class="na">addPropertyValue</span><span class="o">(</span><span class="s">"onthrowMethod"</span><span class="o">,</span> <span class="n">throwMethod</span><span class="o">);</span>
+                                <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+                                    <span class="k">if</span> <span class="o">(</span><span class="s">"ref"</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">property</span><span class="o">)</span>
+                                            <span class="o">&amp;&amp;</span> <span class="n">parserContext</span><span class="o">.</span><span class="na">getRegistry</span><span class="o">().</span><span class="na">containsBeanDefinition</span><span class="o">(</span><span class="n">value</span><span class="o">))</span> <span class="o">{</span>
+                                        <span class="n">BeanDefinition</span> <span class="n">refBean</span> <span class="o">=</span> <span class="n">parserContext</span><span class="o">.</span><span class="na">getRegistry</span><span class="o">().</span><span class="na">getBeanDefinition</span><span class="o">(</span><span class="n">value</span><span class="o">);</span>
+                                        <span class="k">if</span> <span class="o">(!</span><span class="n">refBean</span><span class="o">.</span><span class="na">isSingleton</span><span class="o">())</span> <span class="o">{</span>
+                                            <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalStateException</span><span class="o">(</span><span class="s">"The exported service ref "</span> <span class="o">+</span> <span class="n">value</span>
+                                                    <span class="o">+</span> <span class="s">" must be singleton! Please set the "</span> <span class="o">+</span> <span class="n">value</span>
+                                                    <span class="o">+</span> <span class="s">" bean scope to singleton, eg: &lt;bean id=\""</span> <span class="o">+</span> <span class="n">value</span>
+                                                    <span class="o">+</span> <span class="s">"\" scope=\"singleton\" ...&gt;"</span><span class="o">);</span>
+                                        <span class="o">}</span>
+                                    <span class="o">}</span>
+                                    <span class="n">reference</span> <span class="o">=</span> <span class="k">new</span> <span class="n">RuntimeBeanReference</span><span class="o">(</span><span class="n">value</span><span class="o">);</span>
+                                <span class="o">}</span>
+                                <span class="n">beanDefinition</span><span class="o">.</span><span class="na">getPropertyValues</span><span class="o">().</span><span class="na">addPropertyValue</span><span class="o">(</span><span class="n">property</span><span class="o">,</span> <span class="n">reference</span><span class="o">);</span>
+                            <span class="o">}</span>
+                        <span class="o">}</span>
+                    <span class="o">}</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+
+        <span class="c1">// 获取所有属性</span>
+        <span class="c1">// ok,现在解析每一个节点对应的属性参数，比如 address，loadbalance等</span>
+        <span class="n">NamedNodeMap</span> <span class="n">attributes</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="na">getAttributes</span><span class="o">();</span>
+        <span class="kt">int</span> <span class="n">len</span> <span class="o">=</span> <span class="n">attributes</span><span class="o">.</span><span class="na">getLength</span><span class="o">();</span>
+        <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">len</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+            <span class="n">Node</span> <span class="n">node</span> <span class="o">=</span> <span class="n">attributes</span><span class="o">.</span><span class="na">item</span><span class="o">(</span><span class="n">i</span><span class="o">);</span>
+            <span class="n">String</span> <span class="n">name</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="na">getLocalName</span><span class="o">();</span>
+            <span class="k">if</span> <span class="o">(!</span><span class="n">props</span><span class="o">.</span><span class="na">contains</span><span class="o">(</span><span class="n">name</span><span class="o">))</span> <span class="o">{</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">parameters</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="n">parameters</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ManagedMap</span><span class="o">();</span>
+                <span class="o">}</span>
+                <span class="n">String</span> <span class="n">value</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="na">getNodeValue</span><span class="o">();</span>
+                <span class="c1">// 整了这么多，到这里终于放进ManagedMap里面去了</span>
+                <span class="n">parameters</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">name</span><span class="o">,</span> <span class="k">new</span> <span class="n">TypedStringValue</span><span class="o">(</span><span class="n">value</span><span class="o">,</span> <span class="n">String</span><span class="o">.</span><span class="na">class</span><span class="o">));</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">parameters</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="c1">// 这里放到beanDefinition属性里面，进而在Context中就可以拿到了</span>
+            <span class="n">beanDefinition</span><span class="o">.</span><span class="na">getPropertyValues</span><span class="o">().</span><span class="na">addPropertyValue</span><span class="o">(</span><span class="s">"parameters"</span><span class="o">,</span> <span class="n">parameters</span><span class="o">);</span>
+        <span class="o">}</span>
+        <span class="k">return</span> <span class="n">beanDefinition</span><span class="o">;</span>
+    <span class="o">}</span>
+    
+    <span class="c1">//.............................</span>
+    <span class="o">}</span>
+
+</code></pre></div></div>
+
+
+        </article>
+        <hr>
+
+        
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+        
+
+        <div class="post-recent">
+    <div class="pre">
+        
+        <p><strong>上一篇</strong> <a href="/2014/10/09/Mysql-Delete-Insert-Deadlock-Analyse/">线上Mysql Delete 和 Insert 操作导致死锁问题分析</a></p>
+        
+    </div>
+    <div class="nex">
+
+        
+        <p><strong>下一篇</strong> <a href="/2014/11/24/java-some-tips/">Java一些小Tips</a></p>
+        
+    </div>
+</div>
+
+
+        <h2 id="comments">Comments</h2>
+        
+
+
+<div id="disqus_thread"></div>
+<script>
+    /**
+     * RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     * LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+
+    var disqus_config = function() {
+        this.page.url = 'http://localhost:4000/2014/10/22/Dubbo-Provider-Groups-Bug-Analyse/'; // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = 'http://localhost:4000/2014/10/22/Dubbo-Provider-Groups-Bug-Analyse/'; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+
+    (function() { // DON'T EDIT BELOW THIS LINE
+        var d = document,
+            s = d.createElement('script');
+
+        s.src = '//taocoder.disqus.com/embed.js';
+
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+
+
+
+    </div>
+    <button class="anchor"><i class="fa fa-anchor"></i></button>
+    <div class="right">
+        <div class="wrap">
+
+            <!-- Content -->
+            <div class="side content">
+                <div>
+                    Content
+                </div>
+                <ul id="content-side" class="content-ul">
+                    
+                    <li><a href="#comments">Comments</a></li>
+                </ul>
+            </div>
+            <!-- 其他div框放到这里 -->
+            <!-- <div class="side">bbbb</div> -->
+        </div>
+    </div>
+</div>
+<script>
+/**
+ * target _blank
+ */
+(function() {
+    var aTags = document.querySelectorAll('article a:not([id])')
+    for (var i = 0; i < aTags.length; i++) {
+        aTags[i].setAttribute('target', '_blank')
+    }
+}());
+</script>
+<script src="/js/pageContent.js " charset="utf-8"></script>
+
+
+    <footer class="site-footer">
+
+
+    <div class="wrapper">
+
+        <p class="description">
+             本站保留着一点点技术积蓄！ 
+        </p>
+        <p class="contact">
+            Contact me at: 
+            <a href="https://github.com/ketao1989" title="GitHub"><i class="fa fa-github" aria-hidden="true"></i></a>  
+            <a href="mailto:ketao1989@126.com" title="email"><i class="fa fa-envelope-o" aria-hidden="true"></i></a>  
+            <a href="http://weibo.com/柯小小西" title="Weibo"><i class="fa fa-weibo" aria-hidden="true"></i></a>       
+        </p>
+        <p>
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次，本站访客数<span id="busuanzi_value_site_uv"></span>人次，本文总阅读量<span id="busuanzi_value_page_pv"></span>次
+        </p>
+        <p class="power">
+            <span>
+                Site powered by <a href="https://jekyllrb.com/">Jekyll</a> & <a href="https://pages.github.com/">Github Pages</a>.
+            </span>
+            <span>
+                Theme designed by <a href="https://github.com/Gaohaoyang">HyG</a>.
+            </span>
+        </p>
+    </div>
+</footer>
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+    <div class="back-to-top">
+    <a href="#top" data-scroll>
+        <i class="fa fa-arrow-up" aria-hidden="true"></i>
+    </a>
+</div>
+
+    <script src=" /js/main.js " charset="utf-8"></script>
+    <script src=" /js/smooth-scroll.min.js " charset="utf-8"></script>
+    <script type="text/javascript">
+      smoothScroll.init({
+        speed: 500, // Integer. How fast to complete the scroll in milliseconds
+        easing: 'easeInOutCubic', // Easing pattern to use
+        offset: 20, // Integer. How far to offset the scrolling anchor location in pixels
+      });
+    </script>
+    <!-- <script src=" /js/scroll.min.js " charset="utf-8"></script> -->
+  </body>
+
+</html>

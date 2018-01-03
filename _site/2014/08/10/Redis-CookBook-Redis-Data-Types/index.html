@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Redis Cookbook 之 Redis数据类型</title>
+    <meta name="description" content="问题首先，你需要了解Redis的数据类型，这样才能够为特定的应用提供更好的Redis使用方式和性能。解决方法和大部分其他的NoSQL方案和key-value存储引擎不同，Redis包含一些内建的数据类型，允许开发者可以使用有意义的语义方式来构建他们的数据。在Redis内部操作指定类型的数据时，预定义的数据类型一般...">
+
+    <link rel="shortcut icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://at.alicdn.com/t/font_8v3czwksspqlg14i.css">
+    <link rel="stylesheet" href="/css/main.css ">
+    <link rel="canonical" href="http://localhost:4000/2014/08/10/Redis-CookBook-Redis-Data-Types/">
+    <link rel="alternate" type="application/rss+xml" title="柯小小西" href="http://localhost:4000/feed.xml ">
+
+
+    <script>
+    // 百度统计代码
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?a9b0f47a0e50b02dafb8a7088436a9bc";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+    </script>
+
+
+
+
+</head>
+
+
+  <body>
+
+    <header id="top">
+    <div class="wrapper">
+        <a href="/" class="brand">柯小小西</a>
+        <small>留着一点点技术积蓄</small>
+        <button id="headerMenu" class="menu"><i class="fa fa-bars"></i></button>
+        <nav id="headerNav">
+            <ul>
+                <li>
+                    
+                    <a href="/">
+                    
+                        <i class="fa fa-home"></i>Home
+                    </a>
+                </li>
+
+                
+                    
+                    <li>
+                        
+                        <a href="/archive/">
+                        
+                            <i class="fa fa-archive"></i>Archives
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/category/">
+                        
+                            <i class="fa fa-th-list"></i>Categories
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/tag/">
+                        
+                            <i class="fa fa-tags"></i>Tags
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/about/">
+                        
+                            <i class="fa fa-heart"></i>About
+                        </a>
+                    </li>
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+        <div class="page clearfix" post>
+    <div class="left">
+        <h1>Redis Cookbook 之 Redis数据类型</h1>
+        <div class="label">
+
+            <div class="label-card">
+                <i class="fa fa-calendar"></i>2014-08-10
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+            
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Redis" title="Category: Redis" rel="category">Redis</a>&nbsp;
+    
+        <a href="/category/#Redis Cookbook" title="Category: Redis Cookbook" rel="category">Redis Cookbook</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+            </div>
+
+            <div class="label-card">
+            
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+            </div>
+
+        </div>
+        <hr>
+        <article itemscope itemtype="http://schema.org/BlogPosting">
+        <h2 id="问题"><a id="Problem">问题</a></h2>
+
+<p>首先，你需要了解<code class="highlighter-rouge">Redis</code>的数据类型，这样才能够为特定的应用提供更好的<code class="highlighter-rouge">Redis</code>使用方式和性能。</p>
+
+<h2 id="解决方法"><a id="Solution">解决方法</a></h2>
+
+<p>和大部分其他的<code class="highlighter-rouge">NoSQL</code>方案和<code class="highlighter-rouge">key-value</code>存储引擎不同，<code class="highlighter-rouge">Redis</code>包含一些内建的数据类型，允许开发者可以使用有意义的语义方式来构建他们的数据。在<code class="highlighter-rouge">Redis</code>内部操作指定类型的数据时，预定义的数据类型一般会比外部定义数据类型要操作更快。</p>
+
+<h2 id="讨论"><a id="Discussion">讨论</a></h2>
+
+<p>在我们深入特定的数据类型之前，先来了解一些在设计<code class="highlighter-rouge">Key</code>数据结构的时候需要关注的事情：</p>
+
+<ul>
+  <li>
+    <p>定义<code class="highlighter-rouge">key</code>空间时需要一致。由于一个key可以包含任意的字符，你可以使用分隔符去为自己的业务定义有意义的命名。例如：<code class="highlighter-rouge"> cache:project:319:tasks</code>，每一个冒号就是一个命名分隔符。</p>
+  </li>
+  <li>
+    <p>当定义自己的<code class="highlighter-rouge">key</code>时，尝试限制合适的大小。从存储中检索一个key是需要比较操作的，所以保证<code class="highlighter-rouge">key</code>长度足够的小是一个很好的建议。此外，更小的<code class="highlighter-rouge">key</code>长度还会节省内存的使用。</p>
+  </li>
+  <li>
+    <p>即使<code class="highlighter-rouge">key</code>不能够特别的大，但是保持特别小的<code class="highlighter-rouge">key</code>并不会带来非常大的性能提升。这意味着，你设计自己的<code class="highlighter-rouge">key</code>时需要综合考虑<code class="highlighter-rouge">key</code>的易读性和正常的键长度。</p>
+  </li>
+</ul>
+
+<p>因此，当键设计成<code class="highlighter-rouge">c:p:319:t</code>或者<code class="highlighter-rouge">user 123</code>是相当失败的，前面一个可读性很差，后面一个包含空格。另一方面，像<code class="highlighter-rouge">cache:project:319:tasks</code>，<code class="highlighter-rouge">lastchatmessage</code>，<code class="highlighter-rouge">464A1E96B2D217EBE87449FA8B70E6C7D112560C</code>的<code class="highlighter-rouge">key</code>都是很好的，因为他们都是有语义的词（最后一个是SHA1哈希值，虽然很难猜测他的语义，但是这对于存储了对应的对象，你就可以计算出hash值了）。</p>
+
+<!-- more -->
+
+<h3 id="strings">Strings</h3>
+
+<p>这是<code class="highlighter-rouge">Redis</code>里面最简单的数据类型：字符串。<code class="highlighter-rouge">Strings</code>也是其他<code class="highlighter-rouge">key-value</code>存储引擎中典型的数据类型。你可以存储任意类型的字符串，包括二进制数据。比如：你可能想要为<code class="highlighter-rouge">社交网络中的头像</code>缓存图片数据。你需要考虑的唯一一件事情就是在<code class="highlighter-rouge">Redis</code>里面不允许特定的值大小超过<code class="highlighter-rouge">512M</code>。</p>
+
+<h3 id="lists">Lists</h3>
+
+<p>在<code class="highlighter-rouge">Redis</code>存储里面，<code class="highlighter-rouge">  Lists</code>是一个有序的二进制安全的字符串列表，使用<code class="highlighter-rouge">linked list</code>来实现。这意外者，当通过一个指定的索引获取元素的时候，会是一个很慢的操作，但是在这个数据结构的头部或者尾部增加元素是非常快的。你可能想要基于<code class="highlighter-rouge">Lists</code>去实现<code class="highlighter-rouge">queues</code>之类的数据结构。关于这点，后文会说到。</p>
+
+<h3 id="hashes">Hashes</h3>
+
+<p>和传统的hash表很像，在<code class="highlighter-rouge">Redis</code>中<code class="highlighter-rouge">hashes</code>在特定的key里面存储一些<code class="highlighter-rouge">fields</code>和他们对应的值。<code class="highlighter-rouge">hashes</code>是需要映射复杂对像的完美选项，通过使用对象属性的<code class="highlighter-rouge">fields</code>（比如一个对象有多个属性：“color”,“brand”, “license plate”）。</p>
+
+<h3 id="sets-and-sorted-sets">Sets and Sorted Sets</h3>
+
+<p>在<code class="highlighter-rouge">Redis</code>中，<code class="highlighter-rouge">sets</code>是一个无序的二进制安全的字符串集合。在给定的<code class="highlighter-rouge">set</code>中是不存在重复的元素的。比如，当你尝试在一个<code class="highlighter-rouge">set</code>中添加两次<code class="highlighter-rouge">wheel</code>时，<code class="highlighter-rouge">Redis</code>会忽略第二次插入操作。<code class="highlighter-rouge">sets</code>允许你执行传统语言中<code class="highlighter-rouge">set</code>的相关操作，比如获取集合的交集和并集。</p>
+
+<p>虽然这个和<code class="highlighter-rouge">lists</code>看起来很相似，但是他们实现是非常不同的，并且由于他们不同的特性而决定适应不同的应用需求。此外，set的内存占用要比<code class="highlighter-rouge">lists</code>高一些。</p>
+
+<p><code class="highlighter-rouge">Sorted sets</code>是<code class="highlighter-rouge">sets</code>的特例，通过定义<code class="highlighter-rouge">score</code>来实现排序，此外也是经典的二进制安全字符串。这个<code class="highlighter-rouge">score</code>允许你通过使用<code class="highlighter-rouge">ZRANGE</code>命令查询一个有序的元素列表。后面，会介绍一些关于<code class="highlighter-rouge">sets and sorted sets</code>的使用实例。</p>
+
+
+        </article>
+        <hr>
+
+        
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+        
+
+        <div class="post-recent">
+    <div class="pre">
+        
+        <p><strong>上一篇</strong> <a href="/2014/07/03/Query-DB-Python-Shell/">使用Python操作线上数据库脚本</a></p>
+        
+    </div>
+    <div class="nex">
+
+        
+        <p><strong>下一篇</strong> <a href="/2014/08/10/Redis-Cookbook-Redis-KeyValue-Store/">Redis Cookbook 之 Redis 键值对存储服务</a></p>
+        
+    </div>
+</div>
+
+
+        <h2 id="comments">Comments</h2>
+        
+
+
+<div id="disqus_thread"></div>
+<script>
+    /**
+     * RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     * LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+
+    var disqus_config = function() {
+        this.page.url = 'http://localhost:4000/2014/08/10/Redis-CookBook-Redis-Data-Types/'; // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = 'http://localhost:4000/2014/08/10/Redis-CookBook-Redis-Data-Types/'; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+
+    (function() { // DON'T EDIT BELOW THIS LINE
+        var d = document,
+            s = d.createElement('script');
+
+        s.src = '//taocoder.disqus.com/embed.js';
+
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+
+
+
+    </div>
+    <button class="anchor"><i class="fa fa-anchor"></i></button>
+    <div class="right">
+        <div class="wrap">
+
+            <!-- Content -->
+            <div class="side content">
+                <div>
+                    Content
+                </div>
+                <ul id="content-side" class="content-ul">
+                    
+                    <li><a href="#comments">Comments</a></li>
+                </ul>
+            </div>
+            <!-- 其他div框放到这里 -->
+            <!-- <div class="side">bbbb</div> -->
+        </div>
+    </div>
+</div>
+<script>
+/**
+ * target _blank
+ */
+(function() {
+    var aTags = document.querySelectorAll('article a:not([id])')
+    for (var i = 0; i < aTags.length; i++) {
+        aTags[i].setAttribute('target', '_blank')
+    }
+}());
+</script>
+<script src="/js/pageContent.js " charset="utf-8"></script>
+
+
+    <footer class="site-footer">
+
+
+    <div class="wrapper">
+
+        <p class="description">
+             本站保留着一点点技术积蓄！ 
+        </p>
+        <p class="contact">
+            Contact me at: 
+            <a href="https://github.com/ketao1989" title="GitHub"><i class="fa fa-github" aria-hidden="true"></i></a>  
+            <a href="mailto:ketao1989@126.com" title="email"><i class="fa fa-envelope-o" aria-hidden="true"></i></a>  
+            <a href="http://weibo.com/柯小小西" title="Weibo"><i class="fa fa-weibo" aria-hidden="true"></i></a>       
+        </p>
+        <p>
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次，本站访客数<span id="busuanzi_value_site_uv"></span>人次，本文总阅读量<span id="busuanzi_value_page_pv"></span>次
+        </p>
+        <p class="power">
+            <span>
+                Site powered by <a href="https://jekyllrb.com/">Jekyll</a> & <a href="https://pages.github.com/">Github Pages</a>.
+            </span>
+            <span>
+                Theme designed by <a href="https://github.com/Gaohaoyang">HyG</a>.
+            </span>
+        </p>
+    </div>
+</footer>
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+    <div class="back-to-top">
+    <a href="#top" data-scroll>
+        <i class="fa fa-arrow-up" aria-hidden="true"></i>
+    </a>
+</div>
+
+    <script src=" /js/main.js " charset="utf-8"></script>
+    <script src=" /js/smooth-scroll.min.js " charset="utf-8"></script>
+    <script type="text/javascript">
+      smoothScroll.init({
+        speed: 500, // Integer. How fast to complete the scroll in milliseconds
+        easing: 'easeInOutCubic', // Easing pattern to use
+        offset: 20, // Integer. How far to offset the scrolling anchor location in pixels
+      });
+    </script>
+    <!-- <script src=" /js/scroll.min.js " charset="utf-8"></script> -->
+  </body>
+
+</html>

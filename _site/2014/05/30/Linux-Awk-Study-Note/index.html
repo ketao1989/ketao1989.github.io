@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Linux Awk 使用学习笔记</title>
+    <meta name="description" content="前言linux Awk 脚本语言，算来也有很长的一段历史了。在如今各种更全更简单的脚本语言遍地生成的年代，关注Awk的新人越来越少了。最近，在项目组同事的影响下，去学习了下Awk的基本使用方法。      Note：本文只是学习笔记，很多示例和描述都来自最后推荐的文章里面。  起意写关于Awk学习笔记的主要原因是...">
+
+    <link rel="shortcut icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://at.alicdn.com/t/font_8v3czwksspqlg14i.css">
+    <link rel="stylesheet" href="/css/main.css ">
+    <link rel="canonical" href="http://localhost:4000/2014/05/30/Linux-Awk-Study-Note/">
+    <link rel="alternate" type="application/rss+xml" title="柯小小西" href="http://localhost:4000/feed.xml ">
+
+
+    <script>
+    // 百度统计代码
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?a9b0f47a0e50b02dafb8a7088436a9bc";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+    </script>
+
+
+
+
+</head>
+
+
+  <body>
+
+    <header id="top">
+    <div class="wrapper">
+        <a href="/" class="brand">柯小小西</a>
+        <small>留着一点点技术积蓄</small>
+        <button id="headerMenu" class="menu"><i class="fa fa-bars"></i></button>
+        <nav id="headerNav">
+            <ul>
+                <li>
+                    
+                    <a href="/">
+                    
+                        <i class="fa fa-home"></i>Home
+                    </a>
+                </li>
+
+                
+                    
+                    <li>
+                        
+                        <a href="/archive/">
+                        
+                            <i class="fa fa-archive"></i>Archives
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/category/">
+                        
+                            <i class="fa fa-th-list"></i>Categories
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/tag/">
+                        
+                            <i class="fa fa-tags"></i>Tags
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/about/">
+                        
+                            <i class="fa fa-heart"></i>About
+                        </a>
+                    </li>
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+        <div class="page clearfix" post>
+    <div class="left">
+        <h1>Linux Awk 使用学习笔记</h1>
+        <div class="label">
+
+            <div class="label-card">
+                <i class="fa fa-calendar"></i>2014-05-30
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+            
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Script" title="Category: Script" rel="category">Script</a>&nbsp;
+    
+        <a href="/category/#Linux" title="Category: Linux" rel="category">Linux</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+            </div>
+
+            <div class="label-card">
+            
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+            </div>
+
+        </div>
+        <hr>
+        <article itemscope itemtype="http://schema.org/BlogPosting">
+        <h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p><code class="highlighter-rouge">linux Awk</code> 脚本语言，算来也有很长的一段历史了。在如今各种更全更简单的脚本语言遍地生成的年代，关注<code class="highlighter-rouge">Awk</code>的新人越来越少了。最近，在项目组同事的影响下，去学习了下<code class="highlighter-rouge">Awk</code>的基本使用方法。</p>
+
+<blockquote>
+  <blockquote>
+    <p>Note：本文只是学习笔记，很多示例和描述都来自最后推荐的文章里面。</p>
+  </blockquote>
+</blockquote>
+
+<p>起意写关于<code class="highlighter-rouge">Awk</code>学习笔记的主要原因是，学习皓哥的<a href="http://coolshell.cn/articles/9070.html">AWK 简明教程</a> 完了之后，完全还是云里雾里的，不知所以然。所以，找了个<a href="http://www.aslibra.com/doc/awk.htm">AWK 手册</a>好好学习。但是，对于前者介绍太多浅，初学者对于<code class="highlighter-rouge">Awk</code>使用没有任何概念；后者又过于长，不方便我去查资料，所以合计起来，就写一个学习总结罢了。</p>
+
+<h2 id="awk命令行"><a id="Console">Awk命令行</a></h2>
+
+<p>关于<code class="highlighter-rouge">Awk</code>的历史，语言优势什么的，就不浪费时间介绍了。</p>
+
+<h3 id="21-awk-程序结构">2.1 Awk 程序结构</h3>
+
+<p>首先，我们在服务器上查看日志信息，大部分时候都希望使用一行命令搞定问题，因此，显然命令行方式使用<code class="highlighter-rouge">Awk</code>是很频繁的事情。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">awk</span> <span class="s1">'awk程序主体'</span> <span class="o">[</span>操作的文本] 
+</code></pre></div></div>
+
+<p>在写一个<code class="highlighter-rouge">awk</code>脚本之前，首先需要的是了解 <code class="highlighter-rouge">awk</code>程序组成结构，如果你不了解它的程序一般的结构，那么你去看皓哥或者其他人写的入门级<code class="highlighter-rouge">Awk</code>小程序，你也无法真正去了解或者深入。</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Pattern1 {Actions1}
+Pattern2 { Actions2 }
+......
+Pattern3 { Actions3 }
+</code></pre></div></div>
+
+<!-- more -->
+
+<blockquote>
+  <blockquote>
+    <p>Note：<code class="highlighter-rouge">Pattern （模式）</code>，如同正则一样，就是判断<code class="highlighter-rouge">Pattern</code>是否满足，如果满足，则执行就下来的<code class="highlighter-rouge">Actions</code>动作行为。<code class="highlighter-rouge">awk</code>提供的比较运算符和<code class="highlighter-rouge">C</code>语言一样，不过新加了 ` ~ <code class="highlighter-rouge">(匹配) 及 </code> !~ `(不匹配) 二个关系运算符.</p>
+  </blockquote>
+</blockquote>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>其用法与涵义如下:
+若 A 为一字符串, B 为一正则表达式(Regular Expression)
+A ~ B 判断 字符串A 中是否 包含 能匹配(match)B表达式的子字符串.
+A !~ B 判断 字符串A 中是否 不包含 能匹配(match)B表达式的子字符串.
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Note：<code class="highlighter-rouge">Action</code>，就是动作，但是需要指出的是，一个<code class="highlighter-rouge">Pattern</code>所对应的<code class="highlighter-rouge">Action</code>应该要放进<code class="highlighter-rouge">{ }</code>内。当然，存在一种情况，就是没有<code class="highlighter-rouge">Pattern</code>,直接就是<code class="highlighter-rouge">{Action}</code>，这表示，“无条件执行指定的Action动作”。</p>
+  </blockquote>
+</blockquote>
+
+<p>了解了<code class="highlighter-rouge">awk</code>程序的基本结构，下面给一个简单示例：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">awk</span> <span class="s1">' $0&gt;1 {print "hello world"}'</span> 
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>这个程序意思就是：<code class="highlighter-rouge">$0&gt;1</code>模式成立，则打印后面的<code class="highlighter-rouge">hello world</code>，在console上输入3，回车，则会打印<code class="highlighter-rouge">hello world</code>；如果输入0，则不会打印该消息。</p>
+  </blockquote>
+</blockquote>
+
+<h3 id="22-awk-程序说明">2.2 Awk 程序说明</h3>
+
+<p>首先，需要了解<code class="highlighter-rouge">$0</code>这种格式： <code class="highlighter-rouge">$0</code>表示<code class="highlighter-rouge">awk</code>所读入的一行字符串；<code class="highlighter-rouge">$1</code>则表示所读入的字符串的第一个数据，默认安装<code class="highlighter-rouge">空格/tab</code>来分隔；<code class="highlighter-rouge">$2</code>则表示所读入的字符串的第二个数据；以此类推…..</p>
+
+<p>其次，这个程序是从控制台，或者文本中读取变量值（需要在后面写操作的文本名）。如果你测试了这个小脚本，你会发现，它会一直读，知道遇到<code class="highlighter-rouge">ctrl+d</code>或者<code class="highlighter-rouge">EOF</code>才会结束。但是，如果你初始化一些变量或者其他只需要执行一次的逻辑，怎么办呢？你需要<code class="highlighter-rouge">BEGIN</code>和<code class="highlighter-rouge">END</code>。</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>1. BEGIN ：程序一开始执行时执行的，仅被执行一次。
+2. END	 ：程序处理完所有数据即将返回的时候，执行一次。
+</code></pre></div></div>
+
+<p>比如上面的程序，可以写成：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">awk</span> <span class="s1">' BEGIN{n=3} $0&gt;1 &amp;&amp; --n&gt;0 {print "hello world"} END{print "EXIT AWK TEST"}'</span>
+</code></pre></div></div>
+
+<p>执行完了结果如下：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[tao.ke@l-rtools1.ops.cn6 ~]$ awk ' BEGIN{n=3} $0&gt;1 &amp;&amp; --n&gt;0 {print "hello world"} END{print "EXIT AWK TEST"}'         
+3
+hello world
+2
+hello world
+1
+0 #（在这里的时候输入 ctrl+d）
+EXIT AWK TEST
+</code></pre></div></div>
+
+<p>最后，说说<code class="highlighter-rouge">Awk</code>中使用<code class="highlighter-rouge">linux shell</code>命令。和<code class="highlighter-rouge">linux</code>一样，使用<code class="highlighter-rouge">|</code>来操作管道流，使用<code class="highlighter-rouge">""</code>标识<code class="highlighter-rouge">linux</code>命令。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">awk</span> <span class="s1">' BEGIN{while("who"|getline){print $0}} '</span>  
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>这里可以打印出，所有的登陆在系统上的用户。	关于<code class="highlighter-rouge">while</code>的使用，和<code class="highlighter-rouge">c</code>语言一样；此外，其他控制语言<code class="highlighter-rouge">if</code>、<code class="highlighter-rouge">do-while</code>、<code class="highlighter-rouge">for</code>，也和<code class="highlighter-rouge">c</code>一样。需要说明的是，<code class="highlighter-rouge">for</code>可以使用类似<code class="highlighter-rouge">foreach</code>的形式，具体见下一节。</p>
+  </blockquote>
+</blockquote>
+
+<h2 id="推荐教程"><a id="Recommend">推荐教程</a></h2>
+
+<ul>
+  <li>
+    <p>awk手册，<a href="http://www.aslibra.com/doc/awk.htm">http://www.aslibra.com/doc/awk.htm</a></p>
+  </li>
+  <li>
+    <p>AWK 简明教程，<a href="http://coolshell.cn/articles/9070.html">http://coolshell.cn/articles/9070.html</a></p>
+  </li>
+</ul>
+
+        </article>
+        <hr>
+
+        
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+        
+
+        <div class="post-recent">
+    <div class="pre">
+        
+        <p><strong>上一篇</strong> <a href="/2014/05/28/Online-Mysql-Deadlock-Analyse/">线上Mysql死锁问题分析</a></p>
+        
+    </div>
+    <div class="nex">
+
+        
+        <p><strong>下一篇</strong> <a href="/2014/06/04/Ubuntu-Software-Configure-and-Install/">Ubuntu Subversion软件安装和配置</a></p>
+        
+    </div>
+</div>
+
+
+        <h2 id="comments">Comments</h2>
+        
+
+
+<div id="disqus_thread"></div>
+<script>
+    /**
+     * RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     * LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+
+    var disqus_config = function() {
+        this.page.url = 'http://localhost:4000/2014/05/30/Linux-Awk-Study-Note/'; // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = 'http://localhost:4000/2014/05/30/Linux-Awk-Study-Note/'; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+
+    (function() { // DON'T EDIT BELOW THIS LINE
+        var d = document,
+            s = d.createElement('script');
+
+        s.src = '//taocoder.disqus.com/embed.js';
+
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+
+
+
+    </div>
+    <button class="anchor"><i class="fa fa-anchor"></i></button>
+    <div class="right">
+        <div class="wrap">
+
+            <!-- Content -->
+            <div class="side content">
+                <div>
+                    Content
+                </div>
+                <ul id="content-side" class="content-ul">
+                    
+                    <li><a href="#comments">Comments</a></li>
+                </ul>
+            </div>
+            <!-- 其他div框放到这里 -->
+            <!-- <div class="side">bbbb</div> -->
+        </div>
+    </div>
+</div>
+<script>
+/**
+ * target _blank
+ */
+(function() {
+    var aTags = document.querySelectorAll('article a:not([id])')
+    for (var i = 0; i < aTags.length; i++) {
+        aTags[i].setAttribute('target', '_blank')
+    }
+}());
+</script>
+<script src="/js/pageContent.js " charset="utf-8"></script>
+
+
+    <footer class="site-footer">
+
+
+    <div class="wrapper">
+
+        <p class="description">
+             本站保留着一点点技术积蓄！ 
+        </p>
+        <p class="contact">
+            Contact me at: 
+            <a href="https://github.com/ketao1989" title="GitHub"><i class="fa fa-github" aria-hidden="true"></i></a>  
+            <a href="mailto:ketao1989@126.com" title="email"><i class="fa fa-envelope-o" aria-hidden="true"></i></a>  
+            <a href="http://weibo.com/柯小小西" title="Weibo"><i class="fa fa-weibo" aria-hidden="true"></i></a>       
+        </p>
+        <p>
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次，本站访客数<span id="busuanzi_value_site_uv"></span>人次，本文总阅读量<span id="busuanzi_value_page_pv"></span>次
+        </p>
+        <p class="power">
+            <span>
+                Site powered by <a href="https://jekyllrb.com/">Jekyll</a> & <a href="https://pages.github.com/">Github Pages</a>.
+            </span>
+            <span>
+                Theme designed by <a href="https://github.com/Gaohaoyang">HyG</a>.
+            </span>
+        </p>
+    </div>
+</footer>
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+    <div class="back-to-top">
+    <a href="#top" data-scroll>
+        <i class="fa fa-arrow-up" aria-hidden="true"></i>
+    </a>
+</div>
+
+    <script src=" /js/main.js " charset="utf-8"></script>
+    <script src=" /js/smooth-scroll.min.js " charset="utf-8"></script>
+    <script type="text/javascript">
+      smoothScroll.init({
+        speed: 500, // Integer. How fast to complete the scroll in milliseconds
+        easing: 'easeInOutCubic', // Easing pattern to use
+        offset: 20, // Integer. How far to offset the scrolling anchor location in pixels
+      });
+    </script>
+    <!-- <script src=" /js/scroll.min.js " charset="utf-8"></script> -->
+  </body>
+
+</html>

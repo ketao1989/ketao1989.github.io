@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>基于kafka的定时消息/任务服务</title>
+    <meta name="description" content="前言定时任务,在很多业务场景中都会存在.一般,我们简单解决的话,就是使用数据库来存储数据供服务端周期获取执行.显然,对于数据库处理,如果多线程或者多机器处理,就会存在扩展的问题.比如:现在一个任务记录到时间了需要执行,同时被多个executor抓取来执行,就会浪费不必要的资源;并且,这种场景还非常常见. 因此, ...">
+
+    <link rel="shortcut icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://at.alicdn.com/t/font_8v3czwksspqlg14i.css">
+    <link rel="stylesheet" href="/css/main.css ">
+    <link rel="canonical" href="http://localhost:4000/2016/01/02/delayed-message-consume-service-use-kafka/">
+    <link rel="alternate" type="application/rss+xml" title="柯小小西" href="http://localhost:4000/feed.xml ">
+
+
+    <script>
+    // 百度统计代码
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?a9b0f47a0e50b02dafb8a7088436a9bc";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+    </script>
+
+
+
+
+</head>
+
+
+  <body>
+
+    <header id="top">
+    <div class="wrapper">
+        <a href="/" class="brand">柯小小西</a>
+        <small>留着一点点技术积蓄</small>
+        <button id="headerMenu" class="menu"><i class="fa fa-bars"></i></button>
+        <nav id="headerNav">
+            <ul>
+                <li>
+                    
+                    <a href="/">
+                    
+                        <i class="fa fa-home"></i>Home
+                    </a>
+                </li>
+
+                
+                    
+                    <li>
+                        
+                        <a href="/archive/">
+                        
+                            <i class="fa fa-archive"></i>Archives
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/category/">
+                        
+                            <i class="fa fa-th-list"></i>Categories
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/tag/">
+                        
+                            <i class="fa fa-tags"></i>Tags
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/about/">
+                        
+                            <i class="fa fa-heart"></i>About
+                        </a>
+                    </li>
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+        <div class="page clearfix" post>
+    <div class="left">
+        <h1>基于kafka的定时消息/任务服务</h1>
+        <div class="label">
+
+            <div class="label-card">
+                <i class="fa fa-calendar"></i>2016-01-02
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+            
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Kafka" title="Category: Kafka" rel="category">Kafka</a>&nbsp;
+    
+        <a href="/category/#Java" title="Category: Java" rel="category">Java</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+            </div>
+
+            <div class="label-card">
+            
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+            </div>
+
+        </div>
+        <hr>
+        <article itemscope itemtype="http://schema.org/BlogPosting">
+        <h2 id="前言"><a id="Introduction">前言</a></h2>
+
+<p>定时任务,在很多业务场景中都会存在.一般,我们简单解决的话,就是使用数据库来存储数据供服务端周期获取执行.显然,对于数据库处理,如果多线程或者多机器处理,就会存在扩展的问题.比如:现在一个任务记录到时间了需要执行,同时被多个executor抓取来执行,就会浪费不必要的资源;并且,这种场景还非常常见. 因此, 需要额外状态处理,或者其他分库分表策略保证尽量一个executor来操作一个记录,并且如果executor失败了,其他的executor才会去执行分配给失败executor的任务. 整个设计相对而言,就相当复杂了.</p>
+
+<p>基于上面的一些原因,这里我们设计了一个简单的基于kafka消息队列的定时任务方案.</p>
+
+<p>这里，首先定义一下定时消息。所谓定时消息，就是业务方根据自己的业务需求，指定在接下来的大概某个时间点来发送某条消息，从而保证该消息在某个时间点之后可接受的时间区间内消费该消息。所以这里需要指出：</p>
+
+<blockquote>
+  <blockquote>
+    <p>Note:
+消息机制都是异步的，所以如果存在大量消息累积未消费，则无法保证定时消息指定的时间区间。因此，使用的时候，必须预计定时消息服务提供的服务能否满足业务的QPS要求。定时消息服务设计保证支持水平扩展，因此，可以根据业务性能需求，部署足够的服务。</p>
+
+  </blockquote>
+</blockquote>
+
+<p>kafka消息队列，所有触发都是基于消息机制的。所以，定时任务的设计必须要有定时消息服务来提供基础核心功能。首先，就需要设计一个基于kafka队列的定时消息服务。</p>
+
+<!-- more -->
+
+<h2 id="定时消息服务总体设计"><a id="Delayed_Message_Service_Design">定时消息服务总体设计</a></h2>
+
+<p>定时消息服务，这里主要是服务于定时任务设计的；但是，这不意味着它不能单独提供服务。相反，定时消息服务设计时，考虑是单独部署，单独提供服务的。而定时任务，是基于定时消息服务进行封装的client端，便于没有kafka或者其他消息队列的开发者，可以直接使用，而不需要额外学习kafka的使用，虽然其接口很简便。</p>
+
+<p>首先，给出定时消息服务整体的交互图：</p>
+
+<p><img src="/images/2016/01/dms.png" /></p>
+
+<p>从以上的交互图可以看到，业务方produce的定时消息，其 topic 是让 定时消息服务单独consume的；然后kafka-dms 服务将业务方produce生成的消息进行解析处理，剥离出真实的topic和payload，以及可能有的partitioner。拿到真实业务的消息，kafka-dms就可以根据业务的要求，延迟到指定的时间去produce kafka消息。这样，真实的业务consumer就可以在指定时间后消费定时消息。</p>
+
+<p>整个交互并不复杂，简洁满足需求，可以更容易的后期维护。</p>
+
+<p>和很多同学一样，简洁的设计并不意味着实现起来就简单。在实现过程中，考虑到业务的需求，以及开发的成本，做了一些折中权衡。</p>
+
+<h2 id="定时消息服务具体设计与关键实现"><a id="Delayed_Message_Service_Implement">定时消息服务具体设计与关键实现</a></h2>
+
+<p>在实现的时候，为了简单且满足需求，对于开发遇到的一些问题，进行了处理和简化。</p>
+
+<h3 id="定时时间限制">定时时间限制</h3>
+
+<p>由于每个业务对于需要延迟多长时间来让消费者消费消息是多种多样的，此外，基于定时消息模式处理的业务，对于时间的精准性要求并不是很高。比如，存在一个业务场景，调用外部的异步接口，接口只会告知调用已接受并处理，但是处理结果一般是通过异步回调的方式来告知；但是由于回调未必会成功，但是业务一直处于中间状态，这个时候是需要通过查询机制来获取真实状态，完成状态调整的。这种场景，是不会对定时执行时间要求很高的，一般其只需要在约定业务处理时间后的某个时间触发即可。</p>
+
+<p>基于很多上面类似场景的情况，这里我们对定时时间进行限制。也就是，业务方只能在指定的延迟时间来选择。当然，这里的延迟时间是可以根据具体使用来具体调整的。默认，我们的延迟时间级别如下：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="kd">public</span> <span class="kd">enum</span> <span class="n">MsgDelayedLevel</span> <span class="o">{</span>
+
+    <span class="c1">// 1MS 主要服务异步任务</span>
+    <span class="n">ONE_MS_DELAYED</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span><span class="mi">1L</span><span class="o">),</span>
+    <span class="c1">// 1秒</span>
+    <span class="n">ONE_S_DELAYED</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">1000L</span><span class="o">),</span>
+    <span class="c1">// 5秒</span>
+    <span class="n">FIVE_S_DELAYED</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span> <span class="mi">5</span> <span class="o">*</span> <span class="mi">1000L</span><span class="o">),</span>
+    <span class="c1">// 10秒</span>
+    <span class="n">TEN_S_DELAYED</span><span class="o">(</span><span class="mi">3</span><span class="o">,</span> <span class="mi">10</span> <span class="o">*</span> <span class="mi">1000L</span><span class="o">),</span>
+    <span class="c1">// 20秒</span>
+    <span class="n">TWENTY_S_DELAYED</span><span class="o">(</span><span class="mi">4</span><span class="o">,</span> <span class="mi">20</span> <span class="o">*</span> <span class="mi">1000L</span><span class="o">),</span>
+    <span class="c1">// 30秒</span>
+    <span class="n">THIRTY_S_DELAYED</span><span class="o">(</span><span class="mi">5</span><span class="o">,</span> <span class="mi">30</span> <span class="o">*</span> <span class="mi">1000L</span><span class="o">),</span>
+    <span class="c1">// 1分钟</span>
+    <span class="n">ONE_M_DELAYED</span><span class="o">(</span><span class="mi">6</span><span class="o">,</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">1000L</span><span class="o">),</span>
+    <span class="c1">// 5分钟</span>
+    <span class="n">FIVE_M_DELAYED</span><span class="o">(</span><span class="mi">7</span><span class="o">,</span> <span class="mi">5</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">1000L</span><span class="o">),</span>
+    <span class="c1">// 10分钟</span>
+    <span class="n">TEN_M_DELAYED</span><span class="o">(</span><span class="mi">8</span><span class="o">,</span> <span class="mi">10</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">1000L</span><span class="o">),</span>
+    <span class="c1">// 20分钟</span>
+    <span class="n">TWENTY_M_DELAYED</span><span class="o">(</span><span class="mi">9</span><span class="o">,</span> <span class="mi">20</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">1000L</span><span class="o">),</span>
+    <span class="c1">// 30分钟</span>
+    <span class="n">THIRTY_M_DELAYED</span><span class="o">(</span><span class="mi">10</span><span class="o">,</span> <span class="mi">30</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">1000L</span><span class="o">),</span>
+    <span class="c1">// 1小时</span>
+    <span class="n">ONE_H_DELAYED</span><span class="o">(</span><span class="mi">11</span><span class="o">,</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">1000L</span><span class="o">),</span>
+    <span class="c1">// 2小时</span>
+    <span class="n">TWO_H_DELAYED</span><span class="o">(</span><span class="mi">12</span><span class="o">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">1000L</span><span class="o">),</span>
+    <span class="c1">// 3小时</span>
+    <span class="n">THREE_H_DELAYED</span><span class="o">(</span><span class="mi">13</span><span class="o">,</span> <span class="mi">3</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">1000L</span><span class="o">),</span>
+    <span class="c1">// 6小时</span>
+    <span class="n">SIX_H_DELAYED</span><span class="o">(</span><span class="mi">14</span><span class="o">,</span> <span class="mi">6</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">1000L</span><span class="o">),</span>
+    <span class="c1">// 12小时</span>
+    <span class="n">TWELVE_H_DELAYED</span><span class="o">(</span><span class="mi">15</span><span class="o">,</span> <span class="mi">12</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">1000L</span><span class="o">),</span>
+    <span class="c1">// 1天</span>
+    <span class="n">ONE_D_DELAYED</span><span class="o">(</span><span class="mi">16</span><span class="o">,</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">1000L</span><span class="o">),</span>
+    <span class="c1">// 2天</span>
+    <span class="n">TWO_D_DELAYED</span><span class="o">(</span><span class="mi">17</span><span class="o">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">1000L</span><span class="o">),;</span>
+
+    <span class="kd">private</span> <span class="kt">int</span> <span class="n">level</span><span class="o">;</span>
+    <span class="kd">private</span> <span class="kt">long</span> <span class="n">delayedMs</span><span class="o">;</span>
+
+    <span class="n">MsgDelayedLevel</span><span class="o">(</span><span class="kt">int</span> <span class="n">level</span><span class="o">,</span> <span class="kt">long</span> <span class="n">delayedMs</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">level</span> <span class="o">=</span> <span class="n">level</span><span class="o">;</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">delayedMs</span> <span class="o">=</span> <span class="n">delayedMs</span><span class="o">;</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<h3 id="topic-细分">Topic 细分</h3>
+
+<p>延迟时间限制，很大的原因，是因为实现的时候，基于kafka的消息必须顺序消费，这就意味着，如果同一个topic的partitioner内，必须定时的时间都按照顺序排序的。否则，我们只能将所有队列的消息都拿出来消费，然后在内存中排序（万一down机就完了），或者保存在数据库中（又回到最初避免的问题上了）。</p>
+
+<p>基于以上问题，我们对延迟时间进行了级别限制，然后这些级别反映到 Topic 上面。也就是，目前的设计中，我们对每个级别的延迟，都单独提供了一个 Topic 来处理。这就很好地规避了以上 kafka 特性而导致实现上的问题。</p>
+
+<p>每个 topic 的对应的消息队列都是一个水平的超时时间，因此，后面进入到消息队列的消息，执行时间肯定是在前面消息之后的（不考虑不同服务器的网络差异问题）。这就意味着，如果前面消息未到处理时间，后面消息，肯定可以不需要处理。</p>
+
+<p>Topic 生成规则：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">DELAYED_MSG_PREFIX</span> <span class="o">=</span> <span class="s">"KAFKA_DELAYED_MSG_"</span><span class="o">;</span>
+<span class="n">String</span> <span class="n">topic</span> <span class="o">=</span> <span class="n">KafkaConstants</span><span class="o">.</span><span class="na">DELAYED_MSG_PREFIX</span> <span class="o">+</span> <span class="n">delayedLevel</span><span class="o">.</span><span class="na">getLevel</span><span class="o">()</span><span class="err">；</span>
+
+</code></pre></div></div>
+
+<h3 id="延迟消息处理">延迟消息处理</h3>
+
+<p>从 kafka 消息队列中 pull到消息，按照约定的格式进行解析，然后进行处理，produce 真实的业务消息，push 到kafka消息队列中。当我们pull到的消息还未到定时时间，则阻塞等待时间，交给schedulerThread来执行，执行完了之后，会手动触发commit offset，从而消费对应partitioner的下一条消息。这里可能性能有问题，不过通过多部署实例和多partitioner来扩展。</p>
+
+<p>核心的定时消息处理：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+  <span class="kd">private</span> <span class="kt">void</span> <span class="nf">processHandler</span><span class="o">(</span><span class="kd">final</span> <span class="n">String</span> <span class="n">key</span><span class="o">,</span> <span class="kd">final</span> <span class="n">MessageBody</span> <span class="n">body</span><span class="o">,</span> <span class="kd">final</span> <span class="n">ConsumerConnector</span> <span class="n">connector</span><span class="o">)</span> <span class="o">{</span>
+
+        <span class="kt">long</span> <span class="n">now</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">();</span>
+
+        <span class="k">if</span> <span class="o">(</span><span class="n">body</span><span class="o">.</span><span class="na">getCurrentTime</span><span class="o">()</span> <span class="o">&gt;</span> <span class="n">now</span> <span class="o">||</span> <span class="n">body</span><span class="o">.</span><span class="na">getCurrentTime</span><span class="o">()</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">body</span><span class="o">.</span><span class="na">setCurrentTime</span><span class="o">(</span><span class="n">now</span><span class="o">);</span>
+        <span class="o">}</span>
+
+        <span class="kt">long</span> <span class="n">diff</span> <span class="o">=</span> <span class="n">now</span> <span class="o">-</span> <span class="n">body</span><span class="o">.</span><span class="na">getCurrentTime</span><span class="o">()</span> <span class="o">-</span> <span class="n">DELAYED_LEVEL_MS_TIMES</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">key</span><span class="o">);</span>
+
+        <span class="k">if</span> <span class="o">(</span><span class="n">diff</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+
+            <span class="k">try</span> <span class="o">{</span>
+                <span class="n">MsgProducerUtils</span><span class="o">.</span><span class="na">send</span><span class="o">(</span><span class="n">body</span><span class="o">.</span><span class="na">getTopic</span><span class="o">(),</span> <span class="n">body</span><span class="o">.</span><span class="na">getPartitionNum</span><span class="o">(),</span> <span class="n">body</span><span class="o">.</span><span class="na">getRealPayLoad</span><span class="o">());</span>
+            <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">IllegalArgumentException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">logger</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">"producer params illegal. key:{},body:{},e:"</span><span class="o">,</span> <span class="n">key</span><span class="o">,</span> <span class="n">body</span><span class="o">,</span> <span class="n">e</span><span class="o">);</span>
+            <span class="o">}</span>
+            <span class="n">connector</span><span class="o">.</span><span class="na">commitOffsets</span><span class="o">();</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+
+            <span class="n">schedulerExecutor</span><span class="o">.</span><span class="na">schedule</span><span class="o">(</span><span class="k">new</span> <span class="n">Runnable</span><span class="o">()</span> <span class="o">{</span>
+                <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+                    <span class="n">processHandler</span><span class="o">(</span><span class="n">key</span><span class="o">,</span> <span class="n">body</span><span class="o">,</span> <span class="n">connector</span><span class="o">);</span>
+                <span class="o">}</span>
+            <span class="o">},</span> <span class="o">-</span><span class="n">diff</span><span class="o">,</span> <span class="n">TimeUnit</span><span class="o">.</span><span class="na">MILLISECONDS</span><span class="o">);</span>
+
+        <span class="o">}</span>
+
+    <span class="o">}</span>
+
+
+</code></pre></div></div>
+
+<h2 id="基于定时消息的定时任务总体设计"><a id="Delayed_Task_Base_Message_Service_Design">基于定时消息的定时任务总体设计</a></h2>
+
+<p>定时任务，实际上是基于定时消息封装的client客户端。业务方，引入对应的jar包后，调用相关的方法，就可以完成对某个类的某个方法进行调用。</p>
+
+<p>由于定时任务主要是对调用方屏蔽掉使用生产kafka定时消息以及消费kafka消息带来的额外学习成本，因此，其主要提供两个方面的功能，produce 和 consume kafka消息。</p>
+
+<p>基于定时消息的定时任务整体交互流程如下：</p>
+
+<p><img src="/images/2016/01/dts.png" /></p>
+
+<p>从交互图可以显然的看到，我们在client内定义了一个调用方法相关的数据结构，业务代码将该数据结构交给client，client根据该数据结构，构建topic，发送到kafka-dms服务上；然后client 根据业务配置的project.topic 来pull消息，反射执行方法，完成定时任务调用。</p>
+
+<h2 id="基于定时消息的定时任务具体设计与关键实现"><a id="Delayed_Task_Base_Message_Service_Implement">基于定时消息的定时任务具体设计与关键实现</a></h2>
+
+<p>定时任务client实现，其实质就是根据业务级别来封装处理kafka消息。一般的，对于这种需求，显然需要配置的kafka相关设置越少越好，因此为了使用简便，对于很多功能都省去。</p>
+
+<h3 id="broker-获取和-partitioner-获取">Broker 获取和 partitioner 获取</h3>
+
+<p>一般，对于producer使用中，需要设置broker list来告知kafka的服务地址。在client中，我们不希望业务方去了解设置这些。因此，需要通过代码获取broker地址。由于kafka的获取是scala实现，因此，这里首先使用java来重写，对java来进行调用。</p>
+
+<p>同样，对于分区逻辑，业务方也不会关心（如果想保证先后顺序，即在一个分区内，可以通过数据结构的key来实现），业务需要根据topic去获取对应的实际分区数来达到分区效果。对于分区，kafka定时消息是根据业务方的key直接push到对应的业务消息分区的。</p>
+
+<p>获取broker实现如下：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">KafkaZkUtils</span> <span class="o">{</span>
+
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">Logger</span> <span class="n">logger</span> <span class="o">=</span> <span class="n">LoggerFactory</span><span class="o">.</span><span class="na">getLogger</span><span class="o">(</span><span class="n">KafkaZkUtils</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+    
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">BrokerIdsPath</span> <span class="o">=</span> <span class="s">"/brokers/ids"</span><span class="o">;</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">BrokerTopicsPath</span> <span class="o">=</span> <span class="s">"/brokers/topics"</span><span class="o">;</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">TopicConfigPath</span> <span class="o">=</span> <span class="s">"/config/topics"</span><span class="o">;</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">DeleteTopicsPath</span> <span class="o">=</span> <span class="s">"/admin/delete_topics"</span><span class="o">;</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="n">String</span> <span class="nf">getTopicPath</span><span class="o">(</span><span class="n">String</span> <span class="n">topic</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="n">BrokerTopicsPath</span> <span class="o">+</span> <span class="s">"/"</span> <span class="o">+</span> <span class="n">topic</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="n">String</span> <span class="nf">getTopicPartitionsPath</span><span class="o">(</span><span class="n">String</span> <span class="n">topic</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="nf">getTopicPath</span><span class="o">(</span><span class="n">topic</span><span class="o">)</span> <span class="o">+</span> <span class="s">"/partitions"</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="cm">/**
+     * 获取topic 分区. 由于构造CuratorFramework 成功很大,所以请缓存结果,或者使用下面的方法来获取
+     * 
+     * @param zkAddress
+     * @param topic
+     * @return
+     */</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="nf">getPartitionsForTopic</span><span class="o">(</span><span class="n">String</span> <span class="n">zkAddress</span><span class="o">,</span> <span class="n">String</span> <span class="n">topic</span><span class="o">)</span> <span class="o">{</span>
+
+        <span class="n">CuratorFramework</span> <span class="n">client</span> <span class="o">=</span> <span class="n">CuratorFrameworkFactory</span><span class="o">.</span><span class="na">newClient</span><span class="o">(</span><span class="n">zkAddress</span><span class="o">,</span> <span class="mi">6000</span><span class="o">,</span> <span class="mi">6000</span><span class="o">,</span> <span class="k">new</span> <span class="n">RetryForever</span><span class="o">(</span><span class="mi">1000</span><span class="o">));</span>
+
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="n">client</span><span class="o">.</span><span class="na">start</span><span class="o">();</span>
+
+            <span class="k">return</span> <span class="nf">getPartitionsForTopic</span><span class="o">(</span><span class="n">client</span><span class="o">,</span> <span class="n">topic</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+            <span class="n">client</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="nf">getBrokers</span><span class="o">(</span><span class="n">String</span> <span class="n">zkAddress</span><span class="o">)</span> <span class="o">{</span>
+
+        <span class="n">CuratorFramework</span> <span class="n">client</span> <span class="o">=</span> <span class="n">CuratorFrameworkFactory</span><span class="o">.</span><span class="na">newClient</span><span class="o">(</span><span class="n">zkAddress</span><span class="o">,</span> <span class="mi">6000</span><span class="o">,</span> <span class="mi">6000</span><span class="o">,</span> <span class="k">new</span> <span class="n">RetryForever</span><span class="o">(</span><span class="mi">1000</span><span class="o">));</span>
+
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="n">client</span><span class="o">.</span><span class="na">start</span><span class="o">();</span>
+
+            <span class="k">return</span> <span class="nf">getBrokers</span><span class="o">(</span><span class="n">client</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+            <span class="n">client</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+
+    <span class="cm">/**
+     * 获取某个指定topic 的分区情况.
+     * 
+     * @param zkClient 已经start,并且close由其关闭
+     * @param topic
+     * @return
+     */</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="nf">getPartitionsForTopic</span><span class="o">(</span><span class="n">CuratorFramework</span> <span class="n">zkClient</span><span class="o">,</span> <span class="n">String</span> <span class="n">topic</span><span class="o">)</span> <span class="o">{</span>
+
+        <span class="k">try</span> <span class="o">{</span>
+
+            <span class="k">return</span> <span class="n">zkClient</span><span class="o">.</span><span class="na">getChildren</span><span class="o">().</span><span class="na">forPath</span><span class="o">(</span><span class="n">getTopicPartitionsPath</span><span class="o">(</span><span class="n">topic</span><span class="o">));</span>
+
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">"getPartitionsForTopic error.topic:{}, e:"</span><span class="o">,</span> <span class="n">topic</span><span class="o">,</span> <span class="n">e</span><span class="o">);</span>
+            <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+        <span class="o">}</span>
+
+    <span class="o">}</span>
+
+    <span class="cm">/**
+     * 简单需求的时候,可以使用,对应broker,一般使用zk的watch保存监听比较好
+     * 
+     * @param zkClient
+     * @return
+     */</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="nf">getBrokers</span><span class="o">(</span><span class="n">CuratorFramework</span> <span class="n">zkClient</span><span class="o">)</span> <span class="o">{</span>
+
+        <span class="k">try</span> <span class="o">{</span>
+
+            <span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">brokerIds</span> <span class="o">=</span> <span class="n">zkClient</span><span class="o">.</span><span class="na">getChildren</span><span class="o">().</span><span class="na">forPath</span><span class="o">(</span><span class="n">BrokerIdsPath</span><span class="o">);</span>
+
+            <span class="k">if</span> <span class="o">(</span><span class="n">brokerIds</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="n">brokerIds</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">())</span> <span class="o">{</span>
+                <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+            <span class="o">}</span>
+
+            <span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">brokerHostInfo</span> <span class="o">=</span> <span class="n">Lists</span><span class="o">.</span><span class="na">newArrayList</span><span class="o">();</span>
+            <span class="k">for</span> <span class="o">(</span><span class="n">String</span> <span class="n">id</span> <span class="o">:</span> <span class="n">brokerIds</span><span class="o">)</span> <span class="o">{</span>
+
+                <span class="n">String</span> <span class="n">info</span> <span class="o">=</span> <span class="k">new</span> <span class="n">String</span><span class="o">(</span><span class="n">zkClient</span><span class="o">.</span><span class="na">getData</span><span class="o">().</span><span class="na">forPath</span><span class="o">(</span><span class="n">BrokerIdsPath</span> <span class="o">+</span> <span class="s">"/"</span> <span class="o">+</span> <span class="n">id</span><span class="o">));</span>
+
+                <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">Object</span><span class="o">&gt;</span> <span class="n">data</span> <span class="o">=</span> <span class="n">JsonUtils</span><span class="o">.</span><span class="na">decode</span><span class="o">(</span><span class="n">info</span><span class="o">,</span> <span class="n">Map</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+
+                <span class="n">brokerHostInfo</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">data</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">"host"</span><span class="o">)</span> <span class="o">+</span> <span class="s">":"</span> <span class="o">+</span> <span class="n">data</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">"port"</span><span class="o">));</span>
+            <span class="o">}</span>
+
+            <span class="k">return</span> <span class="n">brokerHostInfo</span><span class="o">;</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">"getBrokers error. e:"</span><span class="o">,</span> <span class="n">e</span><span class="o">);</span>
+            <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+        <span class="o">}</span>
+
+    <span class="o">}</span>
+
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="client-调用业务接口">client 调用业务接口</h3>
+
+<p>在业务调用接口的时候，它需要把定时任务执行的方法和相关参数序列化，然后client pull到消息后，将这些信息通过反射机制来执行。</p>
+
+<p>首先看一下，业务调用异步任务接口时，需要提供的数据结构：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">DelayedTaskProperty</span> <span class="kd">implements</span> <span class="n">Serializable</span> <span class="o">{</span>
+
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">long</span> <span class="n">serialVersionUID</span> <span class="o">=</span> <span class="mi">6227226019751603874L</span><span class="o">;</span>
+
+    <span class="kd">private</span> <span class="n">String</span> <span class="n">classFullName</span><span class="o">;</span>
+
+    <span class="kd">private</span> <span class="n">String</span> <span class="n">methodName</span><span class="o">;</span>
+
+    <span class="kd">private</span> <span class="n">Object</span><span class="o">[]</span> <span class="n">args</span><span class="o">;</span>
+
+    <span class="cm">/**
+     * 路由规则的key,如果不设置,则随机路由到不同的分区
+     */</span>
+    <span class="kd">private</span> <span class="kt">int</span> <span class="n">routeKey</span><span class="o">;</span>
+
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>然后根据上面数据结构的信息，client的consumer端就可以来执行相应的方法了：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="cm">/**
+     * 处理的核心逻辑,反射方式调用方法
+     * 
+     * @param property
+     * @param connector
+     */</span>
+    <span class="kd">private</span> <span class="kt">void</span> <span class="nf">processHandler</span><span class="o">(</span><span class="n">DelayedTaskProperty</span> <span class="n">property</span><span class="o">,</span> <span class="n">ConsumerConnector</span> <span class="n">connector</span><span class="o">)</span> <span class="o">{</span>
+
+        <span class="n">Class</span> <span class="n">clazz</span> <span class="o">=</span> <span class="n">CLASS_MAP</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">property</span><span class="o">.</span><span class="na">getClassFullName</span><span class="o">());</span>
+
+        <span class="k">if</span> <span class="o">(</span><span class="n">clazz</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="kd">synchronized</span> <span class="o">(</span><span class="n">LOCK</span><span class="o">)</span> <span class="o">{</span>
+                <span class="k">try</span> <span class="o">{</span>
+                    <span class="n">clazz</span> <span class="o">=</span> <span class="n">ClassUtils</span><span class="o">.</span><span class="na">getClass</span><span class="o">(</span><span class="n">property</span><span class="o">.</span><span class="na">getClassFullName</span><span class="o">());</span>
+                <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">ClassNotFoundException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">"class reflect error.class:{} not find.e:"</span><span class="o">,</span> <span class="n">property</span><span class="o">.</span><span class="na">getClassFullName</span><span class="o">(),</span> <span class="n">e</span><span class="o">);</span>
+                    <span class="n">connector</span><span class="o">.</span><span class="na">commitOffsets</span><span class="o">();</span>
+                    <span class="k">return</span><span class="o">;</span>
+                <span class="o">}</span>
+                <span class="n">CLASS_MAP</span><span class="o">.</span><span class="na">putIfAbsent</span><span class="o">(</span><span class="n">property</span><span class="o">.</span><span class="na">getClassFullName</span><span class="o">(),</span> <span class="n">clazz</span><span class="o">);</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+
+        <span class="c1">// FIXME: 16/1/2 这里的异常等处理后续需要细化,确保有些额外异常不进行commit?</span>
+        <span class="k">try</span> <span class="o">{</span>
+
+            <span class="n">Object</span> <span class="n">target</span> <span class="o">=</span> <span class="n">clazz</span><span class="o">.</span><span class="na">newInstance</span><span class="o">();</span>
+            <span class="n">Reflection</span><span class="o">.</span><span class="na">invokeN</span><span class="o">(</span><span class="n">clazz</span><span class="o">,</span> <span class="n">property</span><span class="o">.</span><span class="na">getMethodName</span><span class="o">(),</span> <span class="n">target</span><span class="o">,</span> <span class="n">property</span><span class="o">.</span><span class="na">getArgs</span><span class="o">());</span>
+
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">logger</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">"e:"</span><span class="o">,</span> <span class="n">e</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+            <span class="n">connector</span><span class="o">.</span><span class="na">commitOffsets</span><span class="o">();</span>
+        <span class="o">}</span>
+
+    <span class="o">}</span>
+
+</code></pre></div></div>
+
+<h2 id="遗留问题和总结"><a id="Problem_and_Summary">遗留问题和总结</a></h2>
+
+<p>显然，这个基于kafka消息队列的定时消息，还可以完成其他一些需求。</p>
+
+<p>目前的设计，还处在使用kafka完成我们需要的定时消息的功能，以及基于此的定时任务；其性能和设计上的优化，还有很多进步的空间，代码还没有进行优化和统一等等。</p>
+
+<p>此外，对于client的使用，显然需要封装成jar包，然后给业务方引入。</p>
+
+<p>具体的代码请参考：<a href="https://github.com/ketao1989/JavaApiUtilsProject/tree/master/src/main/java/io/github/ketao1989/scheduler">https://github.com/ketao1989/JavaApiUtilsProject/tree/master/src/main/java/io/github/ketao1989/scheduler</a></p>
+
+<p>整体的项目在：git@github.com:ketao1989/JavaApiUtilsProject.git</p>
+
+
+        </article>
+        <hr>
+
+        
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+        
+
+        <div class="post-recent">
+    <div class="pre">
+        
+        <p><strong>上一篇</strong> <a href="/2015/09/05/zookeeper-programmer-guide/">Zookeeper 编程指南</a></p>
+        
+    </div>
+    <div class="nex">
+
+        
+        <p><strong>下一篇</strong> <a href="/2016/03/10/junit-mockito-guice-in-action-and-junit-test-mechanism/">基于JUnit Mockito Guice测试实践及JUnit运行机制浅析</a></p>
+        
+    </div>
+</div>
+
+
+        <h2 id="comments">Comments</h2>
+        
+
+
+<div id="disqus_thread"></div>
+<script>
+    /**
+     * RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     * LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+
+    var disqus_config = function() {
+        this.page.url = 'http://localhost:4000/2016/01/02/delayed-message-consume-service-use-kafka/'; // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = 'http://localhost:4000/2016/01/02/delayed-message-consume-service-use-kafka/'; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+
+    (function() { // DON'T EDIT BELOW THIS LINE
+        var d = document,
+            s = d.createElement('script');
+
+        s.src = '//taocoder.disqus.com/embed.js';
+
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+
+
+
+    </div>
+    <button class="anchor"><i class="fa fa-anchor"></i></button>
+    <div class="right">
+        <div class="wrap">
+
+            <!-- Content -->
+            <div class="side content">
+                <div>
+                    Content
+                </div>
+                <ul id="content-side" class="content-ul">
+                    
+                    <li><a href="#comments">Comments</a></li>
+                </ul>
+            </div>
+            <!-- 其他div框放到这里 -->
+            <!-- <div class="side">bbbb</div> -->
+        </div>
+    </div>
+</div>
+<script>
+/**
+ * target _blank
+ */
+(function() {
+    var aTags = document.querySelectorAll('article a:not([id])')
+    for (var i = 0; i < aTags.length; i++) {
+        aTags[i].setAttribute('target', '_blank')
+    }
+}());
+</script>
+<script src="/js/pageContent.js " charset="utf-8"></script>
+
+
+    <footer class="site-footer">
+
+
+    <div class="wrapper">
+
+        <p class="description">
+             本站保留着一点点技术积蓄！ 
+        </p>
+        <p class="contact">
+            Contact me at: 
+            <a href="https://github.com/ketao1989" title="GitHub"><i class="fa fa-github" aria-hidden="true"></i></a>  
+            <a href="mailto:ketao1989@126.com" title="email"><i class="fa fa-envelope-o" aria-hidden="true"></i></a>  
+            <a href="http://weibo.com/柯小小西" title="Weibo"><i class="fa fa-weibo" aria-hidden="true"></i></a>       
+        </p>
+        <p>
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次，本站访客数<span id="busuanzi_value_site_uv"></span>人次，本文总阅读量<span id="busuanzi_value_page_pv"></span>次
+        </p>
+        <p class="power">
+            <span>
+                Site powered by <a href="https://jekyllrb.com/">Jekyll</a> & <a href="https://pages.github.com/">Github Pages</a>.
+            </span>
+            <span>
+                Theme designed by <a href="https://github.com/Gaohaoyang">HyG</a>.
+            </span>
+        </p>
+    </div>
+</footer>
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+    <div class="back-to-top">
+    <a href="#top" data-scroll>
+        <i class="fa fa-arrow-up" aria-hidden="true"></i>
+    </a>
+</div>
+
+    <script src=" /js/main.js " charset="utf-8"></script>
+    <script src=" /js/smooth-scroll.min.js " charset="utf-8"></script>
+    <script type="text/javascript">
+      smoothScroll.init({
+        speed: 500, // Integer. How fast to complete the scroll in milliseconds
+        easing: 'easeInOutCubic', // Easing pattern to use
+        offset: 20, // Integer. How far to offset the scrolling anchor location in pixels
+      });
+    </script>
+    <!-- <script src=" /js/scroll.min.js " charset="utf-8"></script> -->
+  </body>
+
+</html>

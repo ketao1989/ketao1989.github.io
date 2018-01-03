@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>线上Mysql死锁问题分析</title>
+    <meta name="description" content="前言前段时间，查看线上Tomcat日志，发现多台服务器出现Mysql死锁情况，虽然死锁问题没有影响到正常业务，但是毕竟数据库死锁还是得需要好好分析原因去修复和开发过程中极力需要避免的。服务器上Mysql死锁日志如下：由于我们的服务使用了连接池，所以接着让 DBA 查询下Mysql的数据库操作日志信息，如下图所示：...">
+
+    <link rel="shortcut icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://at.alicdn.com/t/font_8v3czwksspqlg14i.css">
+    <link rel="stylesheet" href="/css/main.css ">
+    <link rel="canonical" href="http://localhost:4000/2014/05/28/Online-Mysql-Deadlock-Analyse/">
+    <link rel="alternate" type="application/rss+xml" title="柯小小西" href="http://localhost:4000/feed.xml ">
+
+
+    <script>
+    // 百度统计代码
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?a9b0f47a0e50b02dafb8a7088436a9bc";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+    </script>
+
+
+
+
+</head>
+
+
+  <body>
+
+    <header id="top">
+    <div class="wrapper">
+        <a href="/" class="brand">柯小小西</a>
+        <small>留着一点点技术积蓄</small>
+        <button id="headerMenu" class="menu"><i class="fa fa-bars"></i></button>
+        <nav id="headerNav">
+            <ul>
+                <li>
+                    
+                    <a href="/">
+                    
+                        <i class="fa fa-home"></i>Home
+                    </a>
+                </li>
+
+                
+                    
+                    <li>
+                        
+                        <a href="/archive/">
+                        
+                            <i class="fa fa-archive"></i>Archives
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/category/">
+                        
+                            <i class="fa fa-th-list"></i>Categories
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/tag/">
+                        
+                            <i class="fa fa-tags"></i>Tags
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/about/">
+                        
+                            <i class="fa fa-heart"></i>About
+                        </a>
+                    </li>
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+        <div class="page clearfix" post>
+    <div class="left">
+        <h1>线上Mysql死锁问题分析</h1>
+        <div class="label">
+
+            <div class="label-card">
+                <i class="fa fa-calendar"></i>2014-05-28
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+            
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Mysql" title="Category: Mysql" rel="category">Mysql</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+            </div>
+
+            <div class="label-card">
+            
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+            </div>
+
+        </div>
+        <hr>
+        <article itemscope itemtype="http://schema.org/BlogPosting">
+        <h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p>前段时间，查看线上<code class="highlighter-rouge">Tomcat</code>日志，发现多台服务器出现<code class="highlighter-rouge">Mysql</code>死锁情况，虽然死锁问题没有影响到正常业务，但是毕竟数据库死锁还是得需要好好分析原因去修复和开发过程中极力需要避免的。服务器上<code class="highlighter-rouge">Mysql死锁</code>日志如下：</p>
+
+<p><img src="/images/2014/05/deadlock-log.png" /></p>
+
+<p>由于我们的服务使用了连接池，所以接着让 DBA 查询下<code class="highlighter-rouge">Mysql</code>的数据库操作日志信息，如下图所示：</p>
+
+<p><img src="/images/2014/05/mysql-log.png" /></p>
+
+<h2 id="死锁问题定位"><a id="Problem">死锁问题定位</a></h2>
+
+<p>查看了建表语句，其实很简单：</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="nv">`room_rate_plan_id`</span> <span class="p">(</span>
+  <span class="nv">`id`</span> <span class="n">bigint</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span> <span class="n">unsigned</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="n">AUTO_INCREMENT</span><span class="p">,</span> 
+  <span class="nv">`value`</span> <span class="n">varchar</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="p">,</span>
+  <span class="k">PRIMARY</span> <span class="k">KEY</span> <span class="p">(</span><span class="nv">`id`</span><span class="p">),</span>
+  <span class="k">UNIQUE</span> <span class="k">KEY</span> <span class="nv">`uniq_value`</span> <span class="p">(</span><span class="nv">`value`</span><span class="p">)</span> <span class="k">USING</span> <span class="n">BTREE</span>
+<span class="p">)</span> <span class="n">ENGINE</span><span class="o">=</span><span class="n">InnoDB</span> <span class="n">AUTO_INCREMENT</span><span class="o">=</span><span class="mi">175663</span> <span class="k">DEFAULT</span> <span class="n">CHARSET</span><span class="o">=</span><span class="n">utf8</span>  
+</code></pre></div></div>
+
+<p>而使用的地方只在一个类代码里用过，使用的方式是<code class="highlighter-rouge">select for update</code>，并且该查询事务中包含着，如果不存在，则<code class="highlighter-rouge">INSERT INTO room_rate_plan_id (value) VALUES(?)</code>语句，那么，接着就得了解<code class="highlighter-rouge">select for update</code>来确定是不是这里导致数据库死锁现象。主要有两篇博客：</p>
+
+<!-- more -->
+
+<ul>
+  <li>
+    <p><a href="http://stackoverflow.com/questions/5432370/mysql-innodb-dead-lock-on-select-with-exclusive-lock-for-update">http://stackoverflow.com/questions/5432370/mysql-innodb-dead-lock-on-select-with-exclusive-lock-for-update</a></p>
+  </li>
+  <li>
+    <p><a href="http://dev.mysql.com/doc/refman/5.0/en/innodb-deadlocks.html">http://dev.mysql.com/doc/refman/5.0/en/innodb-deadlocks.html</a></p>
+  </li>
+</ul>
+
+<p><code class="highlighter-rouge">SELECT FOR UPDATE</code> 是<code class="highlighter-rouge">SELECT</code> 的升级版，其在查询时会上锁。一般地，当数据量特别大时，可能有大量的并发，这些并发会导致在<code class="highlighter-rouge">SELECT</code>时，状态已经变更了，因此需要上锁。InnoDB默认是Row-Level Lock，因此<code class="highlighter-rouge">SELECT FOR UPDATE</code>只有在<code class="highlighter-rouge">WHERE</code> 判断条件内明确指定主键时，才会执行<code class="highlighter-rouge">Row lock</code>，否则会<code class="highlighter-rouge">lock</code>整个数据表。当有多个请求同时加上<code class="highlighter-rouge">for update</code>的意向锁时，如果<code class="highlighter-rouge">select</code>没有时，第一个请求会接着<code class="highlighter-rouge">insert</code>而去尝试获取排它锁，B锁保持等待；而第二个请求也<code class="highlighter-rouge">select</code>为空时，并且刚好第二条请求插入的数据和第一个请求一样的时候，则会导致死锁。</p>
+
+<h2 id="问题重现"><a id="Reproduce">问题重现</a></h2>
+
+<blockquote>
+  <blockquote>
+    <p>执行下面语句：</p>
+  </blockquote>
+</blockquote>
+
+<ul>
+  <li><code class="highlighter-rouge">session 1</code>执行：</li>
+</ul>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">START</span> <span class="n">TRANSACTION</span><span class="p">;</span>
+<span class="k">SELECT</span> <span class="n">id</span> <span class="k">FROM</span> <span class="n">qunar</span><span class="p">.</span><span class="n">room_rate_plan_id</span> <span class="k">where</span> <span class="n">value</span><span class="o">=</span><span class="s1">'elong_abcd'</span><span class="k">for</span> <span class="k">update</span><span class="p">;</span>
+</code></pre></div></div>
+
+<ul>
+  <li><code class="highlighter-rouge">session 2</code>执行：</li>
+</ul>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">START</span> <span class="n">TRANSACTION</span><span class="p">;</span>
+<span class="k">SELECT</span> <span class="n">id</span> <span class="k">FROM</span> <span class="n">qunar</span><span class="p">.</span><span class="n">room_rate_plan_id</span> <span class="k">where</span> <span class="n">value</span><span class="o">=</span><span class="s1">'elong_abcd'</span><span class="k">for</span> <span class="k">update</span><span class="p">;</span>
+</code></pre></div></div>
+
+<ul>
+  <li>在<code class="highlighter-rouge">session 1</code>上执行 <code class="highlighter-rouge">insert</code> 语句：</li>
+</ul>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">insert</span> <span class="k">into</span> <span class="n">qunar</span><span class="p">.</span><span class="n">room_rate_plan_id</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">values</span> <span class="p">(</span><span class="s1">'elong_abcd'</span><span class="p">);</span>
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>执行上面的操作，则在<code class="highlighter-rouge">Mysql</code>控制台上打出死锁日志信息：</p>
+  </blockquote>
+</blockquote>
+
+<p><img src="/assets/img/2014/5/28/mysql-dead.png" /></p>
+
+<h2 id="解决方法"><a id="Solution">解决方法</a></h2>
+
+<ol>
+  <li>
+    <p>采用官网上指出的方法：If you are using locking reads (SELECT … FOR UPDATE or SELECT … LOCK IN SHARE MODE), try using <code class="highlighter-rouge">a lower isolation level</code> such as READ COMMITTED.</p>
+  </li>
+  <li>
+    <p>由于<code class="highlighter-rouge">select for update</code>只有不存在记录时才会去加一个意向锁，所以可以采用下面方法解决：select—&gt; if(id) is empty —&gt;insert;如果不为空，则select for update。不过这样就多了一次select了。</p>
+  </li>
+  <li>
+    <p>使用<code class="highlighter-rouge">insert ignore</code> 插入，然后select ，由于是value是<code class="highlighter-rouge">unique key</code>，所以select可以获取正确id，并且还可以不需要添加事务。可能会多一次insert ignore。这种方法之所以这样子，是因为在业务中没有update操作，只有insert和select，并且value是唯一的，这样子就可以只采用select而不需要采用select for update，并且还可以不需要事务，提供效率。</p>
+  </li>
+</ol>
+
+<blockquote>
+  <blockquote>
+    <p>如果采用第3中解决方案，不会出现死锁问题，但是当锁一直被占用时，会出现等待超时，当然，如果不使用事务，则肯定不会有锁的问题了。</p>
+  </blockquote>
+</blockquote>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>* session 1：
+    ``` sql
+	START TRANSACTION;
+	INSERT IGNORE 	INTO room_rate_plan_id(value) VALUES ('elong_abcs');
+	SELECT id FROM room_rate_plan_id where value='elong_abcs';
+	```
+
+* session 2：
+    ``` sql
+	START TRANSACTION;
+	INSERT IGNORE 	INTO room_rate_plan_id(value) VALUES ('elong_abcs');
+	```
+* 出现超时异常信息：
+</code></pre></div></div>
+
+<p><img src="/images/2014/05/timeout.png" /></p>
+
+        </article>
+        <hr>
+
+        
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+        
+
+        <div class="post-recent">
+    <div class="pre">
+        
+        <p><strong>上一篇</strong> <a href="/2014/05/27/Jstat-GC-Guide-Introduce/">Java 查看系统GC命令介绍</a></p>
+        
+    </div>
+    <div class="nex">
+
+        
+        <p><strong>下一篇</strong> <a href="/2014/05/30/Linux-Awk-Study-Note/">Linux Awk 使用学习笔记</a></p>
+        
+    </div>
+</div>
+
+
+        <h2 id="comments">Comments</h2>
+        
+
+
+<div id="disqus_thread"></div>
+<script>
+    /**
+     * RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     * LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+
+    var disqus_config = function() {
+        this.page.url = 'http://localhost:4000/2014/05/28/Online-Mysql-Deadlock-Analyse/'; // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = 'http://localhost:4000/2014/05/28/Online-Mysql-Deadlock-Analyse/'; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+
+    (function() { // DON'T EDIT BELOW THIS LINE
+        var d = document,
+            s = d.createElement('script');
+
+        s.src = '//taocoder.disqus.com/embed.js';
+
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+
+
+
+    </div>
+    <button class="anchor"><i class="fa fa-anchor"></i></button>
+    <div class="right">
+        <div class="wrap">
+
+            <!-- Content -->
+            <div class="side content">
+                <div>
+                    Content
+                </div>
+                <ul id="content-side" class="content-ul">
+                    
+                    <li><a href="#comments">Comments</a></li>
+                </ul>
+            </div>
+            <!-- 其他div框放到这里 -->
+            <!-- <div class="side">bbbb</div> -->
+        </div>
+    </div>
+</div>
+<script>
+/**
+ * target _blank
+ */
+(function() {
+    var aTags = document.querySelectorAll('article a:not([id])')
+    for (var i = 0; i < aTags.length; i++) {
+        aTags[i].setAttribute('target', '_blank')
+    }
+}());
+</script>
+<script src="/js/pageContent.js " charset="utf-8"></script>
+
+
+    <footer class="site-footer">
+
+
+    <div class="wrapper">
+
+        <p class="description">
+             本站保留着一点点技术积蓄！ 
+        </p>
+        <p class="contact">
+            Contact me at: 
+            <a href="https://github.com/ketao1989" title="GitHub"><i class="fa fa-github" aria-hidden="true"></i></a>  
+            <a href="mailto:ketao1989@126.com" title="email"><i class="fa fa-envelope-o" aria-hidden="true"></i></a>  
+            <a href="http://weibo.com/柯小小西" title="Weibo"><i class="fa fa-weibo" aria-hidden="true"></i></a>       
+        </p>
+        <p>
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次，本站访客数<span id="busuanzi_value_site_uv"></span>人次，本文总阅读量<span id="busuanzi_value_page_pv"></span>次
+        </p>
+        <p class="power">
+            <span>
+                Site powered by <a href="https://jekyllrb.com/">Jekyll</a> & <a href="https://pages.github.com/">Github Pages</a>.
+            </span>
+            <span>
+                Theme designed by <a href="https://github.com/Gaohaoyang">HyG</a>.
+            </span>
+        </p>
+    </div>
+</footer>
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+    <div class="back-to-top">
+    <a href="#top" data-scroll>
+        <i class="fa fa-arrow-up" aria-hidden="true"></i>
+    </a>
+</div>
+
+    <script src=" /js/main.js " charset="utf-8"></script>
+    <script src=" /js/smooth-scroll.min.js " charset="utf-8"></script>
+    <script type="text/javascript">
+      smoothScroll.init({
+        speed: 500, // Integer. How fast to complete the scroll in milliseconds
+        easing: 'easeInOutCubic', // Easing pattern to use
+        offset: 20, // Integer. How far to offset the scrolling anchor location in pixels
+      });
+    </script>
+    <!-- <script src=" /js/scroll.min.js " charset="utf-8"></script> -->
+  </body>
+
+</html>

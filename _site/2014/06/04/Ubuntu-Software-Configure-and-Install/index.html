@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Ubuntu Subversion软件安装和配置</title>
+    <meta name="description" content="前言最近，系统从 windows切换到Ubuntu，一些开发软件需要重新安装和配置。但是，众所周知，windows上的开发软件客户端比ubuntu等linux系系统使用要便捷和傻瓜得多，所以切换到ubuntu有很多软件需要安装，但是这些软件需要进行代码编译，就在这里记录下。subversion安装和配置一般，如果...">
+
+    <link rel="shortcut icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://at.alicdn.com/t/font_8v3czwksspqlg14i.css">
+    <link rel="stylesheet" href="/css/main.css ">
+    <link rel="canonical" href="http://localhost:4000/2014/06/04/Ubuntu-Software-Configure-and-Install/">
+    <link rel="alternate" type="application/rss+xml" title="柯小小西" href="http://localhost:4000/feed.xml ">
+
+
+    <script>
+    // 百度统计代码
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?a9b0f47a0e50b02dafb8a7088436a9bc";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+    </script>
+
+
+
+
+</head>
+
+
+  <body>
+
+    <header id="top">
+    <div class="wrapper">
+        <a href="/" class="brand">柯小小西</a>
+        <small>留着一点点技术积蓄</small>
+        <button id="headerMenu" class="menu"><i class="fa fa-bars"></i></button>
+        <nav id="headerNav">
+            <ul>
+                <li>
+                    
+                    <a href="/">
+                    
+                        <i class="fa fa-home"></i>Home
+                    </a>
+                </li>
+
+                
+                    
+                    <li>
+                        
+                        <a href="/archive/">
+                        
+                            <i class="fa fa-archive"></i>Archives
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/category/">
+                        
+                            <i class="fa fa-th-list"></i>Categories
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/tag/">
+                        
+                            <i class="fa fa-tags"></i>Tags
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/about/">
+                        
+                            <i class="fa fa-heart"></i>About
+                        </a>
+                    </li>
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+        <div class="page clearfix" post>
+    <div class="left">
+        <h1>Ubuntu Subversion软件安装和配置</h1>
+        <div class="label">
+
+            <div class="label-card">
+                <i class="fa fa-calendar"></i>2014-06-04
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+            
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Linux" title="Category: Linux" rel="category">Linux</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+            </div>
+
+            <div class="label-card">
+            
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+            </div>
+
+        </div>
+        <hr>
+        <article itemscope itemtype="http://schema.org/BlogPosting">
+        <h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p>最近，系统从 <code class="highlighter-rouge">windows</code>切换到<code class="highlighter-rouge">Ubuntu</code>，一些开发软件需要重新安装和配置。但是，众所周知，<code class="highlighter-rouge">windows</code>上的开发软件客户端比<code class="highlighter-rouge">ubuntu</code>等linux系系统使用要便捷和傻瓜得多，所以切换到<code class="highlighter-rouge">ubuntu</code>有很多软件需要安装，但是这些软件需要进行代码编译，就在这里记录下。</p>
+
+<h2 id="subversion安装和配置"><a id="Subversion">subversion安装和配置</a></h2>
+
+<p>一般，如果对<code class="highlighter-rouge">subversion</code>的版本不限制，那些直接使用<code class="highlighter-rouge">sudo apt-get install subversion</code>命令就可以安装来，但是如果对版本有要求，比如由于<code class="highlighter-rouge">svn</code>的1.8版本在很多<code class="highlighter-rouge">svn</code>服务器端不被支持，所以需要安装低于1.8的svn客户端。这就需要我们在本地编译完了之后再安装。</p>
+
+<h3 id="21-subversion源码下载">2.1 subversion源码下载</h3>
+
+<p>点击进入下载页面：<a href="http://subversion.apache.org/download/#supported-releases">http://subversion.apache.org/download/#supported-releases</a> , 选择当前最新的<code class="highlighter-rouge">1.7</code>的子版本下载；</p>
+
+<p>或者，也可以直接在终端使用命令：<code class="highlighter-rouge">wget http://apache.fayea.com/apache-mirror/subversion/subversion-1.7.17.tar.gz</code>下载。</p>
+
+<h3 id="22-subversion-源码编译准备">2.2 subversion 源码编译准备</h3>
+
+<p>在<code class="highlighter-rouge">Linux</code>编译安装<code class="highlighter-rouge">subversion</code>需要事先准备很多的工作，安装很多相关的工具包，否则代码无法编译通过。因此，在安装<code class="highlighter-rouge"> subversion</code>之前，需要先做一些准备工作。</p>
+
+<!-- more -->
+
+<h3 id="221-安装-autoconf-和-libtool">2.2.1 安装 autoconf 和 libtool</h3>
+
+<p>编译<code class="highlighter-rouge">subversion</code>首先需要安装<code class="highlighter-rouge">autoconf</code>和<code class="highlighter-rouge">libtool</code>两个工具，如果你的电脑上没有安装这两个工具包，很简单，直接执行安装命令就可以来了：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>1.  sudo apt-get install autoconf
+
+2.  sudo apt-get install libtool
+</code></pre></div></div>
+
+<p>但是，如果你就接下来运行<code class="highlighter-rouge">./configure</code>命令，则会出现下面错误:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+configure: Apache Portable Runtime (APR) library configuration
+checking for APR... no
+configure: WARNING: APR not found
+The Apache Portable Runtime (APR) library cannot be found.
+Please install APR on this system and supply the appropriate
+--with-apr option to 'configure'
+
+or
+
+get it with SVN and put it in a subdirectory of this source:
+
+   svn co \
+    http://svn.apache.org/repos/asf/apr/apr/branches/1.3.x \
+    apr
+
+Run that right here in the top level of the Subversion tree.
+Afterwards, run apr/buildconf in that subdirectory and
+then run configure again here.
+
+Whichever of the above you do, you probably need to do
+something similar for apr-util, either providing both
+--with-apr and --with-apr-util to 'configure', or
+getting both from SVN with:
+
+   svn co \
+    http://svn.apache.org/repos/asf/apr/apr-util/branches/1.3.x \
+    apr-util
+
+configure: error: no suitable apr found
+
+</code></pre></div></div>
+
+<h3 id="222-安装-apr">2.2.2 安装 APR</h3>
+
+<p>因此，你还需要<code class="highlighter-rouge">APR</code>,首先，在安装<code class="highlighter-rouge">apr</code>之前需要<code class="highlighter-rouge">sqlite-autoconf</code>，因此<code class="highlighter-rouge">subversion</code>需要使用<code class="highlighter-rouge">sqlite</code>来存储数据。</p>
+
+<ol>
+  <li>sqlite-autoconf：<a href="http://www.sqlite.org/2014/sqlite-autoconf-3080403.tar.gz">http://www.sqlite.org/2014/sqlite-autoconf-3080403.tar.gz</a></li>
+</ol>
+
+<p>解压缩文件，然后在<code class="highlighter-rouge">subversion-1.7.17</code>目录下面，新建一个目录<code class="highlighter-rouge">sqlite-amalgamation</code>，然后在目录下面，从解压缩后的<code class="highlighter-rouge">sqlite-autoconf</code>目录里面复制一个文件<code class="highlighter-rouge">sqlite3.c</code>到该新建目录中。</p>
+
+<blockquote>
+  <blockquote>
+    <p>Note：需要注意的是，新建目录名必须为<code class="highlighter-rouge">sqlite-amalgamation</code>，虽然下载的文件是<code class="highlighter-rouge">sqlite-autoconf</code>，这主要是因为<code class="highlighter-rouge">sqlite-autoconf</code>工具是由<code class="highlighter-rouge">sqlite-amalgamation</code>来的，后来改了名字了，但是<code class="highlighter-rouge">subversion</code>编译的时候，并没有改变相应代码配置，所以还是需要用原来的命名。</p>
+  </blockquote>
+</blockquote>
+
+<p>接下来，就可以下载apr.tar.gz和apr-util.tar.gz两个源码包：</p>
+
+<ol>
+  <li>
+    <p>apr：<a href="http://mirrors.cnnic.cn/apache//apr/apr-1.5.1.tar.gz">http://mirrors.cnnic.cn/apache//apr/apr-1.5.1.tar.gz</a></p>
+  </li>
+  <li>
+    <p>apr-util：<a href="http://mirrors.cnnic.cn/apache//apr/apr-util-1.5.3.tar.gz">http://mirrors.cnnic.cn/apache//apr/apr-util-1.5.3.tar.gz</a></p>
+  </li>
+</ol>
+
+<p>解压缩完了之后，分别在<code class="highlighter-rouge">subversion-1.7.17</code>目录下面新建<code class="highlighter-rouge">apr</code>目录和<code class="highlighter-rouge">apr-util</code>目录，然后把解压缩后的内容复制到对应的新建目录中，分别执行<code class="highlighter-rouge">./buildconf</code></p>
+
+<blockquote>
+  <blockquote>
+    <p>Note：这里的目录名字不能改变，必须为<code class="highlighter-rouge">apr</code>和<code class="highlighter-rouge">apr-util</code>，否则会编译失败。</p>
+  </blockquote>
+</blockquote>
+
+<p>当然，在这里运行<code class="highlighter-rouge">./configure</code>还是会出现问题，错误如下：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+checking zlib.h usability... no
+checking zlib.h presence... no
+checking for zlib.h... no
+configure: error: subversion requires zlib
+
+</code></pre></div></div>
+
+<h3 id="223-安装-zlib">2.2.3 安装 zlib</h3>
+
+<p>好吧，这里还需要<code class="highlighter-rouge">zlib</code>库，所以接下来，还需要下载<code class="highlighter-rouge">zlib</code>源码包：</p>
+
+<ol>
+  <li>zlib：<a href="http://cznic.dl.sourceforge.net/project/libpng/zlib/1.2.8/zlib-1.2.8.tar.gz">http://cznic.dl.sourceforge.net/project/libpng/zlib/1.2.8/zlib-1.2.8.tar.gz</a></li>
+</ol>
+
+<p>然后解压缩，在<code class="highlighter-rouge">subversion-1.7.17</code>目录下面，新建一个<code class="highlighter-rouge">zlib</code>目录，然后把解压缩的内容复制到该目录下，执行<code class="highlighter-rouge">./configure --shared</code>，然后在<code class="highlighter-rouge">make</code>，OK了。</p>
+
+<h3 id="224-安装-neon">2.2.4 安装 neon</h3>
+
+<p>如果不安装<code class="highlighter-rouge">neon</code>库，在使用<code class="highlighter-rouge">svn co http://...</code> 的时候，则会出现错误。</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+svn: E170000: Unrecognized URL scheme for http...
+
+</code></pre></div></div>
+
+<p>因此，我们需要安装<code class="highlighter-rouge">neon</code>库来提供<code class="highlighter-rouge">HTTP</code>库给svn工具使用。在安装<code class="highlighter-rouge">neon</code>前需要安装<code class="highlighter-rouge">libxml2</code>和<code class="highlighter-rouge">libxml2-dev</code>，直接使用<code class="highlighter-rouge">sudo apt-get install </code>安装就可以了。</p>
+
+<p>然后，下载neon，地址为：<a href="http://www.webdav.org/neon/neon-0.30.0.tar.gz">http://www.webdav.org/neon/neon-0.30.0.tar.gz</a>，解压缩之后，进入目录，执行<code class="highlighter-rouge">./configure</code>、<code class="highlighter-rouge">make</code>、<code class="highlighter-rouge">sudo make install</code>。</p>
+
+<h3 id="23-subversion源码编译安装">2.3 subversion源码编译安装</h3>
+
+<p>准备工作做好了之后，就可以开始编译安装了。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+ ./configure <span class="nt">--with-neon</span><span class="o">=</span>/usr/local <span class="nv">CPPFLAGS</span><span class="o">=</span><span class="s2">"-I/home/ketao/java/subversion-1.7.17/zlib/ -L/home/ketao/java/subversion-1.7.17/zlib/"</span>
+make
+make <span class="nb">install</span>
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Note：网上嗖的时候，说是<code class="highlighter-rouge">./configure CPPFLAGS="-Izlib/ -Lzlib/"</code>就可以，但是在执行的时候出现问题，找不到<code class="highlighter-rouge">zlib</code>目录，所以需要写绝对路径。</p>
+  </blockquote>
+</blockquote>
+
+<p>接下来，你可以在终端执行命名，查看安装版本是否正确。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+svnversion <span class="nt">--version</span>
+</code></pre></div></div>
+<p>然后会出现：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+svnversion, version 1.7.17 (r1591372)
+   compiled Jun  4 2014, 17:39:27
+
+Copyright (C) 2014 The Apache Software Foundation.
+This software consists of contributions made by many people; see the NOTICE
+file for more information.
+Subversion is open source software, see http://subversion.apache.org/
+
+</code></pre></div></div>
+
+<h2 id="小结"><a id="Finally">小结</a></h2>
+
+<p>Linux下面安装软件，通过编译安装实在是比较复杂，有时候，涉及到多个类库，需要一个个去下载编译安装，比较麻烦。所以，一般情况下，推荐使用<code class="highlighter-rouge">apt-get install </code>来打包安装。</p>
+
+        </article>
+        <hr>
+
+        
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+        
+
+        <div class="post-recent">
+    <div class="pre">
+        
+        <p><strong>上一篇</strong> <a href="/2014/05/30/Linux-Awk-Study-Note/">Linux Awk 使用学习笔记</a></p>
+        
+    </div>
+    <div class="nex">
+
+        
+        <p><strong>下一篇</strong> <a href="/2014/06/10/Ubuntu-Chrome-Start-Fail-Resolve/">Ubuntu Chrome启动失败解决方法</a></p>
+        
+    </div>
+</div>
+
+
+        <h2 id="comments">Comments</h2>
+        
+
+
+<div id="disqus_thread"></div>
+<script>
+    /**
+     * RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     * LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+
+    var disqus_config = function() {
+        this.page.url = 'http://localhost:4000/2014/06/04/Ubuntu-Software-Configure-and-Install/'; // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = 'http://localhost:4000/2014/06/04/Ubuntu-Software-Configure-and-Install/'; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+
+    (function() { // DON'T EDIT BELOW THIS LINE
+        var d = document,
+            s = d.createElement('script');
+
+        s.src = '//taocoder.disqus.com/embed.js';
+
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+
+
+
+    </div>
+    <button class="anchor"><i class="fa fa-anchor"></i></button>
+    <div class="right">
+        <div class="wrap">
+
+            <!-- Content -->
+            <div class="side content">
+                <div>
+                    Content
+                </div>
+                <ul id="content-side" class="content-ul">
+                    
+                    <li><a href="#comments">Comments</a></li>
+                </ul>
+            </div>
+            <!-- 其他div框放到这里 -->
+            <!-- <div class="side">bbbb</div> -->
+        </div>
+    </div>
+</div>
+<script>
+/**
+ * target _blank
+ */
+(function() {
+    var aTags = document.querySelectorAll('article a:not([id])')
+    for (var i = 0; i < aTags.length; i++) {
+        aTags[i].setAttribute('target', '_blank')
+    }
+}());
+</script>
+<script src="/js/pageContent.js " charset="utf-8"></script>
+
+
+    <footer class="site-footer">
+
+
+    <div class="wrapper">
+
+        <p class="description">
+             本站保留着一点点技术积蓄！ 
+        </p>
+        <p class="contact">
+            Contact me at: 
+            <a href="https://github.com/ketao1989" title="GitHub"><i class="fa fa-github" aria-hidden="true"></i></a>  
+            <a href="mailto:ketao1989@126.com" title="email"><i class="fa fa-envelope-o" aria-hidden="true"></i></a>  
+            <a href="http://weibo.com/柯小小西" title="Weibo"><i class="fa fa-weibo" aria-hidden="true"></i></a>       
+        </p>
+        <p>
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次，本站访客数<span id="busuanzi_value_site_uv"></span>人次，本文总阅读量<span id="busuanzi_value_page_pv"></span>次
+        </p>
+        <p class="power">
+            <span>
+                Site powered by <a href="https://jekyllrb.com/">Jekyll</a> & <a href="https://pages.github.com/">Github Pages</a>.
+            </span>
+            <span>
+                Theme designed by <a href="https://github.com/Gaohaoyang">HyG</a>.
+            </span>
+        </p>
+    </div>
+</footer>
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+    <div class="back-to-top">
+    <a href="#top" data-scroll>
+        <i class="fa fa-arrow-up" aria-hidden="true"></i>
+    </a>
+</div>
+
+    <script src=" /js/main.js " charset="utf-8"></script>
+    <script src=" /js/smooth-scroll.min.js " charset="utf-8"></script>
+    <script type="text/javascript">
+      smoothScroll.init({
+        speed: 500, // Integer. How fast to complete the scroll in milliseconds
+        easing: 'easeInOutCubic', // Easing pattern to use
+        offset: 20, // Integer. How far to offset the scrolling anchor location in pixels
+      });
+    </script>
+    <!-- <script src=" /js/scroll.min.js " charset="utf-8"></script> -->
+  </body>
+
+</html>

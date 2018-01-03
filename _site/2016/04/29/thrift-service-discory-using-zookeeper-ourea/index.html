@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Ourea-基于Zookeeper的Thrift服务发现框架实现</title>
+    <meta name="description" content="框架背景Apache Thrift是Facebook实现的一种高效的,支持多种编程语言的远程服务调用的框架.在多语言并行于业务之中的公司,其是一个很好的RPC框架选择,但是由于缺少服务发现管理功能,在使用的时候,需要告知业务方现有业务部署的地址,并且调用方需要自己实现服务状态的感知和重试机制.此外,对于互联网公司...">
+
+    <link rel="shortcut icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://at.alicdn.com/t/font_8v3czwksspqlg14i.css">
+    <link rel="stylesheet" href="/css/main.css ">
+    <link rel="canonical" href="http://localhost:4000/2016/04/29/thrift-service-discory-using-zookeeper-ourea/">
+    <link rel="alternate" type="application/rss+xml" title="柯小小西" href="http://localhost:4000/feed.xml ">
+
+
+    <script>
+    // 百度统计代码
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?a9b0f47a0e50b02dafb8a7088436a9bc";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+    </script>
+
+
+
+
+</head>
+
+
+  <body>
+
+    <header id="top">
+    <div class="wrapper">
+        <a href="/" class="brand">柯小小西</a>
+        <small>留着一点点技术积蓄</small>
+        <button id="headerMenu" class="menu"><i class="fa fa-bars"></i></button>
+        <nav id="headerNav">
+            <ul>
+                <li>
+                    
+                    <a href="/">
+                    
+                        <i class="fa fa-home"></i>Home
+                    </a>
+                </li>
+
+                
+                    
+                    <li>
+                        
+                        <a href="/archive/">
+                        
+                            <i class="fa fa-archive"></i>Archives
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/category/">
+                        
+                            <i class="fa fa-th-list"></i>Categories
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/tag/">
+                        
+                            <i class="fa fa-tags"></i>Tags
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/about/">
+                        
+                            <i class="fa fa-heart"></i>About
+                        </a>
+                    </li>
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+        <div class="page clearfix" post>
+    <div class="left">
+        <h1>Ourea-基于Zookeeper的Thrift服务发现框架实现</h1>
+        <div class="label">
+
+            <div class="label-card">
+                <i class="fa fa-calendar"></i>2016-04-29
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+            
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Java" title="Category: Java" rel="category">Java</a>&nbsp;
+    
+        <a href="/category/#Thrift" title="Category: Thrift" rel="category">Thrift</a>&nbsp;
+    
+        <a href="/category/#Zookeeper" title="Category: Zookeeper" rel="category">Zookeeper</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+            </div>
+
+            <div class="label-card">
+            
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+            </div>
+
+        </div>
+        <hr>
+        <article itemscope itemtype="http://schema.org/BlogPosting">
+        <h2 id="框架背景"><a id="Introduction">框架背景</a></h2>
+
+<p>Apache Thrift是Facebook实现的一种高效的,支持多种编程语言的远程服务调用的框架.在多语言并行于业务之中的公司,其是一个很好的RPC框架选择,但是由于缺少服务发现管理功能,在使用的时候,需要告知业务方现有业务部署的地址,并且调用方需要自己实现服务状态的感知和重试机制.此外,对于互联网公司而言,业务快速变化必然导致机器的增减,这些变化,需要通知到所有调用方来更改调用机器的配置,是非常麻烦的.</p>
+
+<p>显然，对于Thrift来说，一个服务发现管理框架是多么的重要。</p>
+
+<p>那么，服务发现管理框架其实可以做的很重，也可以做的很轻；对于我们，需要满足什么需求：</p>
+
+<ul>
+  <li>服务调用方自动获取服务提供方地址；</li>
+  <li>服务提供方服务分组；</li>
+  <li>服务调用方负载均衡策略；</li>
+  <li>服务非兼容升级；</li>
+</ul>
+
+<p>具体的需求分析和实现，将在 <a href="#Ourea_Implement">Ourea服务发现实现原理</a>介绍。</p>
+
+<h2 id="thrift服务原生使用"><a id="Thrift_Native_Demo">Thrift服务原生使用</a></h2>
+
+<p>Thrift 接口使用还是比较简单地，对外提供的server和client接口封装了所有的内部实现细节，所以，一般我们只需要告诉<code class="highlighter-rouge">Thrift</code>地址端口信息，然后就可以完成简单地RPC调用。</p>
+
+<p>下面，给出一个简单地示例：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="c1">// 服务端示例</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">SimpleThriftServer</span> <span class="o">{</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">Logger</span> <span class="n">logger</span> <span class="o">=</span> <span class="n">LoggerFactory</span><span class="o">.</span><span class="na">getLogger</span><span class="o">(</span><span class="n">SimpleThriftServer</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">port</span> <span class="o">=</span> <span class="mi">9999</span><span class="o">;</span>
+
+    <span class="kd">public</span>  <span class="kt">void</span> <span class="nf">simple</span><span class="o">(</span><span class="kt">int</span> <span class="n">port</span><span class="o">){</span>
+
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="n">TServerSocket</span> <span class="n">tServerSocket</span> <span class="o">=</span> <span class="k">new</span> <span class="n">TServerSocket</span><span class="o">(</span><span class="n">port</span><span class="o">);</span>
+            <span class="n">Hello</span><span class="o">.</span><span class="na">Processor</span> <span class="n">processor</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Hello</span><span class="o">.</span><span class="na">Processor</span><span class="o">(</span><span class="k">new</span> <span class="n">HelloService</span><span class="o">());</span>
+
+            <span class="n">TServer</span> <span class="n">server</span> <span class="o">=</span> <span class="k">new</span> <span class="n">TSimpleServer</span><span class="o">(</span><span class="k">new</span> <span class="n">TServer</span><span class="o">.</span><span class="na">Args</span><span class="o">(</span><span class="n">tServerSocket</span><span class="o">).</span><span class="na">processor</span><span class="o">(</span><span class="n">processor</span><span class="o">)</span> <span class="o">);</span>
+            <span class="n">server</span><span class="o">.</span><span class="na">serve</span><span class="o">();</span>
+
+        <span class="o">}</span><span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">){</span>
+            <span class="n">logger</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">"server start error........"</span><span class="o">,</span><span class="n">e</span><span class="o">);</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">InterruptedException</span> <span class="o">{</span>
+        <span class="n">SimpleThriftServer</span> <span class="n">server</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SimpleThriftServer</span><span class="o">();</span>
+        <span class="n">server</span><span class="o">.</span><span class="na">simple</span><span class="o">(</span><span class="n">port</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="c1">// client 端示例</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">SimpleThriftClient</span> <span class="o">{</span>
+
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">Logger</span> <span class="n">logger</span> <span class="o">=</span> <span class="n">LoggerFactory</span><span class="o">.</span><span class="na">getLogger</span><span class="o">(</span><span class="n">SimpleThriftClient</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">port</span> <span class="o">=</span> <span class="mi">9999</span><span class="o">;</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">ip</span> <span class="o">=</span> <span class="s">"127.0.0.1"</span><span class="o">;</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">()</span> <span class="o">{</span>
+        <span class="n">TTransport</span> <span class="n">transport</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="n">transport</span> <span class="o">=</span> <span class="k">new</span> <span class="n">TSocket</span><span class="o">(</span><span class="n">ip</span><span class="o">,</span> <span class="n">port</span><span class="o">);</span>
+            <span class="n">TProtocol</span> <span class="n">protocol</span> <span class="o">=</span> <span class="k">new</span> <span class="n">TBinaryProtocol</span><span class="o">(</span><span class="n">transport</span><span class="o">);</span>
+            <span class="n">Hello</span><span class="o">.</span><span class="na">Client</span> <span class="n">client</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Hello</span><span class="o">.</span><span class="na">Client</span><span class="o">(</span><span class="n">protocol</span><span class="o">);</span>
+            <span class="n">transport</span><span class="o">.</span><span class="na">open</span><span class="o">();</span>
+            <span class="n">HelloResult</span> <span class="n">result</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="na">sayHello</span><span class="o">(</span><span class="s">"hello world"</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">logger</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">"client invoke fail. "</span><span class="o">,</span> <span class="n">e</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">transport</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">transport</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Note:</p>
+    <ul>
+      <li>TProtocol 协议和编解码组件</li>
+      <li>TTransport 传输通信组件</li>
+      <li>TProcessor 服务处理相关组件</li>
+      <li>TServer 服务提供组件</li>
+      <li>Client 服务调用客户端</li>
+    </ul>
+  </blockquote>
+</blockquote>
+
+<p>Thrift 原生的对外接口已经很简单了，但是为什么还需要去封装呢？上文的代码虽然简单，但是有几个点需要去注意：</p>
+
+<ol>
+  <li>对于生产环境的服务，在发布新功能，出现故障down机，都会导致服务出现不可用的情况；此外，对外的服务一般都是集群部署，集群机器的增减也是很可能会出现的事情，因此，就会出现最初对外提供的服务IP地址会出现新增(新建服务)，减少(缩减服务)，暂时停服(机器故障)，这些所有变更通知所有业务服务调用方去更改是很难处理的事情。此外，由于服务可能存在大量的机器列表，这些配置在业务代码中，本身也是不可取的。</li>
+  <li>服务调用的时候，可能存在某些服务当时负载过高，或者服务网络问题等导致服务调用策略需要调整。也就是在选择调用集群中某台机器的时候，每个业务都要自己去实现策略，这是不可取的。此外，对于服务的负载情况无法感知，即使是静态的服务提供权重都无法获取，导致了即使客户端自己实现均衡策略，由于缺少必要的数据支持，导致只能采用轮询和随机。</li>
+  <li>业务上，服务调用之间隔离，服务接口的灰度升级等，是比较常见的技术需求。Thrift 对外发布的服务的所有IP，对于调用方来说都是平等的，也就是，如果我需要将集群中某些机器进行接口的非兼容的灰度升级，或者某些机器独立出来给一些非常重要的业务使用。目前，这种场景，只能新加机器来解决了。</li>
+  <li>对于调用方Client的调用，每次都需要去创建连接，然后和server端交互，对于大请求场景下的应用，对性能的影响是很大的。创建connection对象，是很重的，需要进行池化。</li>
+  <li>……</li>
+</ol>
+
+<p>基于以上的一些原因，开发了基于<code class="highlighter-rouge">Zookeeper</code>的Thrift服务发现机制框架。</p>
+
+<!-- more -->
+
+<h2 id="-ourea服务发现实现原理"><a id="Ourea_Implement"> Ourea服务发现实现原理</a></h2>
+
+<p>服务发现机制，在很多RPC套件中都会提供。<code class="highlighter-rouge">Zookeeper</code>一直作为经典实现服务发现机制的底层服务，所以这里显然也是这样的。下面给出，实现的模块交互图：</p>
+
+<p><img src="/images/2016/04/ourea.png" /></p>
+
+<h3 id="交互说明">交互说明</h3>
+
+<p>在设计交互图中，<code class="highlighter-rouge">Server</code>服务提供方会在启动的时候，读取服务相关配置属性，比如版本号、组名等信息，以及注册<code class="highlighter-rouge">Zookeeper</code>地址及相关zk操作配置信息；然后根据配置去指定<code class="highlighter-rouge">Zookeeper</code>集群注册服务，其路径为<code class="highlighter-rouge">/ourea/service_name_xxx/group_yyy/version_zzz/provider/ip=mmm&amp;port=nnn&amp;weight=lll</code>,注册完成之后，就可以启动Thrift服务了；如果发现服务启动失败，则去<code class="highlighter-rouge">Zookeeper</code>上注销该路径节点。</p>
+
+<p>服务调用方启动的时候，同样也会读取相关配置，然后去<code class="highlighter-rouge">Zookeeper</code>上注册服务调用信息，注册完了之后，服务调用方会去查询<code class="highlighter-rouge">/ourea/service_name_xxx/group_yyy/version_zzz/provider/</code>下地子节点列表，并且注册监听逻辑，等待子节点变更则触发重新查询操作。服务调用方拿到ip列表之后，就可以按照选择的选择策略来拿到指定服务器的连接去调用相关服务接口。</p>
+
+<p>需要说明的是，由于服务调用方拿到服务提供方的地址列表后，其只会监听<code class="highlighter-rouge">Zookeeper</code>的变更通知，调用方是直接和服务方交互的，因此，当<code class="highlighter-rouge">Zookeeper</code>出现不可服务时，并不会影响Thrift的服务提供和调用交互。因此，也不会影响Thrift的性能。</p>
+
+<h3 id="针对thrift原生接口的解决方案">针对Thrift原生接口的解决方案</h3>
+
+<ol>
+  <li>
+    <p>服务扩张自动感知
+当服务提供方的服务状态发生变更，比如新加机器扩展，或者服务发布上下线等，会自动在指定路径创建一个临时节点，节点包含机器相关信息，利用<code class="highlighter-rouge">Zookeeper</code>的临时节点特性来实现服务状态自动感知功能。</p>
+  </li>
+  <li>
+    <p>服务调用负载策略
+目前，ourea 也只支持方法级轮询策略和权重随机分布策略。服务会记录某个方法上次调用情况，然后从服务list中找出这次选择的机器进行服务调用。权重随机分布，是根据服务提供方在服务启动的时候，配置的机器权重来计算，权重大的服务机器，被选择的几率大于权重小的服务提供者。</p>
+  </li>
+  <li>
+    <p>服务提供粒度细化 
+服务隔离保证重要业务调用方不被其他业务干扰；此外，由于前期设计的问题，需要对部分接口进行非兼容升级(虽然我们非常不提倡这种行为)，这些问题都需要对服务提供进行细化隔离。因此，在ourea中，增加了<code class="highlighter-rouge">group</code>和<code class="highlighter-rouge">version</code>的控制。在server端，初始都是为默认的group提供服务，当存在某个重要的业务需要抗干扰服务级别时，下面一些机器，配置为特定group给改业务调用，这时，其他业务是无法自动获取到这些服务提供者地址的，从而到达服务隔离的目的。</p>
+  </li>
+  <li>
+    <p>Thrift连接池化
+java client端，会对获取到得服务提供者地址列表分别创建对应的socket连接池，保证经过策略选择到指定机器后，可以直接和服务端交互。</p>
+  </li>
+</ol>
+
+<h2 id="-ourea服务发现框架使用示例"><a id="Ourea_Demo"> Ourea服务发现框架使用示例</a></h2>
+
+<p>使用ourea框架非常简单，生成jar包，引入到项目，然后如下调用方法即可完成Thrift交互。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">ZkThriftServerSample</span> <span class="o">{</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+
+        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">Ourea</span><span class="o">.</span><span class="na">Processor</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getCanonicalName</span><span class="o">());</span>
+
+        <span class="n">Properties</span> <span class="n">properties</span> <span class="o">=</span> <span class="n">PropertiesUtils</span><span class="o">.</span><span class="na">load</span><span class="o">(</span><span class="s">"provider.properties"</span><span class="o">);</span>
+
+        <span class="n">ThriftServerConfig</span> <span class="n">config</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ThriftServerConfig</span><span class="o">(</span><span class="n">Integer</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">properties</span><span class="o">.</span><span class="na">getProperty</span><span class="o">(</span><span class="s">"port"</span><span class="o">)));</span>
+        <span class="n">config</span><span class="o">.</span><span class="na">setGroup</span><span class="o">(</span><span class="n">properties</span><span class="o">.</span><span class="na">getProperty</span><span class="o">(</span><span class="s">"group"</span><span class="o">));</span>
+        <span class="n">ServiceProviderFactory</span><span class="o">.</span><span class="na">exposeService</span><span class="o">(</span><span class="k">new</span> <span class="n">OureaImpl</span><span class="o">(),</span> <span class="k">new</span> <span class="n">ZkConfig</span><span class="o">(</span><span class="n">properties</span><span class="o">.</span><span class="na">getProperty</span><span class="o">(</span><span class="s">"zkAddress"</span><span class="o">)),</span>
+                <span class="n">config</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">ZkThriftClientSample</span> <span class="o">{</span>
+
+  <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+
+    <span class="n">Properties</span> <span class="n">properties</span> <span class="o">=</span> <span class="n">PropertiesUtils</span><span class="o">.</span><span class="na">load</span><span class="o">(</span><span class="s">"consumer.properties"</span><span class="o">);</span>
+
+    <span class="n">Ourea</span><span class="o">.</span><span class="na">Iface</span> <span class="n">client</span> <span class="o">=</span> <span class="n">ConsumerProxyFactory</span><span class="o">.</span><span class="na">getProxyClient</span><span class="o">(</span><span class="n">Ourea</span><span class="o">.</span><span class="na">Iface</span><span class="o">.</span><span class="na">class</span><span class="o">,</span>
+        <span class="k">new</span> <span class="nf">ZkConfig</span><span class="o">(</span><span class="n">properties</span><span class="o">.</span><span class="na">getProperty</span><span class="o">(</span><span class="s">"zkAddress"</span><span class="o">)));</span>
+    <span class="kt">int</span> <span class="n">count</span> <span class="o">=</span><span class="mi">0</span><span class="o">;</span>
+    <span class="kt">long</span> <span class="n">start</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">();</span>
+    <span class="k">while</span> <span class="o">(</span><span class="n">count</span><span class="o">++</span> <span class="o">&lt;</span><span class="mi">1000</span><span class="o">){</span>
+      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">count</span> <span class="o">+</span> <span class="s">"-----"</span> <span class="o">+</span> <span class="n">client</span><span class="o">.</span><span class="na">queryEcho</span><span class="o">(</span><span class="s">"hello"</span><span class="o">));</span>
+    <span class="o">}</span>
+    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">()</span> <span class="o">-</span> <span class="n">start</span><span class="o">);</span>
+  <span class="o">}</span>
+
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>服务最少配置如下：</p>
+
+<div class="language-properties highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#zookeeper注册地址
+</span><span class="py">zkAddress</span><span class="p">=</span><span class="s">10.10.33.134:2181</span>
+<span class="c">#zookeeper超时时间
+</span><span class="py">zkTimeout</span><span class="p">=</span><span class="s">3000</span>
+</code></pre></div></div>
+
+<div class="language-properties highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#对外提供服务端口号
+</span><span class="py">port</span><span class="p">=</span><span class="s">9999</span>
+<span class="c">#zookeeper注册地址
+</span><span class="py">zkAddress</span><span class="p">=</span><span class="s">10.10.33.134:2181</span>
+<span class="c">#zookeeper超时时间
+</span><span class="py">zkTimeout</span><span class="p">=</span><span class="s">3000</span>
+<span class="c">#服务细分的组/topic
+</span><span class="py">group</span><span class="p">=</span><span class="s">bbb</span>
+</code></pre></div></div>
+
+<h2 id="-总结"><a id="Summary"> 总结</a></h2>
+
+<p>项目源码开源地址：https://github.com/ketao1989/ourea</p>
+
+
+        </article>
+        <hr>
+
+        
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+        
+
+        <div class="post-recent">
+    <div class="pre">
+        
+        <p><strong>上一篇</strong> <a href="/2016/03/10/junit-mockito-guice-in-action-and-junit-test-mechanism/">基于JUnit Mockito Guice测试实践及JUnit运行机制浅析</a></p>
+        
+    </div>
+    <div class="nex">
+
+        
+        <p><strong>下一篇</strong> <a href="/2016/05/29/talk-about-java-gc/">聊聊 Java GC</a></p>
+        
+    </div>
+</div>
+
+
+        <h2 id="comments">Comments</h2>
+        
+
+
+<div id="disqus_thread"></div>
+<script>
+    /**
+     * RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     * LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+
+    var disqus_config = function() {
+        this.page.url = 'http://localhost:4000/2016/04/29/thrift-service-discory-using-zookeeper-ourea/'; // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = 'http://localhost:4000/2016/04/29/thrift-service-discory-using-zookeeper-ourea/'; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+
+    (function() { // DON'T EDIT BELOW THIS LINE
+        var d = document,
+            s = d.createElement('script');
+
+        s.src = '//taocoder.disqus.com/embed.js';
+
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+
+
+
+    </div>
+    <button class="anchor"><i class="fa fa-anchor"></i></button>
+    <div class="right">
+        <div class="wrap">
+
+            <!-- Content -->
+            <div class="side content">
+                <div>
+                    Content
+                </div>
+                <ul id="content-side" class="content-ul">
+                    
+                    <li><a href="#comments">Comments</a></li>
+                </ul>
+            </div>
+            <!-- 其他div框放到这里 -->
+            <!-- <div class="side">bbbb</div> -->
+        </div>
+    </div>
+</div>
+<script>
+/**
+ * target _blank
+ */
+(function() {
+    var aTags = document.querySelectorAll('article a:not([id])')
+    for (var i = 0; i < aTags.length; i++) {
+        aTags[i].setAttribute('target', '_blank')
+    }
+}());
+</script>
+<script src="/js/pageContent.js " charset="utf-8"></script>
+
+
+    <footer class="site-footer">
+
+
+    <div class="wrapper">
+
+        <p class="description">
+             本站保留着一点点技术积蓄！ 
+        </p>
+        <p class="contact">
+            Contact me at: 
+            <a href="https://github.com/ketao1989" title="GitHub"><i class="fa fa-github" aria-hidden="true"></i></a>  
+            <a href="mailto:ketao1989@126.com" title="email"><i class="fa fa-envelope-o" aria-hidden="true"></i></a>  
+            <a href="http://weibo.com/柯小小西" title="Weibo"><i class="fa fa-weibo" aria-hidden="true"></i></a>       
+        </p>
+        <p>
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次，本站访客数<span id="busuanzi_value_site_uv"></span>人次，本文总阅读量<span id="busuanzi_value_page_pv"></span>次
+        </p>
+        <p class="power">
+            <span>
+                Site powered by <a href="https://jekyllrb.com/">Jekyll</a> & <a href="https://pages.github.com/">Github Pages</a>.
+            </span>
+            <span>
+                Theme designed by <a href="https://github.com/Gaohaoyang">HyG</a>.
+            </span>
+        </p>
+    </div>
+</footer>
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+    <div class="back-to-top">
+    <a href="#top" data-scroll>
+        <i class="fa fa-arrow-up" aria-hidden="true"></i>
+    </a>
+</div>
+
+    <script src=" /js/main.js " charset="utf-8"></script>
+    <script src=" /js/smooth-scroll.min.js " charset="utf-8"></script>
+    <script type="text/javascript">
+      smoothScroll.init({
+        speed: 500, // Integer. How fast to complete the scroll in milliseconds
+        easing: 'easeInOutCubic', // Easing pattern to use
+        offset: 20, // Integer. How far to offset the scrolling anchor location in pixels
+      });
+    </script>
+    <!-- <script src=" /js/scroll.min.js " charset="utf-8"></script> -->
+  </body>
+
+</html>

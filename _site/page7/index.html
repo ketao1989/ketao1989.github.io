@@ -1,0 +1,2766 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>柯小小西</title>
+    <meta name="description" content="">
+
+    <link rel="shortcut icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://at.alicdn.com/t/font_8v3czwksspqlg14i.css">
+    <link rel="stylesheet" href="/css/main.css ">
+    <link rel="canonical" href="http://localhost:4000/page7/">
+    <link rel="alternate" type="application/rss+xml" title="柯小小西" href="http://localhost:4000/feed.xml ">
+
+
+    <script>
+    // 百度统计代码
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?a9b0f47a0e50b02dafb8a7088436a9bc";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+    </script>
+
+
+
+
+</head>
+
+
+  <body>
+
+    <header id="top">
+    <div class="wrapper">
+        <a href="/" class="brand">柯小小西</a>
+        <small>留着一点点技术积蓄</small>
+        <button id="headerMenu" class="menu"><i class="fa fa-bars"></i></button>
+        <nav id="headerNav">
+            <ul>
+                <li>
+                    
+                    <a href="/">
+                    
+                        <i class="fa fa-home"></i>Home
+                    </a>
+                </li>
+
+                
+                    
+                    <li>
+                        
+                        <a href="/archive/">
+                        
+                            <i class="fa fa-archive"></i>Archives
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/category/">
+                        
+                            <i class="fa fa-th-list"></i>Categories
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/tag/">
+                        
+                            <i class="fa fa-tags"></i>Tags
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/about/">
+                        
+                            <i class="fa fa-heart"></i>About
+                        </a>
+                    </li>
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+        <div class="page clearfix" index>
+    <div class="left">
+        <h1>Welcome to 柯小小西's Blog!</h1>
+        <small>留着一点点技术积蓄</small>
+        <hr>
+        <ul>
+            
+              <li>
+                <h2>
+                  <a class="post-link" href="/2014/05/28/Online-Mysql-Deadlock-Analyse/">线上Mysql死锁问题分析</a>
+                </h2>
+                <div class="label">
+                    <div class="label-card">
+                        <i class="fa fa-calendar"></i>2014-05-28
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+
+                    <div class="label-card">
+                    
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Mysql" title="Category: Mysql" rel="category">Mysql</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+                    </div>
+
+                    <div class="label-card">
+                    
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+                    </div>
+                </div>
+                <div class="excerpt">
+                    <h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p>前段时间，查看线上<code class="highlighter-rouge">Tomcat</code>日志，发现多台服务器出现<code class="highlighter-rouge">Mysql</code>死锁情况，虽然死锁问题没有影响到正常业务，但是毕竟数据库死锁还是得需要好好分析原因去修复和开发过程中极力需要避免的。服务器上<code class="highlighter-rouge">Mysql死锁</code>日志如下：</p>
+
+<p><img src="/images/2014/05/deadlock-log.png" /></p>
+
+<p>由于我们的服务使用了连接池，所以接着让 DBA 查询下<code class="highlighter-rouge">Mysql</code>的数据库操作日志信息，如下图所示：</p>
+
+<p><img src="/images/2014/05/mysql-log.png" /></p>
+
+<h2 id="死锁问题定位"><a id="Problem">死锁问题定位</a></h2>
+
+<p>查看了建表语句，其实很简单：</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="nv">`room_rate_plan_id`</span> <span class="p">(</span>
+  <span class="nv">`id`</span> <span class="n">bigint</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span> <span class="n">unsigned</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="n">AUTO_INCREMENT</span><span class="p">,</span> 
+  <span class="nv">`value`</span> <span class="n">varchar</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="p">,</span>
+  <span class="k">PRIMARY</span> <span class="k">KEY</span> <span class="p">(</span><span class="nv">`id`</span><span class="p">),</span>
+  <span class="k">UNIQUE</span> <span class="k">KEY</span> <span class="nv">`uniq_value`</span> <span class="p">(</span><span class="nv">`value`</span><span class="p">)</span> <span class="k">USING</span> <span class="n">BTREE</span>
+<span class="p">)</span> <span class="n">ENGINE</span><span class="o">=</span><span class="n">InnoDB</span> <span class="n">AUTO_INCREMENT</span><span class="o">=</span><span class="mi">175663</span> <span class="k">DEFAULT</span> <span class="n">CHARSET</span><span class="o">=</span><span class="n">utf8</span>  
+</code></pre></div></div>
+
+<p>而使用的地方只在一个类代码里用过，使用的方式是<code class="highlighter-rouge">select for update</code>，并且该查询事务中包含着，如果不存在，则<code class="highlighter-rouge">INSERT INTO room_rate_plan_id (value) VALUES(?)</code>语句，那么，接着就得了解<code class="highlighter-rouge">select for update</code>来确定是不是这里导致数据库死锁现象。主要有两篇博客：</p>
+
+<!-- more -->
+
+<ul>
+  <li>
+    <p><a href="http://stackoverflow.com/questions/5432370/mysql-innodb-dead-lock-on-select-with-exclusive-lock-for-update">http://stackoverflow.com/questions/5432370/mysql-innodb-dead-lock-on-select-with-exclusive-lock-for-update</a></p>
+  </li>
+  <li>
+    <p><a href="http://dev.mysql.com/doc/refman/5.0/en/innodb-deadlocks.html">http://dev.mysql.com/doc/refman/5.0/en/innodb-deadlocks.html</a></p>
+  </li>
+</ul>
+
+<p><code class="highlighter-rouge">SELECT FOR UPDATE</code> 是<code class="highlighter-rouge">SELECT</code> 的升级版，其在查询时会上锁。一般地，当数据量特别大时，可能有大量的并发，这些并发会导致在<code class="highlighter-rouge">SELECT</code>时，状态已经变更了，因此需要上锁。InnoDB默认是Row-Level Lock，因此<code class="highlighter-rouge">SELECT FOR UPDATE</code>只有在<code class="highlighter-rouge">WHERE</code> 判断条件内明确指定主键时，才会执行<code class="highlighter-rouge">Row lock</code>，否则会<code class="highlighter-rouge">lock</code>整个数据表。当有多个请求同时加上<code class="highlighter-rouge">for update</code>的意向锁时，如果<code class="highlighter-rouge">select</code>没有时，第一个请求会接着<code class="highlighter-rouge">insert</code>而去尝试获取排它锁，B锁保持等待；而第二个请求也<code class="highlighter-rouge">select</code>为空时，并且刚好第二条请求插入的数据和第一个请求一样的时候，则会导致死锁。</p>
+
+<h2 id="问题重现"><a id="Reproduce">问题重现</a></h2>
+
+<blockquote>
+  <blockquote>
+    <p>执行下面语句：</p>
+  </blockquote>
+</blockquote>
+
+<ul>
+  <li><code class="highlighter-rouge">session 1</code>执行：</li>
+</ul>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">START</span> <span class="n">TRANSACTION</span><span class="p">;</span>
+<span class="k">SELECT</span> <span class="n">id</span> <span class="k">FROM</span> <span class="n">qunar</span><span class="p">.</span><span class="n">room_rate_plan_id</span> <span class="k">where</span> <span class="n">value</span><span class="o">=</span><span class="s1">'elong_abcd'</span><span class="k">for</span> <span class="k">update</span><span class="p">;</span>
+</code></pre></div></div>
+
+<ul>
+  <li><code class="highlighter-rouge">session 2</code>执行：</li>
+</ul>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">START</span> <span class="n">TRANSACTION</span><span class="p">;</span>
+<span class="k">SELECT</span> <span class="n">id</span> <span class="k">FROM</span> <span class="n">qunar</span><span class="p">.</span><span class="n">room_rate_plan_id</span> <span class="k">where</span> <span class="n">value</span><span class="o">=</span><span class="s1">'elong_abcd'</span><span class="k">for</span> <span class="k">update</span><span class="p">;</span>
+</code></pre></div></div>
+
+<ul>
+  <li>在<code class="highlighter-rouge">session 1</code>上执行 <code class="highlighter-rouge">insert</code> 语句：</li>
+</ul>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">insert</span> <span class="k">into</span> <span class="n">qunar</span><span class="p">.</span><span class="n">room_rate_plan_id</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">values</span> <span class="p">(</span><span class="s1">'elong_abcd'</span><span class="p">);</span>
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>执行上面的操作，则在<code class="highlighter-rouge">Mysql</code>控制台上打出死锁日志信息：</p>
+  </blockquote>
+</blockquote>
+
+<p><img src="/assets/img/2014/5/28/mysql-dead.png" /></p>
+
+<h2 id="解决方法"><a id="Solution">解决方法</a></h2>
+
+<ol>
+  <li>
+    <p>采用官网上指出的方法：If you are using locking reads (SELECT … FOR UPDATE or SELECT … LOCK IN SHARE MODE), try using <code class="highlighter-rouge">a lower isolation level</code> such as READ COMMITTED.</p>
+  </li>
+  <li>
+    <p>由于<code class="highlighter-rouge">select for update</code>只有不存在记录时才会去加一个意向锁，所以可以采用下面方法解决：select—&gt; if(id) is empty —&gt;insert;如果不为空，则select for update。不过这样就多了一次select了。</p>
+  </li>
+  <li>
+    <p>使用<code class="highlighter-rouge">insert ignore</code> 插入，然后select ，由于是value是<code class="highlighter-rouge">unique key</code>，所以select可以获取正确id，并且还可以不需要添加事务。可能会多一次insert ignore。这种方法之所以这样子，是因为在业务中没有update操作，只有insert和select，并且value是唯一的，这样子就可以只采用select而不需要采用select for update，并且还可以不需要事务，提供效率。</p>
+  </li>
+</ol>
+
+<blockquote>
+  <blockquote>
+    <p>如果采用第3中解决方案，不会出现死锁问题，但是当锁一直被占用时，会出现等待超时，当然，如果不使用事务，则肯定不会有锁的问题了。</p>
+  </blockquote>
+</blockquote>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>* session 1：
+    ``` sql
+	START TRANSACTION;
+	INSERT IGNORE 	INTO room_rate_plan_id(value) VALUES ('elong_abcs');
+	SELECT id FROM room_rate_plan_id where value='elong_abcs';
+	```
+
+* session 2：
+    ``` sql
+	START TRANSACTION;
+	INSERT IGNORE 	INTO room_rate_plan_id(value) VALUES ('elong_abcs');
+	```
+* 出现超时异常信息：
+</code></pre></div></div>
+
+<p><img src="/images/2014/05/timeout.png" /></p>
+
+                </div>
+                <div class="read-all">
+                    <a  href="/2014/05/28/Online-Mysql-Deadlock-Analyse/"><i class="fa fa-newspaper-o"></i>Read All</a>
+                </div>
+                <hr>
+              </li>
+            
+              <li>
+                <h2>
+                  <a class="post-link" href="/2014/05/27/Jstat-GC-Guide-Introduce/">Java 查看系统GC命令介绍</a>
+                </h2>
+                <div class="label">
+                    <div class="label-card">
+                        <i class="fa fa-calendar"></i>2014-05-27
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+
+                    <div class="label-card">
+                    
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#GC" title="Category: GC" rel="category">GC</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+                    </div>
+
+                    <div class="label-card">
+                    
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+                    </div>
+                </div>
+                <div class="excerpt">
+                    <h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p>使用	<code class="highlighter-rouge">JVM</code>的人都或多或少的了解<code class="highlighter-rouge">垃圾回收</code>机制，当系统的服务出现性能问题时，都会去服务器上查看下系统<code class="highlighter-rouge">GC</code>的情况。此外，如果有新的服务上线，也需要去服务器上查看下新服务的整体<code class="highlighter-rouge">GC</code>水平，这就可以使用<code class="highlighter-rouge">jstat</code>命令来查看了，当然你也可以使用其他方式。</p>
+
+<h2 id="jstat-查看系统-gc-命令介绍"><a id="Jstat">Jstat 查看系统 GC 命令介绍</a></h2>
+
+<p><code class="highlighter-rouge">jstat</code>的命令查看系统<code class="highlighter-rouge">GC</code>情况，很简单，只需要先通过<code class="highlighter-rouge">jps</code>或者<code class="highlighter-rouge">ps -aux |grep tomcat</code>来查看对应服务所在的进程数，然后使用下面命令查看。</p>
+
+<blockquote>
+  <blockquote>
+    <p>jstat 查看 gc 使用方法如下：</p>
+  </blockquote>
+</blockquote>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+jstat <span class="nt">-gcutil</span> <span class="sb">`</span>线程值<span class="sb">`</span> <span class="sb">`</span>间隔时间数<span class="o">(</span>ms<span class="o">)</span><span class="sb">`</span>
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>执行命令<code class="highlighter-rouge">sudo jstat -gcutil 11694 3600</code>，结果会显示内存各个区域大小的情况，如图：</p>
+  </blockquote>
+</blockquote>
+
+<p><img src="/images/2014/05/jstat-gc.jpg" /></p>
+
+<blockquote>
+  <blockquote>
+    <p>Note: 结果里面列出每个区间的内存大小，新生代gc的次数和时间，老年代gc的次数和时间。</p>
+  </blockquote>
+</blockquote>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>1. S0  — Heap上的 Survivor space 0 区已使用空间的百分比;
+2. S1  — Heap上的 Survivor space 1 区已使用空间的百分比;
+3. E   — Heap上的 Eden space 区已使用空间的百分比;
+4. O   — Heap上的 Old space 区已使用空间的百分比;
+5. P   — Perm space 区已使用空间的百分比;
+6. YGC — 从应用程序启动到采样时发生 Young GC 的次数;
+7. YGCT– 从应用程序启动到采样时 Young GC 所用的时间(单位秒);
+8. FGC — 从应用程序启动到采样时发生 Full GC 的次数;
+9. FGCT– 从应用程序启动到采样时 Full GC 所用的时间(单位秒);
+10. GCT — 从应用程序启动到采样时用于垃圾回收的总时间(单位秒).
+</code></pre></div></div>
+
+<!-- more -->
+
+<h2 id="jmap-查看系统-gc-命令介绍"><a id="Jmap">Jmap 查看系统 GC 命令介绍</a></h2>
+
+<p>当我们使用<code class="highlighter-rouge">jstat</code>命令查看<code class="highlighter-rouge">GC</code>时，发现<code class="highlighter-rouge">YoungGC</code>或者<code class="highlighter-rouge">FullGC</code>频率过高时，就需要分析服务的具体情况了。这个时候，可以使用<code class="highlighter-rouge">Jmap</code>来查看当前系统的实例使用内存大小，一般地，需要<code class="highlighter-rouge">dump</code>到本地进行分析，使用可视化工具可以使分析效率得到很大的提高。</p>
+
+<blockquote>
+  <blockquote>
+    <p><code class="highlighter-rouge">Jmap</code>的使用方法如下所示：</p>
+  </blockquote>
+</blockquote>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>jmap <span class="nt">-dump</span>:format<span class="o">=</span>b,file<span class="o">=</span>log.bin <span class="sb">`</span>进程id<span class="sb">`</span>    
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>使用<code class="highlighter-rouge">sudo jmap -dump:format=b,file=log.bin  -F 11694</code>命令，写入文件内容如下:</p>
+  </blockquote>
+</blockquote>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>JAVA PROFILE 1.0.1
+JAVA PROFILE 1.0.1
+Lcom/alibaba/dubbo/remoting/exchange/support/DefaultFuture$RemotingInvocationTimeoutScan;
+DefaultStatistics.java
+T8procedureNameRs
+StringUtils.10
+isCons
+(Ljava/lang/Integer;)Ljava/math/BigDecimal;
+HtheCloseBracketFor
+h([Ljava/lang/String;Lorg/codehaus/jackson/JsonGenerator;Lorg/codehaus/jackson/map/SerializerProvider;Lorg/codehaus/jackson/map/JsonSerializer;)V
+zC@roureq
+lastActiveFilter
+Ampersand
+......
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Note：有很多可视化的工具来分析<code class="highlighter-rouge">dump</code>文件，为了简单，这里使用java自带的工具<code class="highlighter-rouge">jvisualvm</code>工具，在<code class="highlighter-rouge">文件</code>选项中<code class="highlighter-rouge">装入</code> dump 下来的 文件<code class="highlighter-rouge">log.bin</code>，就可以看到各个对象实例所占用的内存大小和实例数量了。如下图：</p>
+  </blockquote>
+</blockquote>
+
+<p><img src="/images/2014/05/jmap-gc.jpg" /></p>
+
+<h2 id="小结"><a id="Finally">小结</a></h2>
+
+<p>java 中 还有一个命令比较有用，就是<code class="highlighter-rouge">jstack</code>，该命令可以查看服务器上的某个服务的堆栈信息。从而分析线程是否处于死锁状态，从而导致服务不可用或者服务性能受到影响。使用命令<code class="highlighter-rouge">jstack 线程id</code>就可以获取所有堆栈信息了，非常简单便捷。</p>
+
+                </div>
+                <div class="read-all">
+                    <a  href="/2014/05/27/Jstat-GC-Guide-Introduce/"><i class="fa fa-newspaper-o"></i>Read All</a>
+                </div>
+                <hr>
+              </li>
+            
+              <li>
+                <h2>
+                  <a class="post-link" href="/2014/05/26/Spring-MVC-Project-Introduction/">Spring MVC 项目构建入门指南</a>
+                </h2>
+                <div class="label">
+                    <div class="label-card">
+                        <i class="fa fa-calendar"></i>2014-05-26
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+
+                    <div class="label-card">
+                    
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Java" title="Category: Java" rel="category">Java</a>&nbsp;
+    
+        <a href="/category/#Spring" title="Category: Spring" rel="category">Spring</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+                    </div>
+
+                    <div class="label-card">
+                    
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+                    </div>
+                </div>
+                <div class="excerpt">
+                    <h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p>走入社会工作接近一年了,感慨颇多.一年前的现在,自己对java知之甚少,更不知道怎么去创建一个满足<code class="highlighter-rouge">spring mvc</code>架构思想的web项目。最近，为了学习<code class="highlighter-rouge">Spring MVC</code>框架的实现原理，首先新建了一个web项目，该项目包含 <code class="highlighter-rouge">Spring + Mybatis</code>涉及数据库，DAO，service，API，业务，controller多个模块。</p>
+
+<blockquote>
+  <blockquote>
+    <p>Note：这个项目代码完成的功能只是为了演示一个大项目应该具备的结构，而显然在实际工程中，这么简单地功能，是不需要如此繁杂的结构模块的。</p>
+  </blockquote>
+</blockquote>
+
+<p>此外，关于<code class="highlighter-rouge">Spring MVC</code>演示项目的代码，可以从<code class="highlighter-rouge">github</code>上<code class="highlighter-rouge">clone</code>一份到本地，项目为：<a href="https://github.com/ketao1989/simpleSpringProject">SimpleSpringProject</a>。<code class="highlighter-rouge">git clone</code> 地址为：<code class="highlighter-rouge">https://github.com/ketao1989/simpleSpringProject.git</code></p>
+
+<h2 id="simplespringproject-结构介绍"><a id="Framework">SimpleSpringProject 结构介绍</a></h2>
+
+<p><code class="highlighter-rouge">simpleSpringProject</code>项目各个模块分工明确，主要由8个模块组成：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>1. simple-spring-main模块：该模块主要是提供给外界访问的controller层所在。`controller`层可以对外提供html视图，也可以对外提供RPC调用，例如 alibaba 的 dubbo接口。
+
+2. simple-spring-api模块：该模块主要就是封装一些底层的方法接口给外部使用。比如，如果我们使用RPC接口调用服务，则只需要API包就可以了，具体实现调用方是不需要知道的。
+
+3. simple-spring-biz模块：该模块是业务模块，也就是具体业务需要的方法基本上都是在这里实现的。在demo 中，在这一层实现api提供的接口。该模块主要调用service层提供的基本服务，组装起来，实现各种不同的业务逻辑接口。
+
+4. simple-spring-service模块：该模块是基础服务模块，该模块会为biz业务模块提供基本的服务，这些服务功能都比较简单，业务逻辑单一。因此，在这一层进行单元测试，一般会取到比较好的效果。
+
+5. simple-spring-dao模块：该模块是数据库相关接口模块。`Mybatis`可以把interface 和 xml结合起来，使得开发者可以把数据库表中相关操作集成在 interface 代码中，而具体的`SQL`实现则写在xml文件中。这样子，可以让整个结构更清晰。
+
+6. simple-spring-config模块：该模块就是相关`sql`语句的配置文件所在地。一般地，会根据interface 来切分不同的配置文件，两种的关联关系是通过对于的`sql.xml`文件中`mapper namespace`来关联。
+
+7. simple-spring-common模块：该模块一般存放一些项目公用的工具类和常量值。比如，一些配置文件中需要配置的属性值，一些xxxUtils类实现等。
+
+8. simple-spring-model模块：该模块主要提供一些模型，各个类需要使用的对象。比如，我们需要获取一个学生个体信息，显然会作为一个对象类来实现。
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Note：显然，对于各个模块的具体详细分工，其实还是可以调整的，比如可能有些地方会在<code class="highlighter-rouge">service</code>层来做稍微复杂的服务实现，而在<code class="highlighter-rouge">biz</code>层则稍微组合就可以了。这里，demo的模块分类，只是正常情况下，业务规模有一些大的情况下，才会进行多个模块的分工。</p>
+  </blockquote>
+</blockquote>
+
+<!-- more -->
+
+<h2 id="simplespringproject-配置介绍"><a id="Configure">SimpleSpringProject 配置介绍</a></h2>
+
+<p><code class="highlighter-rouge">Spring</code>作为一个主打配置的框架，配置文件的位置，十分重要。如果，一些配置文件的一个符号错误，都会导致整个<code class="highlighter-rouge">MVC</code> web 项目无法正常启动。</p>
+
+<blockquote>
+  <blockquote>
+    <p>首先，来看看web项目中，重中之重的配置文件<code class="highlighter-rouge">web.xml</code>，</p>
+  </blockquote>
+</blockquote>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
+<span class="nt">&lt;web-app</span> <span class="na">xmlns:xsi=</span><span class="s">"http://www.w3.org/2001/XMLSchema-instance"</span>
+         <span class="na">xmlns=</span><span class="s">"http://java.sun.com/xml/ns/javaee"</span> <span class="na">xmlns:web=</span><span class="s">"http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"</span>
+         <span class="na">xsi:schemaLocation=</span><span class="s">"http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"</span>
+         <span class="na">id=</span><span class="s">"WebApp_ID"</span> <span class="na">version=</span><span class="s">"2.5"</span><span class="nt">&gt;</span>
+
+    <span class="c">&lt;!--启动配置文件设置--&gt;</span>
+    <span class="nt">&lt;display-name&gt;</span>simple-spring-main<span class="nt">&lt;/display-name&gt;</span>
+    <span class="nt">&lt;context-param&gt;</span>
+        <span class="nt">&lt;param-name&gt;</span>contextConfigLocation<span class="nt">&lt;/param-name&gt;</span>
+        <span class="nt">&lt;param-value&gt;</span>classpath:applicationContext.xml<span class="nt">&lt;/param-value&gt;</span>
+    <span class="nt">&lt;/context-param&gt;</span>
+
+    <span class="nt">&lt;listener&gt;</span>
+        <span class="nt">&lt;listener-class&gt;</span>org.springframework.web.context.ContextLoaderListener<span class="nt">&lt;/listener-class&gt;</span>
+    <span class="nt">&lt;/listener&gt;</span>
+
+    <span class="c">&lt;!-- 请求地址匹配映射 --&gt;</span>
+
+    <span class="nt">&lt;servlet&gt;</span>
+        <span class="nt">&lt;servlet-name&gt;</span>springmvc<span class="nt">&lt;/servlet-name&gt;</span>
+        <span class="nt">&lt;servlet-class&gt;</span>org.springframework.web.servlet.DispatcherServlet<span class="nt">&lt;/servlet-class&gt;</span>
+        <span class="nt">&lt;load-on-startup&gt;</span>1<span class="nt">&lt;/load-on-startup&gt;</span>
+    <span class="nt">&lt;/servlet&gt;</span>
+    <span class="nt">&lt;servlet-mapping&gt;</span>
+        <span class="nt">&lt;servlet-name&gt;</span>springmvc<span class="nt">&lt;/servlet-name&gt;</span>
+        <span class="nt">&lt;url-pattern&gt;</span>*.htm<span class="nt">&lt;/url-pattern&gt;</span>
+    <span class="nt">&lt;/servlet-mapping&gt;</span>
+    <span class="nt">&lt;servlet-mapping&gt;</span>
+        <span class="nt">&lt;servlet-name&gt;</span>springmvc<span class="nt">&lt;/servlet-name&gt;</span>
+        <span class="nt">&lt;url-pattern&gt;</span>*.json<span class="nt">&lt;/url-pattern&gt;</span>
+    <span class="nt">&lt;/servlet-mapping&gt;</span>
+    <span class="nt">&lt;servlet-mapping&gt;</span>
+        <span class="nt">&lt;servlet-name&gt;</span>springmvc<span class="nt">&lt;/servlet-name&gt;</span>
+        <span class="nt">&lt;url-pattern&gt;</span>*.xml<span class="nt">&lt;/url-pattern&gt;</span>
+    <span class="nt">&lt;/servlet-mapping&gt;</span>
+
+    <span class="c">&lt;!-- 编码过滤器 --&gt;</span>
+    <span class="nt">&lt;filter&gt;</span>
+        <span class="nt">&lt;filter-name&gt;</span>characterEncodingFilter<span class="nt">&lt;/filter-name&gt;</span>
+        <span class="nt">&lt;filter-class&gt;</span>org.springframework.web.filter.CharacterEncodingFilter<span class="nt">&lt;/filter-class&gt;</span>
+        <span class="nt">&lt;init-param&gt;</span>
+            <span class="nt">&lt;param-name&gt;</span>encoding<span class="nt">&lt;/param-name&gt;</span>
+            <span class="nt">&lt;param-value&gt;</span>UTF-8<span class="nt">&lt;/param-value&gt;</span>
+        <span class="nt">&lt;/init-param&gt;</span>
+        <span class="nt">&lt;init-param&gt;</span>
+            <span class="nt">&lt;param-name&gt;</span>forceEncoding<span class="nt">&lt;/param-name&gt;</span>
+            <span class="nt">&lt;param-value&gt;</span>true<span class="nt">&lt;/param-value&gt;</span>
+        <span class="nt">&lt;/init-param&gt;</span>
+    <span class="nt">&lt;/filter&gt;</span>
+    <span class="nt">&lt;filter-mapping&gt;</span>
+        <span class="nt">&lt;filter-name&gt;</span>characterEncodingFilter<span class="nt">&lt;/filter-name&gt;</span>
+        <span class="nt">&lt;url-pattern&gt;</span>*.htm<span class="nt">&lt;/url-pattern&gt;</span>
+    <span class="nt">&lt;/filter-mapping&gt;</span>
+
+    <span class="c">&lt;!-- 指定404页面 --&gt;</span>
+    <span class="nt">&lt;error-page&gt;</span>
+        <span class="nt">&lt;error-code&gt;</span>404<span class="nt">&lt;/error-code&gt;</span>
+        <span class="nt">&lt;location&gt;</span>/404.html<span class="nt">&lt;/location&gt;</span>
+    <span class="nt">&lt;/error-page&gt;</span>
+
+
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>接下来默认<code class="highlighter-rouge">springmvc-servlet.xml</code>文件和<code class="highlighter-rouge">applicationContext.xml</code>文件。<code class="highlighter-rouge">springmvc-servlet.xml</code>配置文件，主要定义servlet相关配置，比如scan 基本包名，视图velocity配置，jsp配置设置等信息。由于这里只有一个 mapping servlet，所以只有一个对应的配置文件，当然也可以把这个文件放置其他地方，然后再<code class="highlighter-rouge">web.xml</code>中定义对于的servlet就可以了。<code class="highlighter-rouge">applicationContext.xml</code>配置文件，则是整个项目的公共配置，比如指定数据库配置，连接池相关信息，一些spring bean 注册信息，默认的视图解析器等等。</p>
+  </blockquote>
+</blockquote>
+
+<p>-</p>
+
+<blockquote>
+  <blockquote>
+    <p>接下来，就是<code class="highlighter-rouge">mybatis.xml</code>配置文件，这个配置主要是针对<code class="highlighter-rouge">Mybatis</code>而存在的，其指定项目中<code class="highlighter-rouge">Mybatis</code>设置，以及一些<code class="highlighter-rouge">typeHandler</code>，<code class="highlighter-rouge">mapper</code>实现的位置。下面给出demo中的配置示例：</p>
+  </blockquote>
+</blockquote>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
+<span class="cp">&lt;!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd"&gt;</span>
+<span class="nt">&lt;configuration&gt;</span>
+
+    <span class="nt">&lt;settings&gt;</span>
+        <span class="c">&lt;!-- 这个配置使全局的映射器启用或禁用缓存 --&gt;</span>
+        <span class="nt">&lt;setting</span> <span class="na">name=</span><span class="s">"cacheEnabled"</span> <span class="na">value=</span><span class="s">"false"</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;setting</span> <span class="na">name=</span><span class="s">"mapUnderscoreToCamelCase"</span> <span class="na">value=</span><span class="s">"true"</span><span class="nt">/&gt;</span>
+        <span class="c">&lt;!-- 全局启用或禁用延迟加载。当禁用时，所有关联对象都会即时加载 --&gt;</span>
+        <span class="c">&lt;!-- &lt;setting name="lazyLoadingEnabled" value="true"/&gt; --&gt;</span>
+        <span class="c">&lt;!-- 当启用时，有延迟加载属性的对象在被调用时将会完全加载任意属性。否则，每种属性将会按需要加载 --&gt;</span>
+        <span class="c">&lt;!-- &lt;setting name="aggressiveLazyLoading" value="true"/&gt; --&gt;</span>
+        <span class="c">&lt;!-- 允许或不允许多种结果集从一个单独的语句中返回（需要适合的驱动） --&gt;</span>
+        <span class="c">&lt;!-- &lt;setting name="multipleResultSetsEnabled" value="true"/&gt; --&gt;</span>
+        <span class="c">&lt;!-- 使用列标签代替列名。不同的驱动在这方便表现不同。参考驱动文档或充分测试两种方法来决定所使用的驱动 --&gt;</span>
+        <span class="c">&lt;!-- &lt;setting name="useColumnLabel" value="true"/&gt; --&gt;</span>
+        <span class="c">&lt;!-- 允许JDBC支持生成的键。需要适合的驱动。如果设置为true则这个设置强制生成的键被使用，尽管一些驱动拒绝兼容但仍然有效（比如Derby） --&gt;</span>
+        <span class="nt">&lt;setting</span> <span class="na">name=</span><span class="s">"useGeneratedKeys"</span> <span class="na">value=</span><span class="s">"true"</span><span class="nt">/&gt;</span>
+        <span class="c">&lt;!-- 指定MyBatis如何自动映射列到字段/属性。PARTIAL只会自动映射简单，没有嵌套的结果。FULL会自动映射任意复杂的结果（嵌套的或其他情况） --&gt;</span>
+        <span class="c">&lt;!-- &lt;setting name="autoMappingBehavior" value="PARTIAL"/&gt; --&gt;</span>
+        <span class="c">&lt;!-- 配置默认的执行器。SIMPLE执行器没有什么特别之处。REUSE执行器重用预处理语句。BATCH执行器重用语句和批量更新 --&gt;</span>
+        <span class="nt">&lt;setting</span> <span class="na">name=</span><span class="s">"safeRowBoundsEnabled"</span> <span class="na">value=</span><span class="s">"false"</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;setting</span> <span class="na">name=</span><span class="s">"defaultExecutorType"</span> <span class="na">value=</span><span class="s">"REUSE"</span><span class="nt">/&gt;</span>
+        <span class="c">&lt;!-- 设置超时时间，它决定驱动等待一个数据库响应的时间 --&gt;</span>
+        <span class="nt">&lt;setting</span> <span class="na">name=</span><span class="s">"defaultStatementTimeout"</span> <span class="na">value=</span><span class="s">"600"</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;/settings&gt;</span>
+
+    <span class="nt">&lt;mappers&gt;</span>
+        <span class="nt">&lt;mapper</span> <span class="na">resource=</span><span class="s">"mapper/version.xml"</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;/mappers&gt;</span>
+
+<span class="nt">&lt;/configuration&gt;</span>
+</code></pre></div></div>
+
+<p>-</p>
+
+<blockquote>
+  <blockquote>
+    <p>最后，介绍下<code class="highlighter-rouge">pom.xml</code>文件，这个实际上，不算是MVC 所仅有的。但是，作为一个maven项目，很多配置都比较关键，一般模块的<code class="highlighter-rouge">pom.xml</code>都比较简单，但是<code class="highlighter-rouge">	main</code>模块由于涉及编译成war包，并且针对不同的运行环境，对应打包的配置文件不同，因此，其内部配置会比较复杂。具体参考demo项目代码。</p>
+  </blockquote>
+</blockquote>
+
+<h2 id="simplespringproject-数据操作实现介绍"><a id="DataOp">SimpleSpringProject 数据操作实现介绍</a></h2>
+
+<p>整个项目代码都非常简单，不需要过多的去说明。在这里，对于初学者，需要介绍下，数据库相关的访问代码实现逻辑。</p>
+
+<blockquote>
+  <blockquote>
+    <p>首先，定义一个接口，该接口里面会声明一些需要在	<code class="highlighter-rouge">sql</code>中去实现的方法名，如下所示：</p>
+  </blockquote>
+</blockquote>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cm">/**
+ * @author: tao.ke Date: 14-5-26 Time: 上午11:28
+ * @version: \$Id$
+ */</span>
+<span class="kd">public</span> <span class="kd">interface</span> <span class="nc">VersionDao</span> <span class="o">{</span>
+
+    <span class="cm">/**
+     * 根据id 查询对应的version信息
+     * 
+     * @param id
+     * @return
+     */</span>
+    <span class="n">Version</span> <span class="nf">queryVersionById</span><span class="o">(</span><span class="nd">@Param</span><span class="o">(</span><span class="s">"id"</span><span class="o">)</span> <span class="kt">int</span> <span class="n">id</span><span class="o">);</span>
+
+    <span class="cm">/**
+     * 查询所有的版本信息
+     * 
+     * @return
+     */</span>
+    <span class="n">List</span><span class="o">&lt;</span><span class="n">Version</span><span class="o">&gt;</span> <span class="nf">queryAllVersions</span><span class="o">();</span>
+
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>当<code class="highlighter-rouge">dao</code>模块则存在了需要实现的接口，则接下来可以在<code class="highlighter-rouge">config</code>模块中去实现它，具体实现，如下所示：</p>
+  </blockquote>
+</blockquote>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?xml version="1.0" encoding="UTF-8" ?&gt;</span>
+<span class="cp">&lt;!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd"&gt;</span>
+<span class="nt">&lt;mapper</span> <span class="na">namespace=</span><span class="s">"io.github.ketao1989.dao.VersionDao"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;resultMap</span> <span class="na">id=</span><span class="s">"VersionMap"</span> <span class="na">type=</span><span class="s">"io.github.ketao1989.model.Version"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;id</span> <span class="na">column=</span><span class="s">"id"</span> <span class="na">property=</span><span class="s">"id"</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;result</span> <span class="na">column=</span><span class="s">"id"</span> <span class="na">property=</span><span class="s">"id"</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;result</span> <span class="na">column=</span><span class="s">"version_num"</span> <span class="na">property=</span><span class="s">"versionNum"</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;result</span> <span class="na">column=</span><span class="s">"description"</span> <span class="na">property=</span><span class="s">"description"</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;result</span> <span class="na">column=</span><span class="s">"update_time"</span> <span class="na">property=</span><span class="s">"updateTime"</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;/resultMap&gt;</span>
+
+    <span class="nt">&lt;sql</span> <span class="na">id=</span><span class="s">"versionColumn"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;trim</span> <span class="na">suffix=</span><span class="s">""</span> <span class="na">suffixOverrides=</span><span class="s">","</span><span class="nt">&gt;</span>
+            <span class="nt">&lt;if</span> <span class="na">test=</span><span class="s">"versionNum != null"</span><span class="nt">&gt;</span>version_num,<span class="nt">&lt;/if&gt;</span>
+            <span class="nt">&lt;if</span> <span class="na">test=</span><span class="s">"description != null"</span><span class="nt">&gt;</span>description,<span class="nt">&lt;/if&gt;</span>
+            <span class="nt">&lt;if</span> <span class="na">test=</span><span class="s">"updateTime != null"</span><span class="nt">&gt;</span>update_time<span class="nt">&lt;/if&gt;</span>
+        <span class="nt">&lt;/trim&gt;</span>
+    <span class="nt">&lt;/sql&gt;</span>
+    <span class="nt">&lt;sql</span> <span class="na">id=</span><span class="s">"versionValue"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;trim</span> <span class="na">suffix=</span><span class="s">""</span> <span class="na">suffixOverrides=</span><span class="s">","</span><span class="nt">&gt;</span>
+            <span class="nt">&lt;if</span> <span class="na">test=</span><span class="s">"versionNum != null"</span><span class="nt">&gt;</span>#{versionNum},<span class="nt">&lt;/if&gt;</span>
+            <span class="nt">&lt;if</span> <span class="na">test=</span><span class="s">"description != null"</span><span class="nt">&gt;</span>#{description},<span class="nt">&lt;/if&gt;</span>
+            <span class="nt">&lt;if</span> <span class="na">test=</span><span class="s">"updateTime != null"</span><span class="nt">&gt;</span>#{updateTime}<span class="nt">&lt;/if&gt;</span>
+        <span class="nt">&lt;/trim&gt;</span>
+    <span class="nt">&lt;/sql&gt;</span>
+
+    <span class="c">&lt;!-- 根据id查询Version记录 --&gt;</span>
+    <span class="nt">&lt;select</span> <span class="na">id=</span><span class="s">"queryVersionById"</span> <span class="na">parameterType=</span><span class="s">"map"</span> <span class="na">resultMap=</span><span class="s">"VersionMap"</span><span class="nt">&gt;</span>
+          select id,version_num,description,update_time
+          from version
+          where id = #{id}
+    <span class="nt">&lt;/select&gt;</span>
+
+    <span class="c">&lt;!-- 查询所有Version记录 --&gt;</span>
+    <span class="nt">&lt;select</span> <span class="na">id=</span><span class="s">"queryAllVersions"</span>  <span class="na">resultMap=</span><span class="s">"VersionMap"</span><span class="nt">&gt;</span>
+          select id,version_num,description,update_time
+          from version
+    <span class="nt">&lt;/select&gt;</span>
+<span class="nt">&lt;/mapper&gt;</span>
+
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Note：这样在<code class="highlighter-rouge">service</code>模块调用 <code class="highlighter-rouge">dao</code>模块的接口，就可以操作数据库了。当然，你在<code class="highlighter-rouge">applicationContext.xml</code>中需要配置下面一段代码：</p>
+  </blockquote>
+</blockquote>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">&lt;!-- 创建SqlSessionFactory --&gt;</span>
+    <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">"sqlSessionFactory"</span> <span class="na">name=</span><span class="s">"sqlSessionFactory"</span>
+          <span class="na">class=</span><span class="s">"org.mybatis.spring.SqlSessionFactoryBean"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">"dataSource"</span> <span class="na">ref=</span><span class="s">"dataSource"</span> <span class="nt">/&gt;</span>
+        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">"configLocation"</span> <span class="na">value=</span><span class="s">"classpath:mybatis-config.xml"</span> <span class="nt">/&gt;</span>
+    <span class="nt">&lt;/bean&gt;</span>
+
+    <span class="nt">&lt;bean</span> <span class="na">class=</span><span class="s">"org.mybatis.spring.mapper.MapperScannerConfigurer"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">"basePackage"</span> <span class="na">value=</span><span class="s">"io.github.ketao1989.dao"</span> <span class="nt">/&gt;</span>
+        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">"sqlSessionFactoryBeanName"</span> <span class="na">value=</span><span class="s">"sqlSessionFactory"</span> <span class="nt">/&gt;</span>
+    <span class="nt">&lt;/bean&gt;</span>
+
+</code></pre></div></div>
+
+<h2 id="小结"><a id="Finally">小结</a></h2>
+
+<p>本文只是简单介绍了下<code class="highlighter-rouge">Spring MVC</code>项目的一些实现注意点，具体的代码实现，请参考本github上的<a href="https://github.com/ketao1989/simpleSpringProject">SimpleSpringProject</a> 。在demo代码的实现里面，如果你是一个初学者，你会发现更多需要注意的地方。如果你对于本项目的各个地方都能理解，并且可以仿照新建一个项目，那么你对于<code class="highlighter-rouge">Spring MVC</code>就已经入门了，可以深入框架源码来进一步学习了。</p>
+
+<p>当然，作为一个提供初学者使用的<code class="highlighter-rouge">Spring MVC</code> web工程项目，该demo只是供学习使用而已。你也可以继续在该demo上扩展，增加更多地类，更多地业务和功能，从而完成一个商业大项目。</p>
+
+                </div>
+                <div class="read-all">
+                    <a  href="/2014/05/26/Spring-MVC-Project-Introduction/"><i class="fa fa-newspaper-o"></i>Read All</a>
+                </div>
+                <hr>
+              </li>
+            
+              <li>
+                <h2>
+                  <a class="post-link" href="/2014/05/24/Java-Fork-Join-Task-Framework-API-Introduce/">Java Fork&Join框架使用和实现分析</a>
+                </h2>
+                <div class="label">
+                    <div class="label-card">
+                        <i class="fa fa-calendar"></i>2014-05-24
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+
+                    <div class="label-card">
+                    
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Java" title="Category: Java" rel="category">Java</a>&nbsp;
+    
+        <a href="/category/#Thread" title="Category: Thread" rel="category">Thread</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+                    </div>
+
+                    <div class="label-card">
+                    
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+                    </div>
+                </div>
+                <div class="excerpt">
+                    <h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p>在并发编程网上,关于ForkJoin框架介绍得很好，推荐去看: <a href="http://ifeve.com/fork-join-1/">Fork/Join框架</a> 本篇博文只是对一些地方进行补充说明(为了文章连续性，会借鉴一些介绍文字).</p>
+
+<p>在上一篇博文: <a href="http://ketao1989.github.io/posts/Java-MultiThread-ThreadPool-Introduce.html">Java 多线程线程池介绍</a> 中最后说明了，对于一个任务可以切割成多个小任务分别执行，然后把各个小任务的结果，组合成最终的结论。熟悉<code class="highlighter-rouge">MapReduce</code>的同学，肯定对此再熟悉不过了。</p>
+
+<p>首先贴出一个很简单的代码demo，这段代码是对上篇博文中代码，用<code class="highlighter-rouge">ForkJoin</code> API方式来实现（实际上，这并不是一个好的介绍<code class="highlighter-rouge">ForkJoin</code>功能的例子，但是我们先用它来入门了）</p>
+
+<blockquote>
+  <blockquote>
+    <p><code class="highlighter-rouge">ForkJoin</code>任务，继承自<code class="highlighter-rouge">RecursiveAction</code>，因为我们不需要任务返回什么计算结果：</p>
+  </blockquote>
+</blockquote>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="kn">package</span> <span class="n">io</span><span class="o">.</span><span class="na">github</span><span class="o">.</span><span class="na">ketao1989</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">java.util.List</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.util.concurrent.RecursiveAction</span><span class="o">;</span>
+
+<span class="cm">/**
+ * 很简单的一个操作，就是把字符串加一个后缀，然后放进队列里
+ * 
+ * @author: ketao Date: 14-5-24 Time: 下午10:16
+ * @version: \$Id$
+ */</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">ListTask</span> <span class="kd">extends</span> <span class="n">RecursiveAction</span> <span class="o">{</span>
+
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">THRESHOLD</span> <span class="o">=</span> <span class="mi">1</span><span class="o">;</span>
+
+    <span class="kd">private</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">processStr</span><span class="o">;</span>
+    <span class="kd">private</span> <span class="kt">int</span> <span class="n">start</span><span class="o">;</span>
+    <span class="kd">private</span> <span class="kt">int</span> <span class="n">end</span><span class="o">;</span>
+
+    <span class="kd">public</span> <span class="nf">ListTask</span><span class="o">(</span><span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">processStr</span><span class="o">,</span> <span class="kt">int</span> <span class="n">start</span><span class="o">,</span> <span class="kt">int</span> <span class="n">end</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">processStr</span> <span class="o">=</span> <span class="n">processStr</span><span class="o">;</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">start</span> <span class="o">=</span> <span class="n">start</span><span class="o">;</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">end</span> <span class="o">=</span> <span class="n">end</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">protected</span> <span class="kt">void</span> <span class="nf">compute</span><span class="o">()</span> <span class="o">{</span>
+        <span class="kt">boolean</span> <span class="n">isProcess</span> <span class="o">=</span> <span class="o">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="o">)</span> <span class="o">==</span> <span class="n">THRESHOLD</span><span class="o">;</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">isProcess</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">Thread</span><span class="o">.</span><span class="na">currentThread</span><span class="o">().</span><span class="na">getName</span><span class="o">());</span>
+            <span class="n">String</span> <span class="n">newStr</span> <span class="o">=</span> <span class="n">processStr</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">start</span><span class="o">)</span> <span class="o">+</span> <span class="s">"-test"</span><span class="o">;</span>
+            <span class="n">processStr</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">start</span><span class="o">,</span> <span class="n">newStr</span><span class="o">);</span>
+
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">Thread</span><span class="o">.</span><span class="na">currentThread</span><span class="o">().</span><span class="na">getName</span><span class="o">()+</span><span class="s">"----"</span><span class="o">);</span>
+            <span class="kt">int</span> <span class="n">partPos</span> <span class="o">=</span> <span class="o">(</span><span class="n">start</span> <span class="o">+</span> <span class="n">end</span><span class="o">)</span> <span class="o">/</span> <span class="mi">2</span><span class="o">;</span>
+            <span class="n">ListTask</span> <span class="n">taskl</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ListTask</span><span class="o">(</span><span class="n">processStr</span><span class="o">,</span> <span class="n">start</span><span class="o">,</span> <span class="n">partPos</span><span class="o">);</span>
+            <span class="n">ListTask</span> <span class="n">taskr</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ListTask</span><span class="o">(</span><span class="n">processStr</span><span class="o">,</span> <span class="n">partPos</span><span class="o">,</span> <span class="n">end</span><span class="o">);</span>
+            <span class="n">invokeAll</span><span class="o">(</span><span class="n">taskl</span><span class="o">,</span> <span class="n">taskr</span><span class="o">);</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+
+<span class="o">}</span>
+</code></pre></div></div>
+
+<!-- more -->
+
+<blockquote>
+  <blockquote>
+    <p><code class="highlighter-rouge">ForkJoin</code>的DEMO主函数，最后如果任务正常结束，则打印<code class="highlighter-rouge">任务顺利完成</code>信息：</p>
+  </blockquote>
+</blockquote>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="kn">package</span> <span class="n">io</span><span class="o">.</span><span class="na">github</span><span class="o">.</span><span class="na">ketao1989</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">java.util.List</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.util.concurrent.ForkJoinPool</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">com.alibaba.fastjson.JSON</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">com.google.common.collect.Lists</span><span class="o">;</span>
+
+<span class="cm">/**
+ * @author: ketao Date: 14-5-24 Time: 下午10:12
+ * @version: \$Id: ForkJoinTest.java 6 2014-05-24 14:13:48Z ketao1989 $
+ */</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">ForkJoinTest</span> <span class="o">{</span>
+
+    <span class="kd">private</span> <span class="kd">final</span> <span class="kd">static</span> <span class="n">ForkJoinPool</span> <span class="n">pool</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ForkJoinPool</span><span class="o">();</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">list</span> <span class="o">=</span> <span class="n">Lists</span><span class="o">.</span><span class="na">newArrayList</span><span class="o">(</span><span class="s">"thread-11"</span><span class="o">,</span> <span class="s">"thread-21"</span><span class="o">,</span> <span class="s">"thread-31"</span><span class="o">,</span> <span class="s">"thread-41"</span><span class="o">,</span> <span class="s">"thread-51"</span><span class="o">,</span>
+                <span class="s">"thread-61"</span><span class="o">,</span> <span class="s">"thread-71"</span><span class="o">,</span> <span class="s">"thread-81"</span><span class="o">);</span>
+        <span class="n">ListTask</span> <span class="n">listTask</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ListTask</span><span class="o">(</span><span class="n">list</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="n">list</span><span class="o">.</span><span class="na">size</span><span class="o">());</span>
+        <span class="n">pool</span><span class="o">.</span><span class="na">invoke</span><span class="o">(</span><span class="n">listTask</span><span class="o">);</span>
+        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">JSON</span><span class="o">.</span><span class="na">toJSONString</span><span class="o">(</span><span class="n">list</span><span class="o">));</span>
+        <span class="n">pool</span><span class="o">.</span><span class="na">shutdown</span><span class="o">();</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">listTask</span><span class="o">.</span><span class="na">isCompletedNormally</span><span class="o">())</span> <span class="o">{</span>
+            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Task 任务顺利完成！"</span><span class="o">);</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>执行结果如下，如我们所期望的那样：</p>
+  </blockquote>
+</blockquote>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ForkJoinPool-1-worker-1----
+ForkJoinPool-1-worker-1----
+ForkJoinPool-1-worker-1----
+ForkJoinPool-1-worker-1
+ForkJoinPool-1-worker-3----
+ForkJoinPool-1-worker-3
+ForkJoinPool-1-worker-3
+ForkJoinPool-1-worker-2----
+ForkJoinPool-1-worker-1
+ForkJoinPool-1-worker-4----
+ForkJoinPool-1-worker-4
+ForkJoinPool-1-worker-4
+ForkJoinPool-1-worker-2----
+ForkJoinPool-1-worker-2
+ForkJoinPool-1-worker-2
+["thread-11-test","thread-21-test","thread-31-test","thread-41-test","thread-51-test","thread-61-test","thread-71-test","thread-81-test"]
+Task 任务顺利完成！
+</code></pre></div></div>
+
+<p>上面的代码，其是同步执行任务，也就是说当任务开始执行时，主线程会阻塞执行任务，直到任务执行完成。和线程池一样，你也可以使用Future来完成异步执行任务。此外，对于需要返回结果的<code class="highlighter-rouge">ForkJoin</code>，Task类可以继承<code class="highlighter-rouge">RecursiveTask&lt;T&gt;</code>类。</p>
+
+<h2 id="forkjoin框架介绍"><a id="ForkJoin">ForkJoin框架介绍</a></h2>
+
+<p><code class="highlighter-rouge">ForkJoin</code>框架其本质就是将一个大任务分割成多个小任务来执行，然后将每个小任务执行的结果合并为我们需要的返回值。因此，和当前云计算框架<code class="highlighter-rouge">MapReduce</code>一样，其计算主要分两步：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>1. Fork操作：就是把一个大的任务分割成多个更小的子任务，然后执行这些小的子任务；
+
+2. Join操作：顾名思义就是等待所有任务完成后返回。
+</code></pre></div></div>
+
+<p>因此可以看出，命名意义和<code class="highlighter-rouge">Linux C</code>的<code class="highlighter-rouge">Thread</code>的API定义保持一致。借鉴网络上得一张图来形象描述下：</p>
+
+<p><img src="/images/2014/05/forkjoin-work.jpg" /></p>
+
+<p>这个框架被设计用来解决可以使用分而治之技术将任务分解成更小的问题。在一个任务中，检查你想要解决问题的大小，如果它大于一个既定的大小，把它分解成更小的任务，然后用这个框架来执行。如果问题的大小是小于既定的大小，你直接在任务中解决这问题。它返回一个可选地结果。</p>
+
+<p>Fork/Join 和Executor框架主要的区别是<code class="highlighter-rouge">work-stealing</code>算法，可以参考上一篇博文：<a href="http://ketao1989.github.io/posts/Java-MultiThread-ThreadPool-Introduce.html">Java 多线程线程池介绍</a>。不像Executor框架，当一个任务正在等待它使用join操作创建的子任务的结 束时，执行这个任务的线程（工作线程）查找其他未被执行的任务并开始它的执行。通过这种方式，线程充分利用它们的运行时间，从而提高了应用程序的性能。</p>
+
+<p>工作窃取算法，<code class="highlighter-rouge">work-stealing</code>算法存在可以帮助我们充分利用线程资源来减少执行时间。</p>
+
+<blockquote>
+  <blockquote>
+    <p>Tips: 我们把一个大的任务分割成多个不相互依赖的小的子任务，并且把这些子任务分别放在不同的执行队列中，每个执行队列分别创建一个单独的线程来执行任务。默认线程数（队列数）为执行机器的CPU核数+1，具体可以看看上面DEMO执行的线程编号。每个队列分别有一个线程单独去执行，是为了避免或减少线程间的竞争。当某线程执行完队列中得所有任务时，而有其他线程没有完成对应队列中的任务时，线程会协助其他线程完成其对应队列中剩余的任务。为了避免线程间获取队列任务时产生竞争，显然会采取双端队列从而线程可以从队列尾部拿到还未被执行的任务，而真正执行队列任务的线程，则依然从队列头部获取任务。当然，该算法遇到队列只有一个任务时，也会产生竞争，并且多个队列和多个线程，也会消耗更多的系统资源。</p>
+  </blockquote>
+</blockquote>
+
+<p>为实现这个目标，Fork/Join框架执行的任务有以下局限性：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>1. 任务只能使用`fork()`和`join()`操作，作为同步机制。如果使用其他同步机制，工作线程不能执行其他任务，当它们在同步操作时。比如，在Fork/Join框架中，你使任务进入睡眠，正在执行这个任务的工作线程将不会执行其他任务，在这睡眠期间内。
+
+2. 任务不应该执行I/O操作，如读或写数据文件。
+
+3. 任务不能抛出检查异常，它必须包括必要的代码来处理它们。
+</code></pre></div></div>
+
+<p>Fork/Join框架的核心是由以下两个类：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>1. ForkJoinPool：它实现ExecutorService接口和work-stealing算法。它管理工作线程和提供关于任务的状态和它们执行的信息。
+
+2. ForkJoinTask： 它是将在ForkJoinPool中执行的任务的基类。它提供在任务中执行fork()和join()操作的机制，并且这两个方法控制任务的状态。通常， 为了实现你的Fork/Join任务，你将实现两个子类的子类的类：RecursiveAction对于没有返回结果的任务和RecursiveTask 对于返回结果的任务。
+</code></pre></div></div>
+
+<h2 id="forkjoin-api介绍"><a id="API">ForkJoin API介绍</a></h2>
+
+<p>一般地，你需要按照下面两种情况下使用<code class="highlighter-rouge">ForkJoin</code>框架的API：</p>
+
+<blockquote>
+  <blockquote>
+    <p><code class="highlighter-rouge">RecursiveAction</code>任务对应的API使用模型：</p>
+  </blockquote>
+</blockquote>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+		<span class="n">If</span> <span class="o">(</span><span class="n">problem</span> <span class="n">size</span> <span class="o">&lt;</span> <span class="k">default</span> <span class="n">size</span><span class="o">){</span>
+            <span class="n">tasks</span><span class="o">=</span><span class="n">divide</span><span class="o">(</span><span class="n">task</span><span class="o">);</span>
+            <span class="n">execute</span><span class="o">(</span><span class="n">tasks</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+            <span class="n">resolve</span> <span class="n">problem</span> <span class="n">using</span> <span class="n">another</span> <span class="n">algorithm</span><span class="o">;</span>
+        <span class="o">}</span>
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p><code class="highlighter-rouge">RecursiveTask&lt;V&gt;</code>类任务对应的API使用模型：</p>
+  </blockquote>
+</blockquote>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+        <span class="n">If</span> <span class="o">(</span><span class="n">problem</span> <span class="n">size</span> <span class="o">&lt;</span> <span class="n">size</span><span class="o">){</span>
+            <span class="n">tasks</span><span class="o">=</span><span class="n">Divide</span><span class="o">(</span><span class="n">task</span><span class="o">);</span>
+            <span class="n">execute</span><span class="o">(</span><span class="n">tasks</span><span class="o">);</span>
+            <span class="n">groupResults</span><span class="o">()</span>
+            <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+            <span class="n">resolve</span> <span class="n">problem</span><span class="o">;</span>
+            <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
+        <span class="o">}</span>
+</code></pre></div></div>
+
+<p>首先，看看<code class="highlighter-rouge">ForkJoinPool</code>类的构造函数，和一些重要的对外提供的方法：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+	<span class="cm">/**
+	 * 创建线程数为当前系统CPU核数+1的{@code ForkJoinPool}对象，该对象使用{@linkplain
+     * #defaultForkJoinWorkerThreadFactory default thread factory}，没有异常处理器和非异步的LIFO处理模式
+     *
+     * @throws SecurityException if a security manager exists and
+     *         the caller is not permitted to modify threads
+     *         because it does not hold {@link
+     *         java.lang.RuntimePermission}{@code ("modifyThread")}
+     */</span>
+    <span class="kd">public</span> <span class="nf">ForkJoinPool</span><span class="o">()</span> <span class="o">{</span>
+        <span class="k">this</span><span class="o">(</span><span class="n">Runtime</span><span class="o">.</span><span class="na">getRuntime</span><span class="o">().</span><span class="na">availableProcessors</span><span class="o">(),</span>
+             <span class="n">defaultForkJoinWorkerThreadFactory</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span> <span class="kc">false</span><span class="o">);</span>
+    <span class="o">}</span>
+    
+    <span class="c1">// 指定线程数</span>
+    <span class="kd">public</span> <span class="nf">ForkJoinPool</span><span class="o">(</span><span class="kt">int</span> <span class="n">parallelism</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">this</span><span class="o">(</span><span class="n">parallelism</span><span class="o">,</span> <span class="n">defaultForkJoinWorkerThreadFactory</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span> <span class="kc">false</span><span class="o">);</span>
+    <span class="o">}</span>
+    
+    <span class="c1">// 原生的构造函数</span>
+    <span class="kd">public</span> <span class="nf">ForkJoinPool</span><span class="o">(</span><span class="kt">int</span> <span class="n">parallelism</span><span class="o">,</span>
+                        <span class="n">ForkJoinWorkerThreadFactory</span> <span class="n">factory</span><span class="o">,</span>
+                        <span class="n">Thread</span><span class="o">.</span><span class="na">UncaughtExceptionHandler</span> <span class="n">handler</span><span class="o">,</span>
+                        <span class="kt">boolean</span> <span class="n">asyncMode</span><span class="o">)</span>
+    
+    <span class="c1">// 执行给定的task任务，直到执行完成之后返回它的结果</span>
+    <span class="kd">public</span> <span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">T</span> <span class="nf">invoke</span><span class="o">(</span><span class="n">ForkJoinTask</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">task</span><span class="o">)</span>
+    
+	<span class="c1">// 异步执行给定的task任务</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">execute</span><span class="o">(</span><span class="n">ForkJoinTask</span><span class="o">&lt;?&gt;</span> <span class="n">task</span><span class="o">)</span>
+    
+    <span class="c1">// 提交一个 ForkJoinTask 任务去执行</span>
+    <span class="kd">public</span> <span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">ForkJoinTask</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="nf">submit</span><span class="o">(</span><span class="n">ForkJoinTask</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">task</span><span class="o">)</span>
+    
+    <span class="c1">// 按照先前提交任务的顺序关闭，但是不在接收新的任务。对于已经关闭的pool，不会有副作用。</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">shutdown</span><span class="o">()</span>
+</code></pre></div></div>
+
+<p>接下来，看看<code class="highlighter-rouge">RecursiveAction</code>类的构造函数，以及相应地方法：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+	<span class="c1">// 抽象类，</span>
+	<span class="kd">public</span> <span class="kd">abstract</span> <span class="kd">class</span> <span class="nc">RecursiveAction</span> <span class="kd">extends</span> <span class="n">ForkJoinTask</span><span class="o">&lt;</span><span class="n">Void</span><span class="o">&gt;{</span>
+
+    <span class="cm">/**
+     * 任务需要执行的代码. 继承该类的子类，需要重写该方法
+     */</span>
+    <span class="kd">protected</span> <span class="kd">abstract</span> <span class="kt">void</span> <span class="nf">compute</span><span class="o">();</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>最后，看看<code class="highlighter-rouge">RecursiveTask</code>类的构造函数，以及相应地方法：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="c1">// 抽象类，</span>
+	<span class="kd">public</span> <span class="kd">abstract</span> <span class="kd">class</span> <span class="nc">RecursiveTask</span><span class="o">&lt;</span><span class="n">V</span><span class="o">&gt;</span> <span class="kd">extends</span> <span class="n">ForkJoinTask</span><span class="o">&lt;</span><span class="n">V</span><span class="o">&gt;{</span>
+    <span class="cm">/**
+     * 任务需要执行的代码. 继承该类的子类，需要重写该方法
+     */</span>
+    <span class="kd">protected</span> <span class="kd">abstract</span> <span class="n">V</span> <span class="nf">compute</span><span class="o">();</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="forkjoin-使用示例"><a id="Example">ForkJoin 使用示例</a></h2>
+
+<p>在前言中已经给出了关于<code class="highlighter-rouge">RecursiveAction</code>的demo，下面来看看使用<code class="highlighter-rouge">RecursiveTask</code>来实现该问题的代码，一并说明异步返回：</p>
+
+<p>``` java</p>
+
+<p>package io.github.ketao1989;</p>
+
+<p>import java.util.List;
+import java.util.concurrent.RecursiveTask;</p>
+
+<p>import com.google.common.collect.Lists;</p>
+
+<p>/**</p>
+<ul>
+  <li>很简单的一个操作，就是把字符串加一个后缀，然后放进队列里</li>
+  <li></li>
+  <li>@author: ketao Date: 14-5-24 Time: 下午10:16</li>
+  <li>
+    <p>@version: $Id$
+ */
+public class ListTask extends RecursiveTask&lt;List<String>&gt; {</String></p>
+
+    <p>private static final int THRESHOLD = 1;</p>
+
+    <p>private List<String> processStr;</String></p>
+
+    <p>private int start;
+ private int end;</p>
+
+    <p>public ListTask(List<String> processStr, int start, int end) {
+     this.processStr = processStr;
+     this.start = start;
+     this.end = end;
+ }</String></p>
+
+    <p>@Override
+ protected List<String> compute() {
+     List<String> result = Lists.newArrayListWithCapacity(processStr.size());
+     boolean isProcess = (end - start) == THRESHOLD;
+     if (isProcess) {
+         System.out.println(Thread.currentThread().getName());
+         String newStr = processStr.get(start) + "-test";
+         result.add(newStr);</String></String></p>
+
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code> } else {
+     System.out.println(Thread.currentThread().getName()+"---");
+     int partPos = (start + end) / 2;
+     ListTask taskl = new ListTask(processStr, start, partPos);
+     ListTask taskr = new ListTask(processStr, partPos, end);
+
+     taskl.fork(); //按序异步执行这个任务，会放到一个队列里
+     taskr.fork();
+
+     List&lt;String&gt; resultl = taskl.join(); //等待执行完成后返回，调用isDone 会返回true
+     List&lt;String&gt; resultr = taskr.join();
+        
+     result.addAll(resultl);
+     result.addAll(resultr);
+ }
+</code></pre></div>    </div>
+  </li>
+</ul>
+
+
+                </div>
+                <div class="read-all">
+                    <a  href="/2014/05/24/Java-Fork-Join-Task-Framework-API-Introduce/"><i class="fa fa-newspaper-o"></i>Read All</a>
+                </div>
+                <hr>
+              </li>
+            
+              <li>
+                <h2>
+                  <a class="post-link" href="/2014/05/03/Java-MultiThread-ThreadPool-Introduce/">Java 多线程线程池分析</a>
+                </h2>
+                <div class="label">
+                    <div class="label-card">
+                        <i class="fa fa-calendar"></i>2014-05-03
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+
+                    <div class="label-card">
+                    
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Java" title="Category: Java" rel="category">Java</a>&nbsp;
+    
+        <a href="/category/#Thread" title="Category: Thread" rel="category">Thread</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+                    </div>
+
+                    <div class="label-card">
+                    
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+                    </div>
+                </div>
+                <div class="excerpt">
+                    <h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p>关于Java多线程的知识，看了很多博客书籍，对理论还是比较了解的。但是，最近写一个很简单的使用线程池对列表中任务进行处理，然后返回结果列表的功能，发现理论和实际操作还是有相当大的差距。</p>
+
+<p>首先贴出一个很简单的代码demo：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cm">/**
+ * @author: ketao Date: 14-5-3 Time: 下午4:51
+ * @version: \$Id$
+ */</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">ThreadTest</span> <span class="o">{</span>
+
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">ExecutorService</span> <span class="n">executors</span> <span class="o">=</span> <span class="n">Executors</span><span class="o">.</span><span class="na">newFixedThreadPool</span><span class="o">(</span><span class="mi">2</span><span class="o">);</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+
+        <span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">list</span> <span class="o">=</span> <span class="n">Lists</span><span class="o">.</span><span class="na">newArrayList</span><span class="o">(</span><span class="s">"thread-1"</span><span class="o">,</span> <span class="s">"thread-2"</span><span class="o">,</span> <span class="s">"thread-3"</span><span class="o">,</span> <span class="s">"thread-4"</span><span class="o">);</span>
+        <span class="kd">final</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">results</span> <span class="o">=</span> <span class="n">Collections</span><span class="o">.</span><span class="na">synchronizedList</span><span class="o">(</span><span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;());</span>
+        <span class="k">for</span> <span class="o">(</span><span class="kd">final</span> <span class="n">String</span> <span class="n">str</span> <span class="o">:</span> <span class="n">list</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">executors</span><span class="o">.</span><span class="na">execute</span><span class="o">(</span><span class="k">new</span> <span class="n">Runnable</span><span class="o">()</span> <span class="o">{</span>
+                <span class="nd">@Override</span>
+                <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+                    <span class="k">try</span> <span class="o">{</span>
+                        <span class="n">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">1000</span><span class="o">);</span>
+                    <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">InterruptedException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+                        <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+                    <span class="o">}</span>
+                    <span class="n">results</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">str</span><span class="o">+</span><span class="s">"test"</span><span class="o">);</span>
+                    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">Thread</span><span class="o">.</span><span class="na">currentThread</span><span class="o">().</span><span class="na">getName</span><span class="o">());</span>
+
+                <span class="o">}</span>
+            <span class="o">});</span>
+        <span class="o">}</span>
+
+        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">JSON</span><span class="o">.</span><span class="na">toJSONString</span><span class="o">(</span><span class="n">results</span><span class="o">));</span>
+        <span class="n">executors</span><span class="o">.</span><span class="na">shutdown</span><span class="o">();</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>执行结果如下，显然<code class="highlighter-rouge">results</code>的值并<strong>不是我们想要的结果</strong> ：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[]
+pool-1-thread-1
+pool-1-thread-2
+pool-1-thread-2
+pool-1-thread-1
+</code></pre></div></div>
+
+<h3 id="11-线程定义">1.1 线程定义</h3>
+
+<p>来自Java 并发大家 Doug Lea 关于线程的描述（<a href="http://ifeve.com/java-concurrency-constructs/">中文版</a>）：</p>
+
+<blockquote>
+  <blockquote>
+    <p>线程：其是一个独立执行的调用序列，同一个进程的线程在同一时刻共享一些系统资源（比如文件句柄等）也能访问同一个进程所创建的对象资源（内存资源）。</p>
+  </blockquote>
+</blockquote>
+
+<p>由于一般的系统，最小的基本调度单位是线程，因此如果一个程序中只有一个线程的话，当该线程因为远程调用或者数据库访问，或者其他大量数学计算导致IO/CPU阻塞时，就会导致整个处理性能大幅度的降低。即使没有这些阻塞，对于当前多核处理系统来讲，单线程也会导致资源的浪费。因此，多线程可以帮助我们很好地提高系统的处理能力和吞吐能力。</p>
+
+<h2 id="java线程api"><a id="Thread">Java线程API</a></h2>
+
+<p>在Java中可以通过<code class="highlighter-rouge">java.lang.Thread</code>创建线程。一般，应用中包括两种类型的线程：用户线程和守护线程。当应用启动时，会创建main线程，然后main线程可以创建多个用户线程和守护线程。当所有的用户线程都终止的时候，则JVM会终止程序。
+<strong>相对于用户线程而言，守护线程是为用户线程服务的，当所有的用户线程都退出的时候，守护线程就会全部退出，而不管守护线程当前的执行任务是否完成。</strong></p>
+
+<h3 id="21-创建thread">2.1 创建Thread</h3>
+
+<p>在java中，创建一个线程类对象很简单，有两种方式：其一，只需要继承<code class="highlighter-rouge">Thread</code>类，并且在子类中实现<code class="highlighter-rouge">run()</code>方法;其二，实现一个<code class="highlighter-rouge">Runnable</code>接口来创建线程。简单地demo如下：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cm">/**
+ * @author: ketao Date: 14-5-3 Time: 下午4:51
+ * @version: \$Id$
+ */</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">ThreadTest</span> <span class="o">{</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+
+        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">Thread</span><span class="o">.</span><span class="na">currentThread</span><span class="o">().</span><span class="na">getName</span><span class="o">());</span> <span class="c1">// main</span>
+
+        <span class="n">Thread</span> <span class="n">thread</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Thread</span><span class="o">(){</span>
+            <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">(){</span>
+                <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"创建一个java线程"</span><span class="o">);</span>
+                <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">Thread</span><span class="o">.</span><span class="na">currentThread</span><span class="o">().</span><span class="na">getName</span><span class="o">());</span> <span class="c1">// Thread-0</span>
+            <span class="o">}</span>
+        <span class="o">};</span>
+
+        <span class="n">thread</span><span class="o">.</span><span class="na">start</span><span class="o">();</span>
+
+        <span class="n">Thread</span> <span class="n">thread1</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Thread</span><span class="o">(</span><span class="k">new</span> <span class="n">Runnable</span><span class="o">()</span> <span class="o">{</span>
+            <span class="nd">@Override</span>
+            <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+                <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"创建一个java线程"</span><span class="o">);</span>
+                <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">Thread</span><span class="o">.</span><span class="na">currentThread</span><span class="o">().</span><span class="na">getName</span><span class="o">());</span> <span class="c1">// Thread==Runable=2</span>
+            <span class="o">}</span>
+        <span class="o">},</span><span class="s">"Thread==Runable=2"</span><span class="o">);</span>
+        <span class="n">thread1</span><span class="o">.</span><span class="na">start</span><span class="o">();</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<!-- more -->
+
+<p>对于上面的两种创建线程的方法，推荐使用<code class="highlighter-rouge">Runnable</code>来实现，因为我们知道在java 线程池<code class="highlighter-rouge">ExecutorService</code>可以管理和使用<code class="highlighter-rouge">Runnable</code>接口的线程。
+当请求超过线程池设置的大小后，新的请求会排队等待执行，直到所有的线程池空闲为止，如果通过<code class="highlighter-rouge">Thread 子类</code>来实现线程池，则会比较复杂。</p>
+
+<blockquote>
+  <blockquote>
+    <p>Tip: 在demo中使用<code class="highlighter-rouge">thread.run()</code>也可以得到相同的输出结果，但是，<strong>run() 的输出是由当前线程执行的，而不是新创建的线程</strong>。</p>
+  </blockquote>
+</blockquote>
+
+<h3 id="22-创建守护线程">2.2 创建守护线程</h3>
+
+<p>守护线程，你可能没有注意过，但是在运行java服务的时候必然会遇到，因为一个典型的守护线程就是java垃圾回收线程。因此，当我们的java应用的所有用户线程都完成退出后，就不会再由内存垃圾产生，进而垃圾回收线程就不需要GC操作，对于只剩下守护线程时，JVM的操作就是退出，结束整个java应用环境。</p>
+
+<p>参考网络上得一篇博文<a href="#http://blog.csdn.net/lcore/article/details/12280027">Java中的Daemon线程–守护线程</a>，给出一个deamon示例：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cm">/**
+ * @author: ketao Date: 14-5-3 Time: 下午4:51
+ * @version: \$Id$
+ */</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">ThreadTest</span> <span class="o">{</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+
+        <span class="n">Thread</span> <span class="n">thread</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Thread</span><span class="o">(</span><span class="k">new</span> <span class="n">Runnable</span><span class="o">()</span> <span class="o">{</span>
+            <span class="nd">@Override</span>
+            <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+                <span class="k">while</span> <span class="o">(</span><span class="kc">true</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="k">try</span> <span class="o">{</span>
+                        <span class="n">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">200</span><span class="o">);</span>
+                    <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">InterruptedException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+                        <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+                    <span class="o">}</span>
+                    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"创建一个守护线程Deamon"</span><span class="o">);</span>
+                    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">Thread</span><span class="o">.</span><span class="na">currentThread</span><span class="o">().</span><span class="na">getName</span><span class="o">());</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+        <span class="o">},</span> <span class="s">"deamon-thread-1"</span><span class="o">);</span>
+
+        <span class="n">thread</span><span class="o">.</span><span class="na">setDaemon</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+        <span class="n">thread</span><span class="o">.</span><span class="na">start</span><span class="o">();</span>
+
+        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"守护线程：  "</span> <span class="o">+</span> <span class="n">thread</span><span class="o">.</span><span class="na">isDaemon</span><span class="o">());</span>
+
+        <span class="n">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">1000</span><span class="o">);</span>
+
+        <span class="c1">// AddShutdownHook方法增加JVM停止时要做处理事件：</span>
+
+        <span class="c1">// 当JVM退出时，打印JVM Exit语句.</span>
+        <span class="n">Runtime</span><span class="o">.</span><span class="na">getRuntime</span><span class="o">().</span><span class="na">addShutdownHook</span><span class="o">(</span><span class="k">new</span> <span class="n">Thread</span><span class="o">()</span> <span class="o">{</span>
+            <span class="nd">@Override</span>
+            <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+                <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"JVM Exit!"</span><span class="o">);</span>
+            <span class="o">}</span>
+        <span class="o">});</span>
+
+<span class="o">}}</span>
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Note: 守护线程不要去做一些文件、数据库等操作，因为一旦用户线程都完成操作退出后，守护线程也需要退出，这个时候可能会导致内存溢出等风险。</p>
+  </blockquote>
+</blockquote>
+
+<h2 id="java线程池api"><a id="ThreadPool">Java线程池API</a></h2>
+
+<p>在前言中，引入的<code class="highlighter-rouge">ExecutorService</code>是对原生线程池<code class="highlighter-rouge">ThreadPoolExecutor</code>类的封装，提供了4种构造不同需求的线程池方法。首先，还是先介绍下<code class="highlighter-rouge">ThreadPoolExecutor</code>，API接口定义如下：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="cm">/**
+     * 根据给定的初始化参数创建一个新的 {@code ThreadPoolExecutor} 对象.
+     *
+     * @param corePoolSize 线程池中维持的线程数，即使所有线程都是空闲状态；除非设置了{@code allowCoreThreadTimeOut}。
+     * @param maximumPoolSize 线程池中允许的最大数量的线程。
+     * @param keepAliveTime 当线程数量比corePoolSize的值大时，这个变量指定了在结束之前，多余的线程等待新来任务时最长的时间。
+     * @param unit 参数{@code keepAliveTime} 的时间单位
+     * @param workQueue 在任务执行之前，存储这些任务的队列queue。这个队列只会保存通过{@code execute}提交的{@code Runnable}任务。
+     * @param threadFactory 当创建一个新的线程时候，使用的工厂factory对象。
+     * @param handler 当执行任务出现阻塞的时候，使用的处理器handler。一般，可能当前的线程上线和队列容量都已经饱和的时候，
+     *        就需要对新进来的任务执行相应处理策略。
+     * @throws IllegalArgumentException if one of the following holds:&lt;br&gt;
+     *         {@code corePoolSize &lt; 0}&lt;br&gt;
+     *         {@code keepAliveTime &lt; 0}&lt;br&gt;
+     *         {@code maximumPoolSize &lt;= 0}&lt;br&gt;
+     *         {@code maximumPoolSize &lt; corePoolSize}
+     * @throws NullPointerException if {@code workQueue}
+     *         or {@code threadFactory} or {@code handler} is null
+     */</span>
+<span class="kd">public</span> <span class="nf">ThreadPoolExecutor</span><span class="o">(</span><span class="kt">int</span> <span class="n">corePoolSize</span><span class="o">,</span>
+                              <span class="kt">int</span> <span class="n">maximumPoolSize</span><span class="o">,</span>
+                              <span class="kt">long</span> <span class="n">keepAliveTime</span><span class="o">,</span>
+                              <span class="n">TimeUnit</span> <span class="n">unit</span><span class="o">,</span>
+                              <span class="n">BlockingQueue</span><span class="o">&lt;</span><span class="n">Runnable</span><span class="o">&gt;</span> <span class="n">workQueue</span><span class="o">,</span>
+                              <span class="n">ThreadFactory</span> <span class="n">threadFactory</span><span class="o">,</span>
+                              <span class="n">RejectedExecutionHandler</span> <span class="n">handler</span><span class="o">)</span> 
+</code></pre></div></div>
+
+<p>对于该构造函数的参数说明，已经对应的一些注意事项可以参考 <a href="http://dlc.sun.com.edgesuite.net/jdk/jdk-api-localizations/jdk-api-zh-cn/builds/latest/html/zh_CN/api/">JDK 6 ThreadPoolExecutor API中文</a>。但是需要对其中<code class="highlighter-rouge">BlockingQueue&lt;Runnable&gt;</code>，<code class="highlighter-rouge">ThreadFactory</code>，<code class="highlighter-rouge">RejectedExecutionHandler</code>进行说明。</p>
+
+<h3 id="31-blockingqueue-介绍">3.1 BlockingQueue<Runnable> 介绍</Runnable></h3>
+
+<p>在jdk 6中对<code class="highlighter-rouge">BlockingQueue</code>接口进行了详细的说明，主要几点如下：</p>
+
+<ol>
+  <li>
+    <p>BlockingQueue 实现主要用于生产者-使用者队列，但它另外还支持 Collection 接口。因此，举例来说，使用 remove(x) 从队列中移除任意一个元素是有可能的。然而，这种操作通常不会有效执行，只能有计划地偶尔使用，比如在取消排队信息时。</p>
+  </li>
+  <li>
+    <p>BlockingQueue 实现是线程安全的。所有排队方法都可以使用内部锁或其他形式的并发控制来自动达到它们的目的。然而，大量的 Collection 操作（addAll、containsAll、retainAll 和 removeAll）没有 必要自动执行，除非在实现中特别说明。因此，举例来说，在只添加了 c 中的一些元素后，addAll(c) 有可能失败（抛出一个异常）。</p>
+  </li>
+  <li>
+    <p>BlockingQueue 实质上不 支持使用任何一种“close”或“shutdown”操作来指示不再添加任何项。这种功能的需求和使用有依赖于实现的倾向。例如，一种常用的策略是：对于生产者，插入特殊的 end-of-stream 或 poison 对象，并根据使用者获取这些对象的时间来对它们进行解释。</p>
+  </li>
+  <li>
+    <p>此外，BlockingQueue 可以安全地与多个生产者和多个使用者一起使用。</p>
+  </li>
+</ol>
+
+<p>在java 中默认实现了4种阻塞队列，提供四种不同的阻塞队列模型：</p>
+
+<ol>
+  <li>
+    <p>ArrayBlockingQueue, 底层由数组构成的有界阻塞队列。按照FIFO(先进先出)策略对元素进行排序。因此，队列的头部是当前队列中，最早进入队列的元素，而队尾则是最后进入队列的元素。并且，新来的任务元素，都插入到队列的尾部，执行任务的时候，从队列的头部取出任务元素。</p>
+  </li>
+  <li>
+    <p>LinkedBlockingQueue, 底层由链表组成的阻塞队列。同样是按照FIFO策略对元素进行排序。和ArrayBlockingQueue不同的是，基于链表的阻塞队列可以不设置队列的大小，从而构造一个无界队列；此外，LinkedBlockingQueue的吞吐量也要高于数组的阻塞队列，不过，它会造成部分元素插入顺序的不确定性。</p>
+  </li>
+  <li>
+    <p>SynchronousQueue，同步的阻塞队列，不存储元素，没有任何内部容量。因此，这决定了该队列模型是一个同步操作，即每一个生产者的任务消息都会直接给消费者处理，而不会先保存起来，让消费者从队列中FIFO来获取最老的消息元素。其特点就是：每个插入操作必须等待另一个线程的对应移除操作 ，反之亦然。适合传递性设计，设计中，在一个线程中运行的对象要将某些信息、事件或任务传递给在另一个线程中运行的对象，它就必须与该对象同步。</p>
+  </li>
+  <li>
+    <p>DelayQueue<E extends="" Delayed="">，延迟的无界阻塞队列。队列中的元素只有在只有在延迟期满时才能从中提取元素。该队列的头部是延迟期满后保存时间最长的 Delayed 元素。如果延迟都还没有期满，则队列没有头部，并且 poll 将返回 null。</E></p>
+  </li>
+  <li>
+    <p>LinkedBlockingDeque，底层有双向链表构成的阻塞队列。和LinkedBlockingQueue一样，可以做无界队列，只是因为可以从两端插入和获取元素，所以时间消耗是单向链表的一半；当然这是一种空间换时的策略。该队列需要设置队列大小来防止过度膨胀。</p>
+  </li>
+  <li>
+    <p>PriorityBlockingQueue，一个无界的阻塞队列，它的使用和类 PriorityQueue 相同的顺序规则，并且提供了阻塞获取操作。虽然此队列逻辑上是无界的，但是资源被耗尽时试图执行 add 操作也将失败（导致 OutOfMemoryError）。iterator() 方法中提供的迭代器并不 保证以特定的顺序遍历 PriorityBlockingQueue 的元素。如果需要有序地进行遍历，则应考虑使用 Arrays.sort(pq.toArray())。此外，可以使用方法 drainTo 按优先级顺序移除 全部或部分元素，并将它们放在另一个 collection 中。</p>
+  </li>
+</ol>
+
+<p><strong>ArrayBlockingQueue：</strong></p>
+
+<blockquote>
+  <blockquote>
+    <p>Note: <code class="highlighter-rouge">ArrayBlockingQueue</code>队列是有界的队列，所以当队列满的时候，如果还向该队列插入元素，则会导致操作被阻塞住，当然，如果从空的队列中获取元素，该操作也会被阻塞。此外，构造<code class="highlighter-rouge">ArrayBlockingQueue</code>队列时，有一个参数为：<code class="highlighter-rouge"> boolean fair</code> ：如果为 true，则按照 FIFO 顺序访问插入或移除时受阻塞线程的队列；如果为 false，则访问顺序是不确定的.</p>
+  </blockquote>
+</blockquote>
+
+<p><strong>LinkedBlockingQueue：</strong></p>
+
+<blockquote>
+  <blockquote>
+    <p>Note: <code class="highlighter-rouge">LinkedBlockingQueue</code> 队列的吞吐量也要高于数组的阻塞队列，这主要是因为数组的特性和链表的特性决定的，链表在处理元素的offer队头元素和add队尾元素的速度要快于相应地数组操作。不过，显然这样会造成部分元素插入顺序的不确定性。</p>
+  </blockquote>
+</blockquote>
+
+<p><strong><code class="highlighter-rouge">DelayQueue&lt;E extends Delayed&gt;</code>：</strong></p>
+
+<blockquote>
+  <blockquote>
+    <p>Note: <code class="highlighter-rouge">DelayQueue&lt;E extends Delayed&gt;</code>队列中的元素需要实现<code class="highlighter-rouge">Delayed</code>接口，该接口只有<code class="highlighter-rouge">long getDelay(TimeUnit unit);</code>方法即可使用延迟阻塞队列。此外，需要注意，可能存在的时间延时，即任务元素不一定会准时执行，会有一点点的延迟。</p>
+  </blockquote>
+</blockquote>
+
+<p><strong>LinkedBlockingDeque：</strong></p>
+
+<blockquote>
+  <blockquote>
+    <p>Note: <code class="highlighter-rouge">LinkedBlockingDeque</code>队列用的最多的地方，就是使用<code class="highlighter-rouge">工作窃取算法</code>的地方。工作窃取（work-stealing）算法是指某个线程从其他队列里窃取任务来执行。如下图（参考<a href="http://ifeve.com/talk-concurrency-forkjoin/">工作窃取运行说明</a>）：</p>
+  </blockquote>
+</blockquote>
+
+<p><img src="/images/2014/05/work-stealing.png" /></p>
+
+<p><strong>PriorityBlockingQueue：</strong></p>
+
+<blockquote>
+  <blockquote>
+    <p>Note: <code class="highlighter-rouge">PriorityBlockingQueue</code>队列，默认情况下元素采取自然顺序排列，也可以通过比较器comparator来指定元素的排序规则。比较器可使用修改键断开主优先级值之间的联系。元素默认按照升序排列。</p>
+  </blockquote>
+</blockquote>
+
+<p>选择其中的<code class="highlighter-rouge">LinkedBlockingQueue</code>来简单分析下，其内部实现结构和细节：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>   <span class="kd">public</span> <span class="nf">LinkedBlockingQueue</span><span class="o">(</span><span class="kt">int</span> <span class="n">capacity</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">capacity</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="o">)</span> <span class="k">throw</span> <span class="k">new</span> <span class="n">IllegalArgumentException</span><span class="o">();</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">capacity</span> <span class="o">=</span> <span class="n">capacity</span><span class="o">;</span>
+        <span class="n">last</span> <span class="o">=</span> <span class="n">head</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Node</span><span class="o">&lt;</span><span class="n">E</span><span class="o">&gt;(</span><span class="kc">null</span><span class="o">);</span> <span class="c1">// Node是链表中一个节点，包含一个元素和下一个元素的引用</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>从上面的代码可以看到，<code class="highlighter-rouge">LinkedBlockingQueue</code>实质上就是一个链表结构。作为阻塞的队列，在插入和移出元素的时候，肯定会加一个特殊的操作控制。在代码中，可以很清楚的看到，其消费者和生产者是通过singal来维护的，包括<code class="highlighter-rouge">notFull</code>和<code class="highlighter-rouge">notEmpty</code>两个信号变量。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>   <span class="cm">/**
+     * 插入指定元素到队列的尾部，如果没有空间的话，等待。
+     *
+     * @throws InterruptedException {@inheritDoc}
+     * @throws NullPointerException {@inheritDoc}
+     */</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">put</span><span class="o">(</span><span class="n">E</span> <span class="n">e</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">InterruptedException</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">e</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="k">throw</span> <span class="k">new</span> <span class="n">NullPointerException</span><span class="o">();</span>
+        
+        <span class="c1">// Note: convention in all put/take/etc is to preset local var</span>
+        <span class="c1">// holding count negative to indicate failure unless set.</span>
+        <span class="kt">int</span> <span class="n">c</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="o">;</span>
+        <span class="n">Node</span><span class="o">&lt;</span><span class="n">E</span><span class="o">&gt;</span> <span class="n">node</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Node</span><span class="o">(</span><span class="n">e</span><span class="o">);</span> <span class="c1">//创建插入链表的节点node</span>
+        <span class="kd">final</span> <span class="n">ReentrantLock</span> <span class="n">putLock</span> <span class="o">=</span> <span class="k">this</span><span class="o">.</span><span class="na">putLock</span><span class="o">;</span> <span class="c1">// 使用自旋锁，确保插入时线程安全</span>
+        <span class="kd">final</span> <span class="n">AtomicInteger</span> <span class="n">count</span> <span class="o">=</span> <span class="k">this</span><span class="o">.</span><span class="na">count</span><span class="o">;</span> <span class="c1">// 原子类型整型</span>
+        <span class="n">putLock</span><span class="o">.</span><span class="na">lockInterruptibly</span><span class="o">();</span><span class="c1">// 可中断加锁</span>
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="cm">/*
+             * 在这里的count并没有使用锁来保护，这是因为这里只有递减操作，并且我
+             * 们在容量大小更改的时候将会发送信号，这和在其他等待guard计数相似。 
+             */</span>
+            <span class="k">while</span> <span class="o">(</span><span class="n">count</span><span class="o">.</span><span class="na">get</span><span class="o">()</span> <span class="o">==</span> <span class="n">capacity</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">notFull</span><span class="o">.</span><span class="na">await</span><span class="o">();</span> <span class="c1">//等待，直到有空间插入元素</span>
+            <span class="o">}</span>
+            <span class="n">enqueue</span><span class="o">(</span><span class="n">node</span><span class="o">);</span> <span class="c1">// 插入元素</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">count</span><span class="o">.</span><span class="na">getAndIncrement</span><span class="o">();</span> <span class="c1">//插入成功</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">c</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&lt;</span> <span class="n">capacity</span><span class="o">)</span>
+                <span class="n">notFull</span><span class="o">.</span><span class="na">signal</span><span class="o">();</span> <span class="c1">//释放信号，队列未满</span>
+        <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+            <span class="n">putLock</span><span class="o">.</span><span class="na">unlock</span><span class="o">();</span> <span class="c1">//释放锁</span>
+        <span class="o">}</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">c</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span>
+            <span class="n">signalNotEmpty</span><span class="o">();</span> <span class="c1">//发送信号，表明当前队列为空。使用全局takeLock 自旋锁来加锁设置发送信号</span>
+    <span class="o">}</span>
+    
+    
+    <span class="kd">public</span> <span class="n">E</span> <span class="nf">take</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">InterruptedException</span> <span class="o">{</span>
+        <span class="n">E</span> <span class="n">x</span><span class="o">;</span>
+        <span class="kt">int</span> <span class="n">c</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="o">;</span>
+        <span class="kd">final</span> <span class="n">AtomicInteger</span> <span class="n">count</span> <span class="o">=</span> <span class="k">this</span><span class="o">.</span><span class="na">count</span><span class="o">;</span>
+        <span class="kd">final</span> <span class="n">ReentrantLock</span> <span class="n">takeLock</span> <span class="o">=</span> <span class="k">this</span><span class="o">.</span><span class="na">takeLock</span><span class="o">;</span>
+        <span class="n">takeLock</span><span class="o">.</span><span class="na">lockInterruptibly</span><span class="o">();</span>
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="k">while</span> <span class="o">(</span><span class="n">count</span><span class="o">.</span><span class="na">get</span><span class="o">()</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">notEmpty</span><span class="o">.</span><span class="na">await</span><span class="o">();</span>
+            <span class="o">}</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">dequeue</span><span class="o">();</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">count</span><span class="o">.</span><span class="na">getAndDecrement</span><span class="o">();</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">c</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="o">)</span>
+                <span class="n">notEmpty</span><span class="o">.</span><span class="na">signal</span><span class="o">();</span>
+        <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+            <span class="n">takeLock</span><span class="o">.</span><span class="na">unlock</span><span class="o">();</span>
+        <span class="o">}</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">c</span> <span class="o">==</span> <span class="n">capacity</span><span class="o">)</span>
+            <span class="n">signalNotFull</span><span class="o">();</span> <span class="c1">//发送信号告知当前队列已满，使用全局putLock 自旋锁来加锁发送信号。</span>
+        <span class="k">return</span> <span class="n">x</span><span class="o">;</span>
+    <span class="o">}</span>
+
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Note: <code class="highlighter-rouge">put</code>在插入的时候，会一直等待插入成功；如果需要设置等待超时时间，需要使用<code class="highlighter-rouge">offer(E e, long timeout, TimeUnit unit)</code>来插入元素。
+此外，<code class="highlighter-rouge">take</code>方法和<code class="highlighter-rouge">put</code>方法整体流程基本一样。</p>
+  </blockquote>
+</blockquote>
+
+<h3 id="32-threadfactory-介绍">3.2 ThreadFactory 介绍</h3>
+
+<p><code class="highlighter-rouge">ThreadFactory</code>，线程工厂，顾名思义，就是采用工厂模式来创建线程实例。使用<code class="highlighter-rouge">ThreadFactory</code>方式构建线程，可以不调用<code class="highlighter-rouge">{@link Thread#Thread(Runnable) new Thread}</code>方法来new 一个新的线程，这样可以更方便的让应用使用定制好了的线程子类，属性等。
+<code class="highlighter-rouge">ThreadFactory</code>接口，只有一个需要实现的方法，接口定义为：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">interface</span> <span class="nc">ThreadFactory</span> <span class="o">{</span>
+
+    <span class="cm">/**
+     * Constructs a new {@code Thread}.  Implementations may also initialize
+     * priority, name, daemon status, {@code ThreadGroup}, etc.
+     *
+     * @param r a runnable to be executed by new thread instance
+     * @return constructed thread, or {@code null} if the request to
+     *         create a thread is rejected
+     */</span>
+    <span class="n">Thread</span> <span class="nf">newThread</span><span class="o">(</span><span class="n">Runnable</span> <span class="n">r</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>我们一般使用<code class="highlighter-rouge">Executors</code>类中提供的<code class="highlighter-rouge">DefaultThreadFactory</code>对接口进行了简单地实现，我们在代码中使用<code class="highlighter-rouge">Executors</code>来创建线程池时，会用到这个默认线程工厂类。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cm">/**
+     * The default thread factory
+     */</span>
+    <span class="kd">static</span> <span class="kd">class</span> <span class="nc">DefaultThreadFactory</span> <span class="kd">implements</span> <span class="n">ThreadFactory</span> <span class="o">{</span>
+        <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">AtomicInteger</span> <span class="n">poolNumber</span> <span class="o">=</span> <span class="k">new</span> <span class="n">AtomicInteger</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span> <span class="c1">//线程池序号</span>
+        <span class="kd">private</span> <span class="kd">final</span> <span class="n">ThreadGroup</span> <span class="n">group</span><span class="o">;</span>
+        <span class="kd">private</span> <span class="kd">final</span> <span class="n">AtomicInteger</span> <span class="n">threadNumber</span> <span class="o">=</span> <span class="k">new</span> <span class="n">AtomicInteger</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span> <span class="c1">//线程所在池中的序号</span>
+        <span class="kd">private</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">namePrefix</span><span class="o">;</span>
+
+        <span class="n">DefaultThreadFactory</span><span class="o">()</span> <span class="o">{</span>
+            <span class="n">SecurityManager</span> <span class="n">s</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">getSecurityManager</span><span class="o">();</span>
+            <span class="n">group</span> <span class="o">=</span> <span class="o">(</span><span class="n">s</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">?</span> <span class="n">s</span><span class="o">.</span><span class="na">getThreadGroup</span><span class="o">()</span> <span class="o">:</span>
+                                  <span class="n">Thread</span><span class="o">.</span><span class="na">currentThread</span><span class="o">().</span><span class="na">getThreadGroup</span><span class="o">();</span> <span class="c1">// 当前线程组名</span>
+            <span class="n">namePrefix</span> <span class="o">=</span> <span class="s">"pool-"</span> <span class="o">+</span>
+                          <span class="n">poolNumber</span><span class="o">.</span><span class="na">getAndIncrement</span><span class="o">()</span> <span class="o">+</span>
+                         <span class="s">"-thread-"</span><span class="o">;</span> <span class="c1">// 线程前缀组合名</span>
+        <span class="o">}</span>
+
+        <span class="kd">public</span> <span class="n">Thread</span> <span class="nf">newThread</span><span class="o">(</span><span class="n">Runnable</span> <span class="n">r</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">Thread</span> <span class="n">t</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Thread</span><span class="o">(</span><span class="n">group</span><span class="o">,</span> <span class="n">r</span><span class="o">,</span>
+                                  <span class="n">namePrefix</span> <span class="o">+</span> <span class="n">threadNumber</span><span class="o">.</span><span class="na">getAndIncrement</span><span class="o">(),</span>
+                                  <span class="mi">0</span><span class="o">);</span> <span class="c1">// 封装了new 对象的方法</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">t</span><span class="o">.</span><span class="na">isDaemon</span><span class="o">())</span>
+                <span class="n">t</span><span class="o">.</span><span class="na">setDaemon</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span> <span class="c1">// 设置为非deamon 线程</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">t</span><span class="o">.</span><span class="na">getPriority</span><span class="o">()</span> <span class="o">!=</span> <span class="n">Thread</span><span class="o">.</span><span class="na">NORM_PRIORITY</span><span class="o">)</span>
+                <span class="n">t</span><span class="o">.</span><span class="na">setPriority</span><span class="o">(</span><span class="n">Thread</span><span class="o">.</span><span class="na">NORM_PRIORITY</span><span class="o">);</span> <span class="c1">//设置为默认优先级 </span>
+            <span class="k">return</span> <span class="n">t</span><span class="o">;</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Note: 除了<code class="highlighter-rouge">Executors</code>使用的默认的线程工厂类之外，还提供了一个线程工厂类：<code class="highlighter-rouge">PrivilegedThreadFactory</code>类。该类继承了<code class="highlighter-rouge">DefaultThreadFactory</code>，增加了访问控制上下文和类加载器，会检查类的调用者是否有相关权限。例如：<code class="highlighter-rouge">System.getSecurityManager().checkPermission(SecurityConstants.GET_CLASSLOADER_PERMISSION);</code>以及<code class="highlighter-rouge">System.getSecurityManager().checkPermission(new RuntimePermission("setContextClassLoader"));</code>。</p>
+  </blockquote>
+</blockquote>
+
+<h3 id="33-rejectedexecutionhandler-介绍">3.3 RejectedExecutionHandler 介绍</h3>
+
+<p><code class="highlighter-rouge">RejectedExecutionHandler</code>类是对线程池中不能被执行的任务，所需要采用的处理策略的指定。当 <code class="highlighter-rouge">executor</code> 不能接受某个任务时，可以由 <code class="highlighter-rouge">ThreadPoolExecutor</code> 调用<code class="highlighter-rouge">RejectedExecutionHandler</code>指定的处理方法。这种不能接受任务的情况，很容易就发生了，比如当超出其界限而没有更多可用的线程或队列池时，或者关闭 Executor 时。默认情况下，<code class="highlighter-rouge">private static final RejectedExecutionHandler defaultHandler = new AbortPolicy()</code>。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">interface</span> <span class="nc">RejectedExecutionHandler</span> <span class="o">{</span>
+
+    <span class="cm">/**
+     * &lt;p&gt;In the absence of other alternatives, the method may throw
+     * an unchecked {@link RejectedExecutionException}, which will be
+     * propagated to the caller of {@code execute}.
+     *
+     * @param r the runnable task requested to be executed
+     * @param executor the executor attempting to execute this task
+     * @throws RejectedExecutionException if there is no remedy
+     */</span>
+    <span class="kt">void</span> <span class="nf">rejectedExecution</span><span class="o">(</span><span class="n">Runnable</span> <span class="n">r</span><span class="o">,</span> <span class="n">ThreadPoolExecutor</span> <span class="n">executor</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>JDK 6 提供了 4 种处理拒绝执行任务的策略：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>1. `AbortPolicy`类，该策略很简单，如果出现任务要被拒绝处理，则会抛出`RejectedExecutionException`异常，该策略为默认处理方式。
+
+2. `CallerRunsPolicy`类，该策略会直接在`execute`方法的调用线程中运行该呗拒绝执行的任务；如果执行程序已经关闭，则直接丢弃该任务。
+
+3. `DiscardOldestPolicy`类，该策略会在出现拒绝执行任务的时候，放弃队列中最老的未被处理的请求，然后重试execute；如果执行程序关闭，同样直接丢弃该任务。
+
+4. `DiscardPolicy`类，该策略同样很简单，就是如果出现被拒绝执行的任务，则直接丢弃该任务。
+</code></pre></div></div>
+
+<p>比如<code class="highlighter-rouge">DiscardOldestPolicy</code>策略的实现，其把任务阻塞队列中得队头元素丢弃掉，然后重新执行该任务。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="cm">/**
+     * A handler for rejected tasks that discards the oldest unhandled
+     * request and then retries {@code execute}, unless the executor
+     * is shut down, in which case the task is discarded.
+     */</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kd">class</span> <span class="nc">DiscardOldestPolicy</span> <span class="kd">implements</span> <span class="n">RejectedExecutionHandler</span> <span class="o">{</span>
+        <span class="cm">/**
+         * Creates a {@code DiscardOldestPolicy} for the given executor.
+         */</span>
+        <span class="kd">public</span> <span class="nf">DiscardOldestPolicy</span><span class="o">()</span> <span class="o">{</span> <span class="o">}</span>
+
+        <span class="cm">/**
+         * Obtains and ignores the next task that the executor
+         * would otherwise execute, if one is immediately available,
+         * and then retries execution of task r, unless the executor
+         * is shut down, in which case task r is instead discarded.
+         *
+         * @param r the runnable task requested to be executed
+         * @param e the executor attempting to execute this task
+         */</span>
+        <span class="kd">public</span> <span class="kt">void</span> <span class="nf">rejectedExecution</span><span class="o">(</span><span class="n">Runnable</span> <span class="n">r</span><span class="o">,</span> <span class="n">ThreadPoolExecutor</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">if</span> <span class="o">(!</span><span class="n">e</span><span class="o">.</span><span class="na">isShutdown</span><span class="o">())</span> <span class="o">{</span>
+                <span class="n">e</span><span class="o">.</span><span class="na">getQueue</span><span class="o">().</span><span class="na">poll</span><span class="o">();</span> <span class="c1">// 丢弃最老的元素</span>
+                <span class="n">e</span><span class="o">.</span><span class="na">execute</span><span class="o">(</span><span class="n">r</span><span class="o">);</span> <span class="c1">//重试执行该拒绝任务</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="java-executors类介绍"><a id="Executors">Java Executors类介绍</a></h2>
+
+<p>虽然<code class="highlighter-rouge">Executors</code>类只是对<code class="highlighter-rouge">ThreadPoolExecutor</code>的一些属性进行组合封装，但是，一般地，我们只需要使用该工具类完成创建线程池，就可以基本上满足我们的需求。
+<code class="highlighter-rouge">Executors</code>类提供了创建4种不同属性的线程池，分别为：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="cm">/**
+     * 创建一个可重用固定线程数的线程池，以共享的无界队列方式来运行这些线程，在需要时使用提供的 ThreadFactory 创建新线程。
+     * 在任意点，大多数 nThreads 线程会处于处理任务的活动状态。如果在所有线程处于活动状态时提交附加任务，则在有可用线程之前，
+     * 剩余任务将在队列中一直等待。如果在关闭前的执行期间由于失败而导致任何线程终止，那么一个新线程将代替它执行后续的任务（如果需要）。
+     * 在某个线程被显式地关闭{@link ExecutorService#shutdown shutdown}之前，池中的线程将一直存在。
+     *
+     * @param nThreads the number of threads in the pool
+     * @param threadFactory 默认使用Executors.defaultThreadFactory()线程工厂，使用抛出异常的AbortPolicy处理策略
+     * @throws IllegalArgumentException if {@code nThreads &lt;= 0}
+     */</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="n">ExecutorService</span> <span class="nf">newFixedThreadPool</span><span class="o">(</span><span class="kt">int</span> <span class="n">nThreads</span><span class="o">,</span> <span class="n">ThreadFactory</span> <span class="n">threadFactory</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="k">new</span> <span class="nf">ThreadPoolExecutor</span><span class="o">(</span><span class="n">nThreads</span><span class="o">,</span> <span class="n">nThreads</span><span class="o">,</span>
+                                      <span class="mi">0L</span><span class="o">,</span> <span class="n">TimeUnit</span><span class="o">.</span><span class="na">MILLISECONDS</span><span class="o">,</span>
+                                      <span class="k">new</span> <span class="n">LinkedBlockingQueue</span><span class="o">&lt;</span><span class="n">Runnable</span><span class="o">&gt;(),</span>
+                                      <span class="n">threadFactory</span><span class="o">);</span>
+    <span class="o">}</span>
+    
+    <span class="cm">/**
+     * 创建一个使用单个 worker 线程的 Executor，以无界队列方式来运行该线程，
+     *（注意，如果因为在关闭前的执行期间出现失败而终止了此单个线程，那么如果需要，一个新线程将代替它执行后续的任务）。
+     * 并在需要时使用提供的 ThreadFactory 创建新线程。与其他等效的 newFixedThreadPool(1, threadFactory) 不同，
+     * 可保证无需重新配置此方法所返回的执行程序即可使用其他的线程。
+     */</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="n">ExecutorService</span> <span class="nf">newSingleThreadExecutor</span><span class="o">(</span><span class="n">ThreadFactory</span> <span class="n">threadFactory</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="k">new</span> <span class="nf">FinalizableDelegatedExecutorService</span>
+            <span class="o">(</span><span class="k">new</span> <span class="n">ThreadPoolExecutor</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">1</span><span class="o">,</span>
+                                    <span class="mi">0L</span><span class="o">,</span> <span class="n">TimeUnit</span><span class="o">.</span><span class="na">MILLISECONDS</span><span class="o">,</span>
+                                    <span class="k">new</span> <span class="n">LinkedBlockingQueue</span><span class="o">&lt;</span><span class="n">Runnable</span><span class="o">&gt;(),</span>
+                                    <span class="n">threadFactory</span><span class="o">));</span>
+    <span class="o">}</span>
+    
+    <span class="cm">/**
+     * 创建一个可根据需要创建新线程的线程池，但是在以前构造的线程可用时将重用它们。
+     * 对于执行很多短期异步任务的程序而言，这些线程池通常可提高程序性能。调用 execute 将重用以前构造的线程（如果线程可用）。
+     * 如果现有线程没有可用的，则创建一个新线程并添加到池中。终止并从缓存中移除那些已有 60 秒钟未被使用的线程。
+     * 因此，长时间保持空闲的线程池不会使用任何资源。注意，可以使用 ThreadPoolExecutor 构造方法创建具有类似属性但细节不同（例如超时参数）的线程池。
+     */</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="n">ExecutorService</span> <span class="nf">newCachedThreadPool</span><span class="o">(</span><span class="n">ThreadFactory</span> <span class="n">threadFactory</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="k">new</span> <span class="nf">ThreadPoolExecutor</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="n">Integer</span><span class="o">.</span><span class="na">MAX_VALUE</span><span class="o">,</span>
+                                      <span class="mi">60L</span><span class="o">,</span> <span class="n">TimeUnit</span><span class="o">.</span><span class="na">SECONDS</span><span class="o">,</span>
+                                      <span class="k">new</span> <span class="n">SynchronousQueue</span><span class="o">&lt;</span><span class="n">Runnable</span><span class="o">&gt;(),</span>
+                                      <span class="n">threadFactory</span><span class="o">);</span>
+    <span class="o">}</span>
+    
+    <span class="cm">/**
+     * 创建一个单线程执行程序，它可安排在给定延迟后运行命令或者定期地执行。
+     *（注意，如果因为在关闭前的执行期间出现失败而终止了此单个线程，那么如果需要，一个新线程会代替它执行后续的任务）。
+     * 可保证顺序地执行各个任务，并且在任意给定的时间不会有多个线程是活动的。
+     * 与其他等效的 newScheduledThreadPool(1, threadFactory) 不同，可保证无需重新配置此方法所返回的执行程序即可使用其他的线程。
+     */</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="n">ScheduledExecutorService</span> <span class="nf">newSingleThreadScheduledExecutor</span><span class="o">(</span><span class="n">ThreadFactory</span> <span class="n">threadFactory</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="k">new</span> <span class="nf">DelegatedScheduledExecutorService</span>
+            <span class="o">(</span><span class="k">new</span> <span class="n">ScheduledThreadPoolExecutor</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="n">threadFactory</span><span class="o">));</span>
+    <span class="o">}</span>
+    
+    <span class="cm">/**
+     * 创建一个线程池，它可安排在给定延迟后运行命令或者定期地执行。
+     * @param corePoolSize 池中所保存的线程数，即使线程是空闲的也包括在内。
+     */</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="n">ScheduledExecutorService</span> <span class="nf">newScheduledThreadPool</span><span class="o">(</span>
+            <span class="kt">int</span> <span class="n">corePoolSize</span><span class="o">,</span> <span class="n">ThreadFactory</span> <span class="n">threadFactory</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="k">new</span> <span class="nf">ScheduledThreadPoolExecutor</span><span class="o">(</span><span class="n">corePoolSize</span><span class="o">,</span> <span class="n">threadFactory</span><span class="o">);</span>
+    <span class="o">}</span>
+
+
+</code></pre></div></div>
+
+<p>在前言部分使用了<code class="highlighter-rouge">Executors.newFixedThreadPool</code>来创建固定线程数的线程池。因此，我们就对这个代码的整个流程进行说明。</p>
+
+<blockquote>
+  <blockquote>
+    <p>Note： 代码首先new 一个线程池，如上面代码所示，直接调用<code class="highlighter-rouge">ThreadPoolExecutor</code>构造函数即可。接下来就是创建任务放在线程池中执行了。</p>
+  </blockquote>
+</blockquote>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="cm">/**
+     * 在将来某个时间执行给定任务。可以在新线程中或者在现有池线程中执行该任务。 
+     * 如果无法将任务提交执行，或者因为此执行程序已关闭，或者因为已达到其容量，则该任务由当前 RejectedExecutionHandler 处理。     
+     */</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">execute</span><span class="o">(</span><span class="n">Runnable</span> <span class="n">command</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">command</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span>
+            <span class="k">throw</span> <span class="k">new</span> <span class="nf">NullPointerException</span><span class="o">();</span>
+        <span class="cm">/*
+         * Proceed in 3 steps:
+         *
+         * 1. 如果比指定的corePoolSize值要少的线程在运行，则尝试着使用给定的factory来新建一个线程来运行该Runnable任务。
+         * 这次addworker()方法的调用会自动检查运行状态和工作者worker数量，所以如果不允许增加worker则会返回false。具体实现参见下面分析。
+         *
+         * 2. 如果任务被插入队列，然后我们仍然需要再次检查是否我们应该增加一个线程（可能会有某一个线程在上一次检查完之后挂掉了），
+         * 或者一进入该方法，线程池就down掉了。所以我们重复检查状态，并在如果需要，则回滚进入队列，或者开启新的线程。
+         *
+         * 3. 如果我们不可以插入任务到队列，则我们会尝试新加一个线程。如果增加失败，我们需要现在线程池已经关闭了或者饱和了，因此拒绝任务进入。
+         */</span>                  
+        <span class="kt">int</span> <span class="n">c</span> <span class="o">=</span> <span class="n">ctl</span><span class="o">.</span><span class="na">get</span><span class="o">();</span> <span class="c1">// 获取线程池中有效的线程数</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">workerCountOf</span><span class="o">(</span><span class="n">c</span><span class="o">)</span> <span class="o">&lt;</span> <span class="n">corePoolSize</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">addWorker</span><span class="o">(</span><span class="n">command</span><span class="o">,</span> <span class="kc">true</span><span class="o">))</span> <span class="c1">//增加新的工作线程运行新的任务command</span>
+                <span class="k">return</span><span class="o">;</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">ctl</span><span class="o">.</span><span class="na">get</span><span class="o">();</span> <span class="c1">//增加新的失败，则获得有效线程数，进行再次尝试</span>
+        <span class="o">}</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">isRunning</span><span class="o">(</span><span class="n">c</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="n">workQueue</span><span class="o">.</span><span class="na">offer</span><span class="o">(</span><span class="n">command</span><span class="o">))</span> <span class="o">{</span> <span class="c1">// 如果worker正在运行任务，则把新的command放在queue中去。</span>
+            <span class="kt">int</span> <span class="n">recheck</span> <span class="o">=</span> <span class="n">ctl</span><span class="o">.</span><span class="na">get</span><span class="o">();</span>
+            <span class="k">if</span> <span class="o">(!</span> <span class="n">isRunning</span><span class="o">(</span><span class="n">recheck</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="n">remove</span><span class="o">(</span><span class="n">command</span><span class="o">))</span> <span class="c1">//非running状态的线程是不接受任务的，所以从队列中移除任务</span>
+                <span class="n">reject</span><span class="o">(</span><span class="n">command</span><span class="o">);</span> <span class="c1">//并且执行拒绝操作</span>
+            <span class="k">else</span> <span class="nf">if</span> <span class="o">(</span><span class="n">workerCountOf</span><span class="o">(</span><span class="n">recheck</span><span class="o">)</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="c1">//如果当前没有running线程是因为线程池没有线程，则增加非core线程。</span>
+                <span class="n">addWorker</span><span class="o">(</span><span class="kc">null</span><span class="o">,</span> <span class="kc">false</span><span class="o">);</span>
+        <span class="o">}</span>
+        <span class="k">else</span> <span class="nf">if</span> <span class="o">(!</span><span class="n">addWorker</span><span class="o">(</span><span class="n">command</span><span class="o">,</span> <span class="kc">false</span><span class="o">))</span>
+            <span class="n">reject</span><span class="o">(</span><span class="n">command</span><span class="o">);</span> <span class="c1">//增加线程失败，则调用对接的策略来执行拒绝该任务</span>
+    <span class="o">}</span>
+    
+        <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">remove</span><span class="o">(</span><span class="n">Runnable</span> <span class="n">task</span><span class="o">)</span> <span class="o">{</span>
+        <span class="kt">boolean</span> <span class="n">removed</span> <span class="o">=</span> <span class="n">workQueue</span><span class="o">.</span><span class="na">remove</span><span class="o">(</span><span class="n">task</span><span class="o">);</span>
+        <span class="n">tryTerminate</span><span class="o">();</span> <span class="c1">// In case SHUTDOWN and now empty</span>
+        <span class="k">return</span> <span class="n">removed</span><span class="o">;</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+<blockquote>
+  <blockquote>
+    <p>Tips: 在代码中，获取当前程序中运行的线程数，是一个很有趣的实现。核心代码如下：</p>
+  </blockquote>
+</blockquote>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="c1">// 主线程池控制状态 ctl，表示当前有效地线程数，此外还可以指示是否是running、shutdown等状态</span>
+    <span class="kd">private</span> <span class="kd">final</span> <span class="n">AtomicInteger</span> <span class="n">ctl</span> <span class="o">=</span> <span class="k">new</span> <span class="n">AtomicInteger</span><span class="o">(</span><span class="n">ctlOf</span><span class="o">(</span><span class="n">RUNNING</span><span class="o">,</span> <span class="mi">0</span><span class="o">));</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">COUNT_BITS</span> <span class="o">=</span> <span class="n">Integer</span><span class="o">.</span><span class="na">SIZE</span> <span class="o">-</span> <span class="mi">3</span><span class="o">;</span> <span class="c1">//Integer.SIZE = 32</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">CAPACITY</span>   <span class="o">=</span> <span class="o">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="n">COUNT_BITS</span><span class="o">)</span> <span class="o">-</span> <span class="mi">1</span><span class="o">;</span><span class="c1">// 00011111111111111111111111111111</span>
+    
+    <span class="cm">/**
+     * RUNNING -&gt; SHUTDOWN
+     *    On invocation of shutdown(), perhaps implicitly in finalize()
+     * (RUNNING or SHUTDOWN) -&gt; STOP
+     *    On invocation of shutdownNow()
+     * SHUTDOWN -&gt; TIDYING
+     *    When both queue and pool are empty
+     * STOP -&gt; TIDYING
+     *    When pool is empty
+     * TIDYING -&gt; TERMINATED
+     *    When the terminated() hook method has completed
+     */</span>
+    
+    <span class="c1">// runState 一共5种，使用高位的3位即可完全表示</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">RUNNING</span>    <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="n">COUNT_BITS</span><span class="o">;</span> <span class="c1">// 11100000000000000000000000000000</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">SHUTDOWN</span>   <span class="o">=</span>  <span class="mi">0</span> <span class="o">&lt;&lt;</span> <span class="n">COUNT_BITS</span><span class="o">;</span> <span class="c1">// 00000000000000000000000000000000</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">STOP</span>       <span class="o">=</span>  <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="n">COUNT_BITS</span><span class="o">;</span> <span class="c1">// 00100000000000000000000000000000</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">TIDYING</span>    <span class="o">=</span>  <span class="mi">2</span> <span class="o">&lt;&lt;</span> <span class="n">COUNT_BITS</span><span class="o">;</span> <span class="c1">// 01000000000000000000000000000000</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">TERMINATED</span> <span class="o">=</span>  <span class="mi">3</span> <span class="o">&lt;&lt;</span> <span class="n">COUNT_BITS</span><span class="o">;</span> <span class="c1">// 01100000000000000000000000000000</span>
+    
+    <span class="c1">// Packing and unpacking ctl</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kt">int</span> <span class="nf">runStateOf</span><span class="o">(</span><span class="kt">int</span> <span class="n">c</span><span class="o">)</span>     <span class="o">{</span> <span class="k">return</span> <span class="n">c</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">CAPACITY</span><span class="o">;</span> <span class="o">}</span> <span class="c1">//获取线程的状态</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kt">int</span> <span class="nf">workerCountOf</span><span class="o">(</span><span class="kt">int</span> <span class="n">c</span><span class="o">)</span>  <span class="o">{</span> <span class="k">return</span> <span class="n">c</span> <span class="o">&amp;</span> <span class="n">CAPACITY</span><span class="o">;</span> <span class="o">}</span> <span class="c1">//获取线程池的线程数</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kt">int</span> <span class="nf">ctlOf</span><span class="o">(</span><span class="kt">int</span> <span class="n">rs</span><span class="o">,</span> <span class="kt">int</span> <span class="n">wc</span><span class="o">)</span> <span class="o">{</span> <span class="k">return</span> <span class="n">rs</span> <span class="o">|</span> <span class="n">wc</span><span class="o">;</span> <span class="o">}</span> <span class="c1">//获取某一状态的值</span>
+</code></pre></div></div>
+
+
+                </div>
+                <div class="read-all">
+                    <a  href="/2014/05/03/Java-MultiThread-ThreadPool-Introduce/"><i class="fa fa-newspaper-o"></i>Read All</a>
+                </div>
+                <hr>
+              </li>
+            
+              <li>
+                <h2>
+                  <a class="post-link" href="/2014/05/02/Java-slf4j-Introduce/">Java日志框架slf4j API介绍及异常接口实现分析</a>
+                </h2>
+                <div class="label">
+                    <div class="label-card">
+                        <i class="fa fa-calendar"></i>2014-05-02
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+
+                    <div class="label-card">
+                    
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Java" title="Category: Java" rel="category">Java</a>&nbsp;
+    
+        <a href="/category/#Log" title="Category: Log" rel="category">Log</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+                    </div>
+
+                    <div class="label-card">
+                    
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+                    </div>
+                </div>
+                <div class="excerpt">
+                    <h2 id="前言"><a id="Intro">前言</a></h2>
+<p>slf4j:简洁的java日志统一接口(Simple Logging Facade for Java),顾名思义,就是一个使用Facade设计模式实现的面向java Logging框架的接口开源包. 
+其和java数据库连接工具包JDBC很像, 在JDBC框架中, 各个不同数据库连接器分别针对不同数据库系统来实现对应的连接操作, 而普通程序员只需要使用统一的JDBC接口而不需要关注具体底层使用的数据库类型, 或者针对不同的数据库系统写各种兼容代码.</p>
+
+<blockquote>
+  <blockquote>
+    <p>Note: slf4j其实类似于适配器,但是这里不称呼适配器,是因为当底层log日志系统不支持slf4j扩展时,比如log4j,就需要在两者中间增加一个适配器层来完成slf4j调用相关日志系统的操作接口动作.例如,slf4j为log4j提高的slf4j-log412.jar类库,但是logback支持slf4J扩展,所以其不需适配层转换.</p>
+  </blockquote>
+</blockquote>
+
+<p>同样，slf4j 不参与具体的日志代码实现，它只是在代码编译的时候根据程序的配置来绑定具体的日志系统。这样，使用slf4j类库就可以让你的代码独立于任意一个特定的日志API。因此，如果编写一个对外开发的API活着一个同样的类库，那么为了不限制使用你类库的代码必须使用指定的日志系统，你应该使用slf4j。</p>
+
+<p>相对于其他日志框架，slf4j日志类库的优点和推荐使用的缘由，可以参见 ImportNew 的译文【 <a href="#http://www.importnew.com/7450.html">为什么要使用SLF4J而不是Log4J</a> 】</p>
+
+<h2 id="facade设计模式简介"><a id="Facade">Facade设计模式简介</a></h2>
+
+<p>Facade模式，或者叫做外观模式，顾名思义就是封装各个底层子系统的提供的同一类功能接口，统一成一个更易操作使用的上层接口进而对外提供交互。有了这个上层封装的接口，接口调用方只需要调用这个接口，而不需要关于各个子系统的具体逻辑实现。</p>
+
+<p>Facade设计模式的官方定义是：Facade模式定义了一个更高层的接口，使子系统更加容易使用。</p>
+
+<!-- more -->
+
+<p>关于Facade模式的实例，日常生活中很多这样子的例子。比如，5、1回家，可以有好几种方式：飞机、火车、长途汽车。在实际生活中，你回家的路线应该是：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	1. 坐车去机场（火车站/长途汽车站）；
+	2. 坐飞机（火车/长途汽车）到家乡；
+	3. 从家乡飞机场（火车站/长途汽车站）到家里。 
+</code></pre></div></div>
+
+<p>一般来说，上面的流程是毫无问题的。但是，如果做成一个系统，你需要对外暴露3个步骤中得3个不同的接口，外界需要根据不同的交通方式选择不同的调用接口，这无疑加大了接口调研的复杂度，以及系统的复杂度。如下图所示：</p>
+
+<p><img src="/images/2014/05/facade.png" /></p>
+
+<p>使用Facade模式，封装各个子系统的实现，对外提供3个接口：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	1. 坐车其站点；
+	2. 做主交通工具到家乡；
+	3. 从家乡的站点回家里。
+</code></pre></div></div>
+
+<p>因此，接口使用方不需要知道子系统具体是什么样的业务逻辑，其主要要在配置中，或者一开始指定交通工具，就可以让facade系统来完成下面的一系列操作。这样，除了让我们的系统对外暴露接口少了，最重要的是可以让第三方以最低的成本使用我们的接口。</p>
+
+<h2 id="slf4j绑定日志"><a id="Bind">slf4j绑定日志</a></h2>
+
+<h3 id="31-slf4j-设计模式说明">3.1 slf4j 设计模式说明</h3>
+
+<p>为了说明slf4j采用的Facade模式，也就是如果只引入slf4j-api包，日志系统将无法正常使用。例如在pom.xml文件这只有：</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        <span class="nt">&lt;dependency&gt;</span>
+            <span class="nt">&lt;groupId&gt;</span>org.slf4j<span class="nt">&lt;/groupId&gt;</span>
+            <span class="nt">&lt;artifactId&gt;</span>slf4j-api<span class="nt">&lt;/artifactId&gt;</span>
+            <span class="nt">&lt;version&gt;</span>1.7.5<span class="nt">&lt;/version&gt;</span>
+        <span class="nt">&lt;/dependency&gt;</span>       
+</code></pre></div></div>
+
+<p>而<a id="BindCode">测试代码</a>为：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">org.slf4j.Logger</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.slf4j.LoggerFactory</span><span class="o">;</span>
+
+<span class="cm">/**
+ * @author: ketao Date: 14-5-3 Time: 上午1:03
+ * @version: \$Id$
+ */</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">LogTest</span> <span class="o">{</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">Logger</span> <span class="n">logger</span> <span class="o">=</span> <span class="n">LoggerFactory</span><span class="o">.</span><span class="na">getLogger</span><span class="o">(</span><span class="n">LogTest</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">){</span>
+        <span class="n">logger</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">"Hello world"</span><span class="o">);</span>
+        <span class="n">logger</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">"ERROR"</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>       
+</code></pre></div></div>
+
+<p>执行上面的代码会出现提示：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+</code></pre></div></div>
+
+<p>而如果我们引入logback日志系统，并且配置logback.xml日志配置文件：</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        <span class="nt">&lt;dependency&gt;</span>
+            <span class="nt">&lt;groupId&gt;</span>ch.qos.logback<span class="nt">&lt;/groupId&gt;</span>
+            <span class="nt">&lt;artifactId&gt;</span>logback-classic<span class="nt">&lt;/artifactId&gt;</span>
+            <span class="nt">&lt;version&gt;</span>1.0.13<span class="nt">&lt;/version&gt;</span>
+        <span class="nt">&lt;/dependency&gt;</span>        
+</code></pre></div></div>
+
+<p>接下来执行上面的测试代码，则会打印日志信息：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[2014-05-03 01:27:11 [34mINFO [0;39m com.qunar.dubbo.LogTest.main(LogTest.java:17)] Hello world
+[2014-05-03 01:27:11 [1;31mERROR[0;39m com.qunar.dubbo.LogTest.main(LogTest.java:18)] ERROR
+</code></pre></div></div>
+
+<h3 id="32-slf4j-日志绑定流程">3.2 slf4j 日志绑定流程</h3>
+
+<p>如<a href="#BindCode">3.1</a>中的代码所示，首先调用<code class="highlighter-rouge">LoggerFactory.getLogger</code>的方法，这个方法会在编译的时候，绑定系统设置的真正的日志框架，如下代码所示：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="cm">/**
+   * Return a logger named according to the name parameter using the statically
+   * bound {@link ILoggerFactory} instance.
+   *
+   * @param name The name of the logger.
+   * @return logger
+   */</span>
+  <span class="kd">public</span> <span class="kd">static</span> <span class="n">Logger</span> <span class="nf">getLogger</span><span class="o">(</span><span class="n">String</span> <span class="n">name</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">ILoggerFactory</span> <span class="n">iLoggerFactory</span> <span class="o">=</span> <span class="n">getILoggerFactory</span><span class="o">();</span> <span class="c1">// 这里先获取ILoggerFactory对象</span>
+    <span class="k">return</span> <span class="n">iLoggerFactory</span><span class="o">.</span><span class="na">getLogger</span><span class="o">(</span><span class="n">name</span><span class="o">);</span> <span class="c1">// 根据获取的ILoggerFactory对象，调用其对应的日志对象</span>
+  <span class="o">}</span>
+
+   <span class="cm">/**
+   * Return the {@link ILoggerFactory} instance in use.
+   * &lt;p/&gt;
+   * &lt;p/&gt;
+   * ILoggerFactory instance is bound with this class at compile time.
+   *
+   * @return the ILoggerFactory instance in use
+   */</span>
+  <span class="kd">public</span> <span class="kd">static</span> <span class="n">ILoggerFactory</span> <span class="nf">getILoggerFactory</span><span class="o">()</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">INITIALIZATION_STATE</span> <span class="o">==</span> <span class="n">UNINITIALIZED</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">INITIALIZATION_STATE</span> <span class="o">=</span> <span class="n">ONGOING_INITIALIZATION</span><span class="o">;</span>
+      <span class="n">performInitialization</span><span class="o">();</span>
+    <span class="o">}</span>
+    <span class="k">switch</span> <span class="o">(</span><span class="n">INITIALIZATION_STATE</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">case</span> <span class="nl">SUCCESSFUL_INITIALIZATION:</span>
+        <span class="k">return</span> <span class="n">StaticLoggerBinder</span><span class="o">.</span><span class="na">getSingleton</span><span class="o">().</span><span class="na">getLoggerFactory</span><span class="o">();</span><span class="c1">// 这里就可以获取底层日志系统的单例对象了</span>
+      <span class="k">case</span> <span class="nl">NOP_FALLBACK_INITIALIZATION:</span>
+        <span class="k">return</span> <span class="n">NOP_FALLBACK_FACTORY</span><span class="o">;</span>
+      <span class="k">case</span> <span class="nl">FAILED_INITIALIZATION:</span>
+        <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalStateException</span><span class="o">(</span><span class="n">UNSUCCESSFUL_INIT_MSG</span><span class="o">);</span>
+      <span class="k">case</span> <span class="nl">ONGOING_INITIALIZATION:</span>
+        <span class="c1">// support re-entrant behavior.</span>
+        <span class="c1">// See also http://bugzilla.slf4j.org/show_bug.cgi?id=106</span>
+        <span class="k">return</span> <span class="n">TEMP_FACTORY</span><span class="o">;</span>
+    <span class="o">}</span>
+    <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalStateException</span><span class="o">(</span><span class="s">"Unreachable code"</span><span class="o">);</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>而绑定是在<code class="highlighter-rouge">getILoggerFactory()</code>中调用的，在该方法的实现里，会调用<code class="highlighter-rouge">performInitialization()</code>，该方法调用<code class="highlighter-rouge">bind()</code>方法（部分代码）：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">private</span> <span class="kd">final</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">bind</span><span class="o">()</span> <span class="o">{</span>
+    <span class="k">try</span> <span class="o">{</span>
+      <span class="n">Set</span> <span class="n">staticLoggerBinderPathSet</span> <span class="o">=</span> <span class="n">findPossibleStaticLoggerBinderPathSet</span><span class="o">();</span><span class="c1">// 寻找程序配置的日志系统集，具体见下面代码</span>
+      <span class="n">reportMultipleBindingAmbiguity</span><span class="o">(</span><span class="n">staticLoggerBinderPathSet</span><span class="o">);</span><span class="c1">// 验证多于1个日志系统时，输出警告信息</span>
+      <span class="c1">// the next line does the binding</span>
+      <span class="n">StaticLoggerBinder</span><span class="o">.</span><span class="na">getSingleton</span><span class="o">();</span><span class="c1">// 测试是否可以获取该静态绑定类单例，可以，则置为成功状态，如下行；否则，会打出3.1中的NOP异常信息。</span>
+      <span class="n">INITIALIZATION_STATE</span> <span class="o">=</span> <span class="n">SUCCESSFUL_INITIALIZATION</span><span class="o">;</span>
+      <span class="n">reportActualBinding</span><span class="o">(</span><span class="n">staticLoggerBinderPathSet</span><span class="o">);</span><span class="c1">// 绑定，打印绑定具体日志系统的日志</span>
+      <span class="n">emitSubstituteLoggerWarning</span><span class="o">();</span><span class="c1">// 提交给临时日志factory 打印的日志，不是重点</span>
+    <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">NoClassDefFoundError</span> <span class="n">ncde</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">String</span> <span class="n">msg</span> <span class="o">=</span> <span class="n">ncde</span><span class="o">.</span><span class="na">getMessage</span><span class="o">();</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">messageContainsOrgSlf4jImplStaticLoggerBinder</span><span class="o">(</span><span class="n">msg</span><span class="o">))</span> <span class="o">{</span>
+        <span class="n">INITIALIZATION_STATE</span> <span class="o">=</span> <span class="n">NOP_FALLBACK_INITIALIZATION</span><span class="o">;</span>
+        <span class="n">Util</span><span class="o">.</span><span class="na">report</span><span class="o">(</span><span class="s">"Failed to load class \"org.slf4j.impl.StaticLoggerBinder\"."</span><span class="o">);</span>
+        <span class="n">Util</span><span class="o">.</span><span class="na">report</span><span class="o">(</span><span class="s">"Defaulting to no-operation (NOP) logger implementation"</span><span class="o">);</span>
+        <span class="n">Util</span><span class="o">.</span><span class="na">report</span><span class="o">(</span><span class="s">"See "</span> <span class="o">+</span> <span class="n">NO_STATICLOGGERBINDER_URL</span>
+                <span class="o">+</span> <span class="s">" for further details."</span><span class="o">);</span>
+      <span class="o">}</span> 
+    <span class="o">}</span>
+  <span class="o">}</span>        
+</code></pre></div></div>
+
+<p>下面看看，slf4j是如何获取系统中指定的真正底层日志系统：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// We need to use the name of the StaticLoggerBinder class, but we can't reference</span>
+  <span class="c1">// the class itself.</span>
+  <span class="kd">private</span> <span class="kd">static</span> <span class="n">String</span> <span class="n">STATIC_LOGGER_BINDER_PATH</span> <span class="o">=</span> <span class="s">"org/slf4j/impl/StaticLoggerBinder.class"</span><span class="o">;</span>
+
+  <span class="kd">private</span> <span class="kd">static</span> <span class="n">Set</span> <span class="nf">findPossibleStaticLoggerBinderPathSet</span><span class="o">()</span> <span class="o">{</span>
+    <span class="c1">// use Set instead of list in order to deal with  bug #138</span>
+    <span class="c1">// LinkedHashSet appropriate here because it preserves insertion order during iteration</span>
+    <span class="n">Set</span> <span class="n">staticLoggerBinderPathSet</span> <span class="o">=</span> <span class="k">new</span> <span class="n">LinkedHashSet</span><span class="o">();</span>
+    <span class="k">try</span> <span class="o">{</span>
+      <span class="n">ClassLoader</span> <span class="n">loggerFactoryClassLoader</span> <span class="o">=</span> <span class="n">LoggerFactory</span><span class="o">.</span><span class="na">class</span>
+              <span class="o">.</span><span class="na">getClassLoader</span><span class="o">();</span>
+      <span class="n">Enumeration</span> <span class="n">paths</span><span class="o">;</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">loggerFactoryClassLoader</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">paths</span> <span class="o">=</span> <span class="n">ClassLoader</span><span class="o">.</span><span class="na">getSystemResources</span><span class="o">(</span><span class="n">STATIC_LOGGER_BINDER_PATH</span><span class="o">);</span>
+      <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+        <span class="n">paths</span> <span class="o">=</span> <span class="n">loggerFactoryClassLoader</span>
+                <span class="o">.</span><span class="na">getResources</span><span class="o">(</span><span class="n">STATIC_LOGGER_BINDER_PATH</span><span class="o">);</span>
+      <span class="o">}</span>
+      <span class="k">while</span> <span class="o">(</span><span class="n">paths</span><span class="o">.</span><span class="na">hasMoreElements</span><span class="o">())</span> <span class="o">{</span>
+        <span class="n">URL</span> <span class="n">path</span> <span class="o">=</span> <span class="o">(</span><span class="n">URL</span><span class="o">)</span> <span class="n">paths</span><span class="o">.</span><span class="na">nextElement</span><span class="o">();</span>
+        <span class="n">staticLoggerBinderPathSet</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">path</span><span class="o">);</span>
+      <span class="o">}</span>
+    <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">IOException</span> <span class="n">ioe</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">Util</span><span class="o">.</span><span class="na">report</span><span class="o">(</span><span class="s">"Error getting resources from path"</span><span class="o">,</span> <span class="n">ioe</span><span class="o">);</span>
+    <span class="o">}</span>
+    <span class="k">return</span> <span class="n">staticLoggerBinderPathSet</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div></div>
+
+<p>slf4j在适配器层或者在兼容slf4j扩展的log-api 中会有一个<code class="highlighter-rouge">org/slf4j/impl/StaticLoggerBinder.class</code>类，这样就获取了系统中真正的日志系统。然后获取该日志的单例，打印相关的日志信息就可以了。比如，打印slf4j的<code class="highlighter-rouge">log.info</code>则调用logback中<code class="highlighter-rouge">Logger.info()</code>方法来打印日志信息。</p>
+
+<h2 id="slf4j-api使用"><a id="API">slf4j API使用</a></h2>
+
+<p>slf4j的打印日志基本一致，主要分为：<code class="highlighter-rouge">trace</code>,<code class="highlighter-rouge">debug</code>,<code class="highlighter-rouge">info</code>,<code class="highlighter-rouge">warn</code>,<code class="highlighter-rouge">error</code>,比log4j少了<code class="highlighter-rouge">fatal</code>级别日志。由于每个级别对于的API方法级别一致，因此，这里选用info来介绍不同输入参数的API使用。</p>
+
+<blockquote>
+  <blockquote>
+    <p>Tip: SLF4J 认为 ERROR 与 FATAL 并没有实质上的差别，所以拿掉了 FATAL 等级，只剩下其他五种。</p>
+  </blockquote>
+</blockquote>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="cm">/**
+   * 纯字符串形式的日志
+   */</span>
+  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">info</span><span class="o">(</span><span class="n">String</span> <span class="n">msg</span><span class="o">);</span>
+
+  <span class="cm">/**
+   * 指定一个参数和位置格式的info级别的日志输出形式。这个形式避免了多个object对象的创建。
+   */</span>
+  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">info</span><span class="o">(</span><span class="n">String</span> <span class="n">format</span><span class="o">,</span> <span class="n">Object</span> <span class="n">arg</span><span class="o">);</span>
+
+  <span class="cm">/**
+   * 指定2个参数和对于位置格式的info级别的日志输出。
+   */</span>
+  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">info</span><span class="o">(</span><span class="n">String</span> <span class="n">format</span><span class="o">,</span> <span class="n">Object</span> <span class="n">arg1</span><span class="o">,</span> <span class="n">Object</span> <span class="n">arg2</span><span class="o">);</span>
+
+  <span class="cm">/**
+   * 根据指定的参数和日志格式来输出info级别的日志信息。
+   * 但是，需要指出这种形式虽然避免的字符串拼接的成本，但是它会私底下创建一个`Object[]`对象在调用info方法之前，即使info级别的日志不打印。
+   * 因此，如果不是必须3个及以上参数的话，推荐使用两个参数和一个参数的info日志。
+   */</span>
+  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">info</span><span class="o">(</span><span class="n">String</span> <span class="n">format</span><span class="o">,</span> <span class="n">Object</span><span class="o">...</span> <span class="n">arguments</span><span class="o">);</span>
+
+  <span class="cm">/**
+   * 打印抛出异常信息的info 级别日志
+   */</span>
+  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">info</span><span class="o">(</span><span class="n">String</span> <span class="n">msg</span><span class="o">,</span> <span class="n">Throwable</span> <span class="n">t</span><span class="o">);</span>
+</code></pre></div></div>
+
+<p>此外，需要介绍的是在slf4j中还提供了含有Marker对象的日记输出API接口。Marker是常常被用来丰富log状态的对象。遵守slf4j的日志系统实现，决定了信息怎样在使用的Marker之间传达。实际上，很多遵守规范的日志系统会忽视掉marker数据,所以，我们不介绍Marker相关API接口。</p>
+
+<p>下面给出各个接口的使用示例代码：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">java.io.IOException</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">org.slf4j.Logger</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.slf4j.LoggerFactory</span><span class="o">;</span>
+
+<span class="cm">/**
+ * @author: ketao Date: 14-5-3 Time: 上午1:03
+ * @version: \$Id$
+ */</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">LogTest</span> <span class="o">{</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">Logger</span> <span class="n">logger</span> <span class="o">=</span> <span class="n">LoggerFactory</span><span class="o">.</span><span class="na">getLogger</span><span class="o">(</span><span class="n">LogTest</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">logger</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">"纯字符串信息的info级别日志"</span><span class="o">);</span>
+        <span class="n">logger</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">"一个参数:{}的info级别日志"</span><span class="o">,</span> <span class="s">"agr1"</span><span class="o">);</span>
+        <span class="n">logger</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">"二个参数:agrs1:{};agrs2:{}的info级别日志"</span><span class="o">,</span> <span class="s">"args1"</span><span class="o">,</span> <span class="s">"args2"</span><span class="o">);</span>
+        <span class="c1">// 下面两种方式都可以，一般使用上面一种就可以了</span>
+        <span class="n">logger</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">"三个参数:agrs1:{};agrs2:{};args3:{} 的info级别日志"</span><span class="o">,</span> <span class="s">"args1"</span><span class="o">,</span> <span class="s">"args2"</span><span class="o">,</span> <span class="s">"args3"</span><span class="o">);</span>
+        <span class="n">logger</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">"三个参数:agrs1:{};agrs2:{};args3:{} 的info级别日志"</span><span class="o">,</span> <span class="k">new</span> <span class="n">Object</span><span class="o">[]</span> <span class="o">{</span> <span class="s">"args1"</span><span class="o">,</span> <span class="s">"args2"</span><span class="o">,</span> <span class="s">"args3"</span> <span class="o">});</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">"======================异常相关===================================="</span><span class="o">);</span>
+        <span class="c1">// 测试异常相关日志</span>
+        <span class="n">logger</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">"抛出异常,e:"</span><span class="o">,</span> <span class="k">new</span> <span class="n">IOException</span><span class="o">(</span><span class="s">"测试抛出IO异常信息"</span><span class="o">));</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">"二个参数:agrs1:{};agrs2:{}的info级别日志"</span><span class="o">,</span> <span class="s">"args1"</span><span class="o">,</span> <span class="k">new</span> <span class="n">IOException</span><span class="o">(</span><span class="s">"测试抛出IO异常信息"</span><span class="o">));</span>
+        <span class="n">logger</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">"二个参数:agrs1:{};agrs2:{}的info级别日志"</span><span class="o">,</span> <span class="s">"args1"</span><span class="o">,</span> <span class="s">"args2"</span><span class="o">,</span> <span class="k">new</span> <span class="n">IOException</span><span class="o">(</span><span class="s">"测试抛出IO异常信息"</span><span class="o">));</span>
+
+        <span class="c1">// 下面两种方式都可以，一般使用上面一种就可以了</span>
+        <span class="n">logger</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">"三个参数:agrs1:{};agrs2:{};args3:{} 的info级别日志"</span><span class="o">,</span> <span class="s">"args1"</span><span class="o">,</span> <span class="s">"args2"</span><span class="o">,</span> <span class="k">new</span> <span class="n">IOException</span><span class="o">(</span><span class="s">"测试抛出IO异常信息"</span><span class="o">));</span>
+        <span class="n">logger</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">"三个参数:agrs1:{};agrs2:{};args3:{} 的info级别日志"</span><span class="o">,</span> <span class="s">"args1"</span><span class="o">,</span> <span class="s">"args2"</span><span class="o">,</span> <span class="s">"agrs3"</span><span class="o">,</span> <span class="k">new</span> <span class="n">IOException</span><span class="o">(</span>
+                <span class="s">"测试抛出IO异常信息"</span><span class="o">));</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">"三个参数:agrs1:{};agrs2:{};args3:{} 的info级别日志"</span><span class="o">,</span> <span class="k">new</span> <span class="n">Object</span><span class="o">[]</span> <span class="o">{</span> <span class="s">"args1"</span><span class="o">,</span> <span class="s">"args2"</span><span class="o">,</span> <span class="s">"args3"</span><span class="o">,</span>
+                <span class="k">new</span> <span class="nf">IOException</span><span class="o">(</span><span class="s">"测试抛出IO异常信息"</span><span class="o">)</span> <span class="o">});</span>
+        <span class="n">logger</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">"三个参数:agrs1:{};agrs2:{};args3:{} 的info级别日志"</span><span class="o">,</span> <span class="k">new</span> <span class="n">Object</span><span class="o">[]</span> <span class="o">{</span> <span class="s">"args1"</span><span class="o">,</span> <span class="s">"args2"</span><span class="o">,</span>
+                <span class="k">new</span> <span class="nf">IOException</span><span class="o">(</span><span class="s">"测试抛出IO异常信息"</span><span class="o">)</span> <span class="o">});</span>
+
+    <span class="o">}</span>
+
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>对应输出日志信息：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[2014-05-03 03:47:14 [34mINFO [0;39m com.qunar.dubbo.LogTest.main(LogTest.java:20)] 纯字符串信息的info级别日志
+[2014-05-03 03:47:14 [34mINFO [0;39m com.qunar.dubbo.LogTest.main(LogTest.java:21)] 一个参数:agr1的info级别日志
+[2014-05-03 03:47:14 [34mINFO [0;39m com.qunar.dubbo.LogTest.main(LogTest.java:22)] 二个参数:agrs1:args1;agrs2:args2的info级别日志
+[2014-05-03 03:47:14 [34mINFO [0;39m com.qunar.dubbo.LogTest.main(LogTest.java:24)] 三个参数:agrs1:args1;agrs2:args2;args3:args3 的info级别日志
+[2014-05-03 03:47:14 [34mINFO [0;39m com.qunar.dubbo.LogTest.main(LogTest.java:25)] 三个参数:agrs1:args1;agrs2:args2;args3:args3 的info级别日志
+[2014-05-03 03:47:14 [34mINFO [0;39m com.qunar.dubbo.LogTest.main(LogTest.java:27)] ======================异常相关====================================
+[2014-05-03 03:47:14 [34mINFO [0;39m com.qunar.dubbo.LogTest.main(LogTest.java:29)] 抛出异常,e:
+java.io.IOException: 测试抛出IO异常信息
+	at com.qunar.dubbo.LogTest.main(LogTest.java:29) [classes/:na]
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[na:1.7.0_45]
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57) ~[na:1.7.0_45]
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[na:1.7.0_45]
+	at java.lang.reflect.Method.invoke(Method.java:606) ~[na:1.7.0_45]
+	at com.intellij.rt.execution.application.AppMain.main(AppMain.java:120) [idea_rt.jar:na]
+[2014-05-03 03:47:14 [34mINFO [0;39m com.qunar.dubbo.LogTest.main(LogTest.java:31)] 二个参数:agrs1:args1;agrs2:java.io.IOException: 测试抛出IO异常信息的info级别日志
+[2014-05-03 03:47:14 [34mINFO [0;39m com.qunar.dubbo.LogTest.main(LogTest.java:32)] 二个参数:agrs1:args1;agrs2:args2的info级别日志
+java.io.IOException: 测试抛出IO异常信息
+	at com.qunar.dubbo.LogTest.main(LogTest.java:32) [classes/:na]
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[na:1.7.0_45]
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57) ~[na:1.7.0_45]
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[na:1.7.0_45]
+	at java.lang.reflect.Method.invoke(Method.java:606) ~[na:1.7.0_45]
+	at com.intellij.rt.execution.application.AppMain.main(AppMain.java:120) [idea_rt.jar:na]
+[2014-05-03 03:47:14 [34mINFO [0;39m com.qunar.dubbo.LogTest.main(LogTest.java:35)] 三个参数:agrs1:args1;agrs2:args2;args3:java.io.IOException: 测试抛出IO异常信息 的info级别日志
+[2014-05-03 03:47:14 [34mINFO [0;39m com.qunar.dubbo.LogTest.main(LogTest.java:36)] 三个参数:agrs1:args1;agrs2:args2;args3:agrs3 的info级别日志
+java.io.IOException: 测试抛出IO异常信息
+	at com.qunar.dubbo.LogTest.main(LogTest.java:36) [classes/:na]
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[na:1.7.0_45]
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57) ~[na:1.7.0_45]
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[na:1.7.0_45]
+	at java.lang.reflect.Method.invoke(Method.java:606) ~[na:1.7.0_45]
+	at com.intellij.rt.execution.application.AppMain.main(AppMain.java:120) [idea_rt.jar:na]
+[2014-05-03 03:47:14 [34mINFO [0;39m com.qunar.dubbo.LogTest.main(LogTest.java:38)] 三个参数:agrs1:args1;agrs2:args2;args3:args3 的info级别日志
+java.io.IOException: 测试抛出IO异常信息
+	at com.qunar.dubbo.LogTest.main(LogTest.java:38) [classes/:na]
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[na:1.7.0_45]
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57) ~[na:1.7.0_45]
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[na:1.7.0_45]
+	at java.lang.reflect.Method.invoke(Method.java:606) ~[na:1.7.0_45]
+	at com.intellij.rt.execution.application.AppMain.main(AppMain.java:120) [idea_rt.jar:na]
+[2014-05-03 03:47:14 [34mINFO [0;39m com.qunar.dubbo.LogTest.main(LogTest.java:39)] 三个参数:agrs1:args1;agrs2:args2;args3:java.io.IOException: 测试抛出IO异常信息 的info级别日志
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Note: 从代码调用可以看到，throwable 异常信息单独作为一个参数输入，因此，如果把异常信息作为<code class="highlighter-rouge">{}</code>占位符中的字符串，则会调用其对应toString方法，而无法打印异常堆栈信息。可以看看下面的截取源码：</p>
+  </blockquote>
+</blockquote>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">info</span><span class="o">(</span><span class="n">String</span> <span class="n">msg</span><span class="o">,</span> <span class="n">Throwable</span> <span class="n">t</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">filterAndLog_0_Or3Plus</span><span class="o">(</span><span class="n">FQCN</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span> <span class="n">Level</span><span class="o">.</span><span class="na">INFO</span><span class="o">,</span> <span class="n">msg</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span> <span class="n">t</span><span class="o">);</span>
+  <span class="o">}</span>
+
+    <span class="c1">// 当日志的参数string 大于1，并且包含 Throwable类型参数，则调用下面的方法</span>
+  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">info</span><span class="o">(</span><span class="n">String</span> <span class="n">format</span><span class="o">,</span> <span class="n">Object</span><span class="o">[]</span> <span class="n">argArray</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">filterAndLog_0_Or3Plus</span><span class="o">(</span><span class="n">FQCN</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span> <span class="n">Level</span><span class="o">.</span><span class="na">INFO</span><span class="o">,</span> <span class="n">format</span><span class="o">,</span> <span class="n">argArray</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span>
+  <span class="o">}</span>
+  
+   <span class="cm">/**
+   * 在logback代码中，作者表明如果不使用Object[]创建参数数组对象，则会减少20 纳秒的时间开销。
+   */</span>
+  <span class="kd">private</span> <span class="kt">void</span> <span class="nf">filterAndLog_0_Or3Plus</span><span class="o">(</span><span class="kd">final</span> <span class="n">String</span> <span class="n">localFQCN</span><span class="o">,</span>
+      <span class="kd">final</span> <span class="n">Marker</span> <span class="n">marker</span><span class="o">,</span> <span class="kd">final</span> <span class="n">Level</span> <span class="n">level</span><span class="o">,</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">msg</span><span class="o">,</span>
+      <span class="kd">final</span> <span class="n">Object</span><span class="o">[]</span> <span class="n">params</span><span class="o">,</span> <span class="kd">final</span> <span class="n">Throwable</span> <span class="n">t</span><span class="o">)</span> <span class="o">{</span>
+
+    <span class="kd">final</span> <span class="n">FilterReply</span> <span class="n">decision</span> <span class="o">=</span> <span class="n">loggerContext</span>
+        <span class="o">.</span><span class="na">getTurboFilterChainDecision_0_3OrMore</span><span class="o">(</span><span class="n">marker</span><span class="o">,</span> <span class="k">this</span><span class="o">,</span> <span class="n">level</span><span class="o">,</span> <span class="n">msg</span><span class="o">,</span>
+            <span class="n">params</span><span class="o">,</span> <span class="n">t</span><span class="o">);</span>
+
+    <span class="k">if</span> <span class="o">(</span><span class="n">decision</span> <span class="o">==</span> <span class="n">FilterReply</span><span class="o">.</span><span class="na">NEUTRAL</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">effectiveLevelInt</span> <span class="o">&gt;</span> <span class="n">level</span><span class="o">.</span><span class="na">levelInt</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">return</span><span class="o">;</span>
+      <span class="o">}</span>
+    <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="n">decision</span> <span class="o">==</span> <span class="n">FilterReply</span><span class="o">.</span><span class="na">DENY</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">return</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="n">buildLoggingEventAndAppend</span><span class="o">(</span><span class="n">localFQCN</span><span class="o">,</span> <span class="n">marker</span><span class="o">,</span> <span class="n">level</span><span class="o">,</span> <span class="n">msg</span><span class="o">,</span> <span class="n">params</span><span class="o">,</span> <span class="n">t</span><span class="o">);</span><span class="c1">// 在这个方法里面，会LoggingEvent方法构架日志信息，而对于Throwable非空时，则会创建一个ThrowableProxy对象，具体代码见下面。</span>
+  <span class="o">}</span>
+
+
+  
+  <span class="c1">// 下面的代码，是对日志中的异常打印信息。显然，在messageFormat里面，使用String来处理，是无法获得这么丰富的异常堆栈信息的。</span>
+  <span class="kd">public</span> <span class="nf">ThrowableProxy</span><span class="o">(</span><span class="n">Throwable</span> <span class="n">throwable</span><span class="o">)</span> <span class="o">{</span>
+   
+    <span class="k">this</span><span class="o">.</span><span class="na">throwable</span> <span class="o">=</span> <span class="n">throwable</span><span class="o">;</span>
+    <span class="k">this</span><span class="o">.</span><span class="na">className</span> <span class="o">=</span> <span class="n">throwable</span><span class="o">.</span><span class="na">getClass</span><span class="o">().</span><span class="na">getName</span><span class="o">();</span>
+    <span class="k">this</span><span class="o">.</span><span class="na">message</span> <span class="o">=</span> <span class="n">throwable</span><span class="o">.</span><span class="na">getMessage</span><span class="o">();</span>
+    <span class="k">this</span><span class="o">.</span><span class="na">stackTraceElementProxyArray</span> <span class="o">=</span> <span class="n">ThrowableProxyUtil</span><span class="o">.</span><span class="na">steArrayToStepArray</span><span class="o">(</span><span class="n">throwable</span>
+        <span class="o">.</span><span class="na">getStackTrace</span><span class="o">());</span>
+    
+    <span class="c1">//下面构建详细异常的堆栈信息，这也就是我们在代码输出时，看到的一大坨at... 输出错误代码位置等。</span>
+    <span class="n">Throwable</span> <span class="n">nested</span> <span class="o">=</span> <span class="n">throwable</span><span class="o">.</span><span class="na">getCause</span><span class="o">();</span>
+    
+    <span class="k">if</span> <span class="o">(</span><span class="n">nested</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">this</span><span class="o">.</span><span class="na">cause</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ThrowableProxy</span><span class="o">(</span><span class="n">nested</span><span class="o">);</span>
+      <span class="k">this</span><span class="o">.</span><span class="na">cause</span><span class="o">.</span><span class="na">commonFrames</span> <span class="o">=</span> <span class="n">ThrowableProxyUtil</span>
+          <span class="o">.</span><span class="na">findNumberOfCommonFrames</span><span class="o">(</span><span class="n">nested</span><span class="o">.</span><span class="na">getStackTrace</span><span class="o">(),</span>
+              <span class="n">stackTraceElementProxyArray</span><span class="o">);</span>
+    <span class="o">}</span>
+    <span class="k">if</span><span class="o">(</span><span class="n">GET_SUPPRESSED_METHOD</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+      <span class="c1">// this will only execute on Java 7</span>
+      <span class="k">try</span> <span class="o">{</span>
+        <span class="n">Object</span> <span class="n">obj</span> <span class="o">=</span> <span class="n">GET_SUPPRESSED_METHOD</span><span class="o">.</span><span class="na">invoke</span><span class="o">(</span><span class="n">throwable</span><span class="o">);</span>
+        <span class="k">if</span><span class="o">(</span><span class="n">obj</span> <span class="k">instanceof</span> <span class="n">Throwable</span><span class="o">[])</span> <span class="o">{</span>
+          <span class="n">Throwable</span><span class="o">[]</span> <span class="n">throwableSuppressed</span> <span class="o">=</span> <span class="o">(</span><span class="n">Throwable</span><span class="o">[])</span> <span class="n">obj</span><span class="o">;</span>
+          <span class="k">if</span><span class="o">(</span><span class="n">throwableSuppressed</span><span class="o">.</span><span class="na">length</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">suppressed</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ThrowableProxy</span><span class="o">[</span><span class="n">throwableSuppressed</span><span class="o">.</span><span class="na">length</span><span class="o">];</span>
+            <span class="k">for</span><span class="o">(</span><span class="kt">int</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="o">;</span><span class="n">i</span><span class="o">&lt;</span><span class="n">throwableSuppressed</span><span class="o">.</span><span class="na">length</span><span class="o">;</span><span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+              <span class="k">this</span><span class="o">.</span><span class="na">suppressed</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ThrowableProxy</span><span class="o">(</span><span class="n">throwableSuppressed</span><span class="o">[</span><span class="n">i</span><span class="o">]);</span>
+              <span class="k">this</span><span class="o">.</span><span class="na">suppressed</span><span class="o">[</span><span class="n">i</span><span class="o">].</span><span class="na">commonFrames</span> <span class="o">=</span> <span class="n">ThrowableProxyUtil</span>
+                  <span class="o">.</span><span class="na">findNumberOfCommonFrames</span><span class="o">(</span><span class="n">throwableSuppressed</span><span class="o">[</span><span class="n">i</span><span class="o">].</span><span class="na">getStackTrace</span><span class="o">(),</span>
+                      <span class="n">stackTraceElementProxyArray</span><span class="o">);</span>
+            <span class="o">}</span>
+          <span class="o">}</span>
+        <span class="o">}</span>
+      <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">IllegalAccessException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+        <span class="c1">// ignore</span>
+      <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">InvocationTargetException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+        <span class="c1">// ignore</span>
+      <span class="o">}</span>
+    <span class="o">}</span>
+
+  <span class="o">}</span>
+
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Note: 上面代码只是一般的步骤，对于调用<code class="highlighter-rouge">Object[]</code>形式的方法，则<code class="highlighter-rouge">ThrowableProxy</code>之前，还会对<code class="highlighter-rouge">Object[]</code>中的元素进行过滤处理，提取出最后一个元素判断是不是 <code class="highlighter-rouge">Throwable</code>类型的对象。代码参考如下：</p>
+  </blockquote>
+</blockquote>
+
+<p>``` java</p>
+
+<p>final public static FormattingTuple format(final String messagePattern,
+      Object arg1, Object arg2) {
+    return arrayFormat(messagePattern, new Object[] { arg1, arg2 });
+  }</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>//这方法会对输入参数进行特殊处理和过滤  final public static FormattingTuple arrayFormat(final String messagePattern,
+  final Object[] argArray) {
+
+Throwable throwableCandidate = getThrowableCandidate(argArray);
+
+......
+
+if (L &lt; argArray.length - 1) {
+  return new FormattingTuple(sbuf.toString(), argArray, throwableCandidate);// 如果元素中有Throwable类型，则size会减少，因此，对应的Throwale参数位置为 置提取出来的异常对象
+} else {
+  return new FormattingTuple(sbuf.toString(), argArray, null);
+}
+</code></pre></div></div>
+
+<p>}</p>
+
+
+                </div>
+                <div class="read-all">
+                    <a  href="/2014/05/02/Java-slf4j-Introduce/"><i class="fa fa-newspaper-o"></i>Read All</a>
+                </div>
+                <hr>
+              </li>
+            
+        </ul>
+
+
+
+        <!-- Pagination links -->
+        <div class="pagination">
+          
+            <a href="/index.html" class="previous"><i class="fa fa-angle-double-left"></i></a>
+            <a href="/page6" class="previous"><i class="fa fa-angle-left"></i></a>
+          
+          <span class="page_number ">7/8</span>
+          
+            <a href="/page8" class="next"><i class="fa fa-angle-right"></i></a>
+            <a href="/page8" class="next"><i class="fa fa-angle-double-right"></i></a>
+          
+        </div>
+    </div>
+    <!-- <button class="anchor"><i class="fa fa-anchor"></i></button> -->
+    <div class="right">
+        <div class="wrap">
+            <div class="side">
+                <div>
+                    <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
+                    Recent Posts
+                </div>
+                <ul class="content-ul" recent>
+                    
+                        <li><a href="/2017/03/29/java-server-in-action/">深入浅出Java服务端原理之基础篇</a></li>
+                    
+                        <li><a href="/2016/12/10/rpc-theory-in-action/">深入浅出RPC原理</a></li>
+                    
+                        <li><a href="/2016/05/29/talk-about-java-gc/">聊聊 Java GC</a></li>
+                    
+                        <li><a href="/2016/04/29/thrift-service-discory-using-zookeeper-ourea/">Ourea-基于Zookeeper的Thrift服务发现框架实现</a></li>
+                    
+                        <li><a href="/2016/03/10/junit-mockito-guice-in-action-and-junit-test-mechanism/">基于JUnit Mockito Guice测试实践及JUnit运行机制浅析</a></li>
+                    
+                        <li><a href="/2016/01/02/delayed-message-consume-service-use-kafka/">基于kafka的定时消息/任务服务</a></li>
+                    
+                        <li><a href="/2015/09/05/zookeeper-programmer-guide/">Zookeeper 编程指南</a></li>
+                    
+                        <li><a href="/2015/08/30/nginx-proxy-configure-and-sduty/">Nginx 反向代理配置和工作原理</a></li>
+                    
+                        <li><a href="/2015/04/29/LogBack-Implemention-And-Slf4j-Mdc/">Slf4j MDC 使用和 基于 Logback 的实现分析</a></li>
+                    
+                        <li><a href="/2015/02/26/Python-Tutoril-Python-Object-Oriented-Programming/">Python 教程学习之 Python 面向对象编程</a></li>
+                    
+                </ul>
+            </div>
+
+            <!-- Content -->
+            <div class="side ">
+                <div>
+                    <i class="fa fa-th-list"></i>
+                    Categories
+                </div>
+                <ul class="content-ul" cate>
+                    
+                    <li>
+                        <a href="/category/#Java" class="categories-list-item" cate="Java">
+                            <span class="name">
+                                Java
+                            </span>
+                            <span class="badge">19</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#IDE" class="categories-list-item" cate="IDE">
+                            <span class="name">
+                                IDE
+                            </span>
+                            <span class="badge">2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Log" class="categories-list-item" cate="Log">
+                            <span class="name">
+                                Log
+                            </span>
+                            <span class="badge">2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Thread" class="categories-list-item" cate="Thread">
+                            <span class="name">
+                                Thread
+                            </span>
+                            <span class="badge">2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Spring" class="categories-list-item" cate="Spring">
+                            <span class="name">
+                                Spring
+                            </span>
+                            <span class="badge">2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#GC" class="categories-list-item" cate="GC">
+                            <span class="name">
+                                GC
+                            </span>
+                            <span class="badge">2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Mysql" class="categories-list-item" cate="Mysql">
+                            <span class="name">
+                                Mysql
+                            </span>
+                            <span class="badge">2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Script" class="categories-list-item" cate="Script">
+                            <span class="name">
+                                Script
+                            </span>
+                            <span class="badge">3</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Linux" class="categories-list-item" cate="Linux">
+                            <span class="name">
+                                Linux
+                            </span>
+                            <span class="badge">5</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Python" class="categories-list-item" cate="Python">
+                            <span class="name">
+                                Python
+                            </span>
+                            <span class="badge">5</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Redis" class="categories-list-item" cate="Redis">
+                            <span class="name">
+                                Redis
+                            </span>
+                            <span class="badge">6</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Redis Cookbook" class="categories-list-item" cate="Redis Cookbook">
+                            <span class="name">
+                                Redis Cookbook
+                            </span>
+                            <span class="badge">6</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#tools" class="categories-list-item" cate="tools">
+                            <span class="name">
+                                tools
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Json" class="categories-list-item" cate="Json">
+                            <span class="name">
+                                Json
+                            </span>
+                            <span class="badge">3</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Dubbo" class="categories-list-item" cate="Dubbo">
+                            <span class="name">
+                                Dubbo
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Git" class="categories-list-item" cate="Git">
+                            <span class="name">
+                                Git
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Nginx" class="categories-list-item" cate="Nginx">
+                            <span class="name">
+                                Nginx
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Zookeeper" class="categories-list-item" cate="Zookeeper">
+                            <span class="name">
+                                Zookeeper
+                            </span>
+                            <span class="badge">2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Translation" class="categories-list-item" cate="Translation">
+                            <span class="name">
+                                Translation
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Kafka" class="categories-list-item" cate="Kafka">
+                            <span class="name">
+                                Kafka
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#JUnit" class="categories-list-item" cate="JUnit">
+                            <span class="name">
+                                JUnit
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Guice" class="categories-list-item" cate="Guice">
+                            <span class="name">
+                                Guice
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Thrift" class="categories-list-item" cate="Thrift">
+                            <span class="name">
+                                Thrift
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#rpc" class="categories-list-item" cate="rpc">
+                            <span class="name">
+                                rpc
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#dubbo" class="categories-list-item" cate="dubbo">
+                            <span class="name">
+                                dubbo
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#thrift" class="categories-list-item" cate="thrift">
+                            <span class="name">
+                                thrift
+                            </span>
+                            <span class="badge">2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#java" class="categories-list-item" cate="java">
+                            <span class="name">
+                                java
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#socket" class="categories-list-item" cate="socket">
+                            <span class="name">
+                                socket
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                </ul>
+            </div>
+            <!-- 其他div框放到这里 -->
+            <div class="side">
+                <div>
+                    <i class="fa fa-tags"></i>
+                    Tags
+                </div>
+                <div class="tags-cloud">
+                    
+                    
+                    
+                    
+
+                    
+
+                    
+                </div>
+            </div>
+
+            <!-- <div class="side">
+                <div>
+                    <i class="fa fa-external-link"></i>
+                    Links
+                </div>
+                <ul  class="content-ul">
+
+                </ul>
+            </div> -->
+        </div>
+    </div>
+</div>
+<!-- <script src="/js/scroll.min.js " charset="utf-8"></script> -->
+<!-- <script src="/js/pageContent.js " charset="utf-8"></script> -->
+
+
+    <footer class="site-footer">
+
+
+    <div class="wrapper">
+
+        <p class="description">
+             本站保留着一点点技术积蓄！ 
+        </p>
+        <p class="contact">
+            Contact me at: 
+            <a href="https://github.com/ketao1989" title="GitHub"><i class="fa fa-github" aria-hidden="true"></i></a>  
+            <a href="mailto:ketao1989@126.com" title="email"><i class="fa fa-envelope-o" aria-hidden="true"></i></a>  
+            <a href="http://weibo.com/柯小小西" title="Weibo"><i class="fa fa-weibo" aria-hidden="true"></i></a>       
+        </p>
+        <p>
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次，本站访客数<span id="busuanzi_value_site_uv"></span>人次，本文总阅读量<span id="busuanzi_value_page_pv"></span>次
+        </p>
+        <p class="power">
+            <span>
+                Site powered by <a href="https://jekyllrb.com/">Jekyll</a> & <a href="https://pages.github.com/">Github Pages</a>.
+            </span>
+            <span>
+                Theme designed by <a href="https://github.com/Gaohaoyang">HyG</a>.
+            </span>
+        </p>
+    </div>
+</footer>
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+    <div class="back-to-top">
+    <a href="#top" data-scroll>
+        <i class="fa fa-arrow-up" aria-hidden="true"></i>
+    </a>
+</div>
+
+    <script src=" /js/main.js " charset="utf-8"></script>
+    <script src=" /js/smooth-scroll.min.js " charset="utf-8"></script>
+    <script type="text/javascript">
+      smoothScroll.init({
+        speed: 500, // Integer. How fast to complete the scroll in milliseconds
+        easing: 'easeInOutCubic', // Easing pattern to use
+        offset: 20, // Integer. How far to offset the scrolling anchor location in pixels
+      });
+    </script>
+    <!-- <script src=" /js/scroll.min.js " charset="utf-8"></script> -->
+  </body>
+
+</html>

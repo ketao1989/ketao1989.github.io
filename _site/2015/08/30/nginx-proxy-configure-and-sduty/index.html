@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Nginx 反向代理配置和工作原理</title>
+    <meta name="description" content="前言Nginx是一款面向性能设计的HTTP服务器,其性能相对于其他服务器表现优异。内部使用异步的事件处理模型，比如linux平台的epoll事件模型，unix平台的kqueue事件模型等。在Nginx源码的src/event/modules目录下，其对各个平台不同的异步模型进行了二次封装。此外，Nginx在代码实...">
+
+    <link rel="shortcut icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://at.alicdn.com/t/font_8v3czwksspqlg14i.css">
+    <link rel="stylesheet" href="/css/main.css ">
+    <link rel="canonical" href="http://localhost:4000/2015/08/30/nginx-proxy-configure-and-sduty/">
+    <link rel="alternate" type="application/rss+xml" title="柯小小西" href="http://localhost:4000/feed.xml ">
+
+
+    <script>
+    // 百度统计代码
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?a9b0f47a0e50b02dafb8a7088436a9bc";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+    </script>
+
+
+
+
+</head>
+
+
+  <body>
+
+    <header id="top">
+    <div class="wrapper">
+        <a href="/" class="brand">柯小小西</a>
+        <small>留着一点点技术积蓄</small>
+        <button id="headerMenu" class="menu"><i class="fa fa-bars"></i></button>
+        <nav id="headerNav">
+            <ul>
+                <li>
+                    
+                    <a href="/">
+                    
+                        <i class="fa fa-home"></i>Home
+                    </a>
+                </li>
+
+                
+                    
+                    <li>
+                        
+                        <a href="/archive/">
+                        
+                            <i class="fa fa-archive"></i>Archives
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/category/">
+                        
+                            <i class="fa fa-th-list"></i>Categories
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/tag/">
+                        
+                            <i class="fa fa-tags"></i>Tags
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/about/">
+                        
+                            <i class="fa fa-heart"></i>About
+                        </a>
+                    </li>
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+        <div class="page clearfix" post>
+    <div class="left">
+        <h1>Nginx 反向代理配置和工作原理</h1>
+        <div class="label">
+
+            <div class="label-card">
+                <i class="fa fa-calendar"></i>2015-08-30
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+            
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Nginx" title="Category: Nginx" rel="category">Nginx</a>&nbsp;
+    
+        <a href="/category/#Script" title="Category: Script" rel="category">Script</a>&nbsp;
+    
+        <a href="/category/#Linux" title="Category: Linux" rel="category">Linux</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+            </div>
+
+            <div class="label-card">
+            
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+            </div>
+
+        </div>
+        <hr>
+        <article itemscope itemtype="http://schema.org/BlogPosting">
+        <h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p><code class="highlighter-rouge">Nginx</code>是一款面向性能设计的HTTP服务器,其性能相对于其他服务器表现优异。内部使用异步的事件处理模型，比如linux平台的<code class="highlighter-rouge">epoll</code>事件模型，unix平台的<code class="highlighter-rouge">kqueue</code>事件模型等。在Nginx源码的<code class="highlighter-rouge">src/event/modules</code>目录下，其对各个平台不同的异步模型进行了二次封装。此外，Nginx在代码实现的时候，会考虑到众多细节优化。比如：根据CPU亲缘性来分配进程和事件，避免CPU级的缓存失效；比如字符串比较时，四字节转换为整数来进行快速指令级比较，等等。</p>
+
+<p>本博文主要目的不是Nginx源码分析，所以，对源码及其独特优秀的代码设计不会去详细介绍。</p>
+
+<p>在最近的一些项目中，涉及到nginx的反向代理配置，然后花了一些时间了解下关于Nginx的整体请求处理流程和返现代理的实现机制。</p>
+
+<p>Nginx虽然代码整洁，模块清晰，但是代码量毕竟还是很多，而且注释实在是太少，所以把一些学习的资料和心得整理一下，以便以后查看。</p>
+
+<h2 id="nginx-反向代理配置说明"><a id="Proxy">Nginx 反向代理配置说明</a></h2>
+
+<p>反向代理指以代理服务器来接受Internet上的连接请求，然后将请求转发给内部网络上的服务器，并将从服务器上得到的结果返回给Internet上请求连接到客户端，此时代理服务器对外就表现为一个服务器，而此种工作模式类似于LVS-NET模型。</p>
+
+<p>反向代理也可以理解为web服务器加速，它是一种通过在繁忙的web服务器和外部网络之间增加的 一个高速web缓冲服务器，用来降低实际的web服务器的负载的一种技术。反向代理是针对web服务器提高加速功能，所有外部网络要访问服务器时的所有请求都要通过它，这样反向代理服务器负责接收客户端的请求，然后到源服务器上获取内容，把内容返回给用户，并把内容保存在本地，以便日后再收到同样的信息请求时，它会将本地缓存里的内容直接发给用户，已减少后端web服务器的压力，提高响应速度。因此Nginx还具有缓存功能。</p>
+
+<!-- more -->
+
+<p>了解nginx的反向代理如何实现之前，先看看我们一般配置nginx反向代理的设置：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+    upstream cc_001 {
+        server 192.168.1.101:80;
+        server 192.168.1.102:80;
+
+        healthcheck_enabled;
+        healthcheck_delay 3000;
+        healthcheck_timeout 1000;
+        healthcheck_failcount 2;
+        healthcheck_send 'GET /healthcheck.html HTTP/1.0' 'Host: local.com' 'Connection: close';
+    }
+
+    server {
+
+        listen       192.168.1.100:80;
+        server_name  cc.local.com;
+
+        proxy_buffers 64 4k;
+
+        location = / {
+            proxy_pass http://cc_001/bm/index.htm;
+            proxy_set_header   Host             $host;
+            proxy_set_header   X-Real-IP        $remote_addr;
+            proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
+        }
+
+        location / {
+            proxy_pass http://cc_001;
+            proxy_set_header   Host             $host;
+            proxy_set_header   X-Real-IP        $remote_addr;
+            proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
+        }
+    }
+
+</code></pre></div></div>
+
+<p>上面的code主要列出来nginx 反向代理基本配置。</p>
+
+<blockquote>
+  <blockquote>
+    <p>Tips：上面的配置选项都是最最基本的，一般涉及到反向代理都会使用到这些配置。对于其中的设置项，理解起来也很简单。</p>
+  </blockquote>
+</blockquote>
+
+<p><em>upstream配置块</em></p>
+
+<p>其实在nginx中，<code class="highlighter-rouge">upstream</code>是一个非常重要的配置。nginx所有对于动态请求的处理，基本上都需要使用<code class="highlighter-rouge">upstream</code>配置模块。nginx的两个很重要的功能，反向代理和负载均衡，都需要通过配置对应的<code class="highlighter-rouge">upstream</code>来完成。</p>
+
+<blockquote>
+  <blockquote>
+    <p>其实在nginx中，有一个基础模块叫handler，这个模块可以接受来自客户端/用户端的请求，然后处理并产生对应的响应内容返回过去。因此，我们那些静态资源，前端页面什么的，都是使用handler模块来完成响应的。但是，众所知周，一般的核心服务都是后台动态产生的，这些资源就不可以方便使用handler去完成内容的生成和响应动作（当然也是可以使用开发自定义handler来完成的，比如各种xxxcgi之流，但是一般还是用来处理静态资源）。</p>
+
+    <p>那么，upstream就出现了。其接收到用户的请求，然后转发到后端服务器拿到对应的响应资源，再返回给请求端。在整个处理过程中，其本身不会产生自己的响应内容，这是和<code class="highlighter-rouge">handler</code>模块唯一的区别。</p>
+
+    <p>upstream的特性，决定了在其配置块中，设置一些后端服务器的地址和端口，就ok了。</p>
+
+  </blockquote>
+</blockquote>
+
+<p>配置项说明：</p>
+
+<ul>
+  <li>
+    <p>upstream中的server项：表明后台的一台服务器地址和端口。当客户端有请求到<code class="highlighter-rouge">nginx</code>服务器的时候，upstream模块根据这里配置的server，该对应的请求转发到这些server服务上，由这些server来处理请求，然后把响应结果告知upstream模块。</p>
+  </li>
+  <li>
+    <p>healthcheck_enabled项：healthcheck健康监控功能，并不是原生nginx自带的。所以如果使用这个功能，必须要安装第三方插件：<code class="highlighter-rouge">ngx_http_healthcheck_module</code>。healthcheck_enabled表示启动健康检查模块功能。</p>
+  </li>
+  <li>
+    <p>healthcheck_delay项：对同一台后端服务器两次检测之间的时间间隔，单位毫秒，默认为1000。</p>
+  </li>
+  <li>
+    <p>healthcheck_timeout项：进行一次健康检测的超时时间，单位为毫秒，默认值2000。</p>
+  </li>
+  <li>
+    <p>healthcheck_failcount项：对一台后端服务器检测成功或失败多少次之后方才确定其为成功或失败，并实现启用或禁用此服务器。</p>
+  </li>
+  <li>
+    <p>healthcheck_send项：为了检测后端服务器的健康状态所发送的检测请求。然后根据各个服务器的响应情况来判断服务器是否存活。上面的配置表面，各个后台服务器上都存在<code class="highlighter-rouge">healthcheck.html</code>静态页面，然后nginx会get这个页面，根据是否status为200来判断是否服务器存活。</p>
+  </li>
+</ul>
+
+<p><em>server配置块</em></p>
+
+<p>在nginx中，不管怎么样的配置，都会有一个server配置块。http服务上支持若干虚拟主机。每个虚拟主机会有一个对应的server配置项，配置项里面包含该虚拟主机相关的配置。在提供mail服务的代理时，也可以建立若干server.每个server通过监听的地址来区分。</p>
+
+<blockquote>
+  <blockquote>
+    <p>Server其实就是一个虚拟主机。因为在nginx中可以配置多个server，这样就使得nginx可以在一台服务器上配置多个域名。</p>
+
+    <p>在nginx的Server虚拟主机中，它只会处理与之对应的域名请求。并且，如果在listen中设置了ip地址，则该虚拟主机只会处理从该服务器的指定ip端口进来的请求，才会去处理。关于一台服务器设置多个别名ip地址的方式，可以参考博客<a href="http://www.cnblogs.com/mchina/archive/2012/05/21/2511824.html">在Nginx中部署基于IP的虚拟主机</a></p>
+  </blockquote>
+</blockquote>
+
+<p>配置项说明：</p>
+
+<ul>
+  <li>
+    <p>listen项：监听ip和端口。当nginx服务器的该ip端口有请求访问，则调用该server的配置来处理该请求。</p>
+  </li>
+  <li>
+    <p>server_name项：域名。nginx对进入该虚拟主机的请求，检查其请求Host头是否匹配设置的server_name，如果是，则继续处理该请求。</p>
+  </li>
+  <li>
+    <p>location块选项：Location在nginx中是一个非常重要的指令。对于HTTP请求，其被用来详细匹配URI和设置的location path。一般这个uri path会是字符串或者正则表达式形式。</p>
+  </li>
+</ul>
+
+<blockquote>
+  <blockquote>
+    <p>: 关于location匹配，存在一些语法规则，如下：</p>
+
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  location [=|~|~*|^~|@] /uri/ { ... }
+   =：表示精确匹配，如果找到，立即停止搜索并立即处理此请求。
+   ~：表示区分大小写匹配。
+   ~*：表示不区分大小写匹配。
+   ^~：表示只匹配字符，串不查询正则表达式。
+   @：指定一个命名的location，一般只用于内部重定向请求。
+</code></pre></div>    </div>
+  </blockquote>
+</blockquote>
+
+<ul>
+  <li>
+    <p>location中proxy_pass项：代理转发。配置了该项，当匹配location path的请求进来后，会根据upstream设置，请求后台服务器上的proxy_pass的请求。例如，上面的配置，当有请求<code class="highlighter-rouge">cc.local.com</code>时，由于精确匹配<code class="highlighter-rouge">=/</code>，则根据proxy_pass配置，则会反向代理，请求<code class="highlighter-rouge">192.168.1.101:80/bm/index.htm</code>。</p>
+  </li>
+  <li>
+    <p>location中proxy_set_header项：设置代理请求头。由于经过了反向代理服务器，所以后台服务器不能获取真正的客户端请求地址等信息，这样，就需要把这些ip地址，设置回请求头部中。然后，我们在后台服务上，可以使用<code class="highlighter-rouge">request.get("X-Real-IP")</code>或者<code class="highlighter-rouge">request.get("X-Forwarded-For")</code>获取真实的请求ip地址。获取host也是如此。具体可以参考博文：<a href="http://gong1208.iteye.com/blog/1559835"> 使用nginx后如何在web应用中获取用户ip及原理解释</a>.</p>
+  </li>
+</ul>
+
+<h2 id="nginx-架构和请求处理流程"><a id="ProcessRequest">Nginx 架构和请求处理流程</a></h2>
+
+<p>Nginx架构，在taobao的<a href="http://tengine.taobao.org/book/chapter_02.html">《Nginx开发从入门到精通》</a>电子书中，写的比较详细。这里记录一些核心的细节。</p>
+
+<p>Nginx在启动会以daemon形式在后台运行，采用<code class="highlighter-rouge">多进程+异步非阻塞IO事件模型</code>来处理各种连接请求。</p>
+
+<p>Nginx主要包含一个master进行和多个worker进行，一般worker进程个数是根据服务器CPU核数来决定的。如下图：</p>
+
+<p><img src="/images/2015/08/nginx_process.png" /></p>
+
+<blockquote>
+  <blockquote>
+    <p>Notes：从上图中可以很明显地看到，4个worker进程的父进程都是master进程，表明worker进程都是从父进程fork出来的，并且父进程的ppid为1，表示其为daemon进程。</p>
+
+    <p>需要说明的是，在nginx多进程中，每个worker都是平等的，因此每个进程处理外部请求的机会权重都是一致的。</p>
+
+  </blockquote>
+</blockquote>
+
+<p>下面来介绍一个请求进来，进程模型的处理方式。</p>
+
+<p><em>首先</em>，master进程一开始就会根据我们的配置，来建立需要listen的网络socket fd，然后fork出多个worker进程。</p>
+
+<p><em>其次</em>，根据进程的特性，新建立的worker进程，也会和master进程一样，具有相同的设置。因此，其也会去监听相同ip端口的套接字socket fd。</p>
+
+<p><em>然后</em>，这个时候有多个worker进程都在监听同样设置的socket fd，意味着当有一个请求进来的时候，所有的worker都会感知到。这样就会产生所谓的<code class="highlighter-rouge">惊群现象</code>。为了保证只会有一个进程成功注册到listenfd的读事件，nginx中实现了一个<code class="highlighter-rouge">accept_mutex</code>类似互斥锁，只有获取到这个锁的进程，才可以去注册读事件。其他进程全部accept 失败。</p>
+
+<p><em>最后</em>，注册成功的worker进程，读取请求，解析处理，响应数据返回给客户端，断开连接，结束。因此，一个request请求，只需要worker进程就可以完成。</p>
+
+<blockquote>
+  <blockquote>
+    <p>进程模型的处理方式带来的一些好处就是：进程之间是独立的，也就是一个worker进程出现异常退出，其他worker进程是不会受到影响的；此外，独立进程也会避免一些不需要的锁操作，这样子会提高处理效率，并且开发调试也更容易。</p>
+
+    <p>如前文所述，<code class="highlighter-rouge">多进程模型+异步非阻塞模型</code>才是胜出的方案。单纯的多进程模型会导致连接并发数量的降低，而采用异步非阻塞IO模型很好的解决了这个问题；并且还因此避免的多线程的上下文切换导致的性能损失。</p>
+
+    <p>关于异步非阻塞IO模型：linux的epoll介绍，可以参考：<a href="http://www.cppblog.com/deane/articles/165218.html">深入了解epoll </a></p>
+  </blockquote>
+</blockquote>
+
+<h3 id="nginx-连接和请求处理">Nginx 连接和请求处理</h3>
+
+<p>上一节介绍了，worker进程会竞争客户端的连接请求，这种方式可能会带来一个问题，就是可能所有的请求都被一个worker进程给竞争获取了，导致其他进程都比较空闲，而某一个进程会处于忙碌的状态，这种状态可能还会导致无法及时响应连接而丢弃discard掉本有能力处理的请求。这种不公平的现象，是需要避免的，尤其是在高可靠web服务器环境下。</p>
+
+<p>针对这种现象，Nginx采用了一个是否打开accept_mutex选项的值<code class="highlighter-rouge">ngx_accept_disabled</code>。标识控制一个worker进程是否需要去竞争获取accept_mutex选项，进而获取accept事件。</p>
+
+<blockquote>
+  <blockquote>
+    <p>ngx_accept_disabled值，nginx单进程的所有连接总数的八分之一，减去剩下的空闲连接数量，得到的这个ngx_accept_disabled。</p>
+
+    <p>当ngx_accept_disabled大于0时，不会去尝试获取accept_mutex锁，并且将ngx_accept_disabled减1，于是，每次执行到此处时，都会去减1，直到小于0。不去获取accept_mutex锁，就是等于让出获取连接的机会，很显然可以看出，当空余连接越少时，ngx_accept_disable越大，于是让出的机会就越多，这样其它进程获取锁的机会也就越大。不去accept，自己的连接就控制下来了，其它进程的连接池就会得到利用，这样，nginx就控制了多进程间连接的平衡了。</p>
+  </blockquote>
+</blockquote>
+
+<p>接下来，看看连接处理流程（来自tengine.taobao.org）：</p>
+
+<p><img src="/images/2015/08/request_process.png" /></p>
+
+<blockquote>
+  <blockquote>
+    <p>关于处理流程的说明，参考: <a href="http://tengine.taobao.org/book/chapter_02.html">http://tengine.taobao.org/book/chapter_02.html</a></p>
+
+  </blockquote>
+</blockquote>
+
+<h2 id="nginx-upstream模块和location配置"><a id="ImplementationStudy">Nginx Upstream模块和Location配置</a></h2>
+
+<p><em>Nginx Upstream</em></p>
+
+<p>upstream模块实现反向代理的功能，将真正的请求转发到后端服务器上，并从后端服务器上读取响应，发回客户端。</p>
+
+<p>从本质上说，upstream属于handler，只是他不产生自己的内容，而是通过请求后端服务器得到内容，所以才称为upstream（上游）。请求并取得响应内容的整个过程已经被封装到nginx内部，所以upstream模块只需要开发若干回调函数，完成构造请求和解析响应等具体的工作。</p>
+
+<p><code class="highlighter-rouge">upstream</code>模块逻辑实现的十分复杂，对于其具体实现，不分析。</p>
+
+<p><code class="highlighter-rouge">upstream</code>模块主要做两件事情：</p>
+
+<ul>
+  <li>
+    <p>当外部的客户端发送一个http请求后，如果涉及更后台服务，则会创建一个到后端服务的request请求；</p>
+  </li>
+  <li>
+    <p>请求到达后端，然后处理完成后，则upstream会将返回的数据接收过来，然后发送给外部请求的客户端。</p>
+  </li>
+</ul>
+
+<p><em>Nginx Location</em></p>
+
+<p>首先，介绍下存在的几种Location配置方式：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+location  = / {
+  # matches the query / only.
+  [ configuration A ] 
+}
+location  / {
+  # matches any query, since all queries begin with /, but regular
+  # expressions and any longer conventional blocks will be
+  # matched first.
+  [ configuration B ] 
+}
+location /documents/ {
+  # matches any query beginning with /documents/ and continues searching,
+  # so regular expressions will be checked. This will be matched only if
+  # regular expressions don't find a match.
+  [ configuration C ] 
+}
+location ^~ /images/ {
+  # matches any query beginning with /images/ and halts searching,
+  # so regular expressions will not be checked.
+  [ configuration D ] 
+}
+location ~* \.(gif|jpg|jpeg)$ {
+  # matches any request ending in gif, jpg, or jpeg. However, all
+  # requests to the /images/ directory will be handled by
+  # Configuration D.   
+  [ configuration E ] 
+}
+
+</code></pre></div></div>
+
+<p>示例请求：</p>
+
+<ul>
+  <li>/ -&gt; configuration A</li>
+  <li>/index.html -&gt; configuration B</li>
+  <li>/documents/document.html -&gt; configuration C</li>
+  <li>/images/1.gif -&gt; configuration D</li>
+  <li>/documents/1.jpg -&gt; configuration E</li>
+</ul>
+
+<p>解析匹配规则为：</p>
+
+<ol>
+  <li>
+    <p>字符串精确匹配到一个带 “=” 号前缀的location，则停止，且使用这个location的配置；</p>
+  </li>
+  <li>
+    <p>字符串匹配剩下的非正则和非特殊location，如果匹配到某个带 “^~” 前缀的location，则停止；</p>
+  </li>
+  <li>
+    <p>正则匹配，匹配顺序为location在配置文件中出现的顺序。如果匹配到某个正则location，则停止，并使用这个location的配置；否则，使用步骤2中得到的具有最大字符串匹配的location配置。</p>
+  </li>
+</ol>
+
+<blockquote>
+  <blockquote>
+    <p>Notes：需要注意的是：<code class="highlighter-rouge">~ 开头</code>表示区分大小写的正则匹配；而<code class="highlighter-rouge">~*  开头</code>表示不区分大小写的正则匹配。<code class="highlighter-rouge">!~和!~*</code>分别为区分大小写不匹配及不区分大小写不匹配的正则</p>
+  </blockquote>
+</blockquote>
+
+<h2 id="后记"><a id="End">后记</a></h2>
+
+<p>Nginx 是一个十分优秀的服务器软件，其内部相当多的设计和实现都非常巧妙和高效。</p>
+
+<p>关于Nginx的一些好的站点有：</p>
+
+<ul>
+  <li><a href="http://tengine.taobao.org/book/">http://tengine.taobao.org/book/</a></li>
+  <li><a href="http://www.pagefault.info/?cat=7">http://www.pagefault.info/?cat=7</a></li>
+  <li><a href="http://nginx.org/en/docs/">http://nginx.org/en/docs/</a></li>
+  <li><a href="http://kxcoder.github.io/images/2015/08/nginx_stream.png">http://kxcoder.github.io/images/2015/08/nginx_stream.png</a></li>
+</ul>
+
+        </article>
+        <hr>
+
+        
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+        
+
+        <div class="post-recent">
+    <div class="pre">
+        
+        <p><strong>上一篇</strong> <a href="/2015/04/29/LogBack-Implemention-And-Slf4j-Mdc/">Slf4j MDC 使用和 基于 Logback 的实现分析</a></p>
+        
+    </div>
+    <div class="nex">
+
+        
+        <p><strong>下一篇</strong> <a href="/2015/09/05/zookeeper-programmer-guide/">Zookeeper 编程指南</a></p>
+        
+    </div>
+</div>
+
+
+        <h2 id="comments">Comments</h2>
+        
+
+
+<div id="disqus_thread"></div>
+<script>
+    /**
+     * RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     * LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+
+    var disqus_config = function() {
+        this.page.url = 'http://localhost:4000/2015/08/30/nginx-proxy-configure-and-sduty/'; // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = 'http://localhost:4000/2015/08/30/nginx-proxy-configure-and-sduty/'; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+
+    (function() { // DON'T EDIT BELOW THIS LINE
+        var d = document,
+            s = d.createElement('script');
+
+        s.src = '//taocoder.disqus.com/embed.js';
+
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+
+
+
+    </div>
+    <button class="anchor"><i class="fa fa-anchor"></i></button>
+    <div class="right">
+        <div class="wrap">
+
+            <!-- Content -->
+            <div class="side content">
+                <div>
+                    Content
+                </div>
+                <ul id="content-side" class="content-ul">
+                    
+                    <li><a href="#comments">Comments</a></li>
+                </ul>
+            </div>
+            <!-- 其他div框放到这里 -->
+            <!-- <div class="side">bbbb</div> -->
+        </div>
+    </div>
+</div>
+<script>
+/**
+ * target _blank
+ */
+(function() {
+    var aTags = document.querySelectorAll('article a:not([id])')
+    for (var i = 0; i < aTags.length; i++) {
+        aTags[i].setAttribute('target', '_blank')
+    }
+}());
+</script>
+<script src="/js/pageContent.js " charset="utf-8"></script>
+
+
+    <footer class="site-footer">
+
+
+    <div class="wrapper">
+
+        <p class="description">
+             本站保留着一点点技术积蓄！ 
+        </p>
+        <p class="contact">
+            Contact me at: 
+            <a href="https://github.com/ketao1989" title="GitHub"><i class="fa fa-github" aria-hidden="true"></i></a>  
+            <a href="mailto:ketao1989@126.com" title="email"><i class="fa fa-envelope-o" aria-hidden="true"></i></a>  
+            <a href="http://weibo.com/柯小小西" title="Weibo"><i class="fa fa-weibo" aria-hidden="true"></i></a>       
+        </p>
+        <p>
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次，本站访客数<span id="busuanzi_value_site_uv"></span>人次，本文总阅读量<span id="busuanzi_value_page_pv"></span>次
+        </p>
+        <p class="power">
+            <span>
+                Site powered by <a href="https://jekyllrb.com/">Jekyll</a> & <a href="https://pages.github.com/">Github Pages</a>.
+            </span>
+            <span>
+                Theme designed by <a href="https://github.com/Gaohaoyang">HyG</a>.
+            </span>
+        </p>
+    </div>
+</footer>
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+    <div class="back-to-top">
+    <a href="#top" data-scroll>
+        <i class="fa fa-arrow-up" aria-hidden="true"></i>
+    </a>
+</div>
+
+    <script src=" /js/main.js " charset="utf-8"></script>
+    <script src=" /js/smooth-scroll.min.js " charset="utf-8"></script>
+    <script type="text/javascript">
+      smoothScroll.init({
+        speed: 500, // Integer. How fast to complete the scroll in milliseconds
+        easing: 'easeInOutCubic', // Easing pattern to use
+        offset: 20, // Integer. How far to offset the scrolling anchor location in pixels
+      });
+    </script>
+    <!-- <script src=" /js/scroll.min.js " charset="utf-8"></script> -->
+  </body>
+
+</html>

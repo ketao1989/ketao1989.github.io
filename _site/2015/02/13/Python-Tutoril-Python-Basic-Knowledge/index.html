@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Python 教程学习之Python基础知识</title>
+    <meta name="description" content="前言2015年春节临近，提前请假回家，闲下来的功夫，系统学习下 python 语言，倒是也好。Python 在日常工作中，主要是脚本语言的开发，由于开发快捷容易，并且在所有 Linux 版本都会安装 Python 的语言环境，不需要额外的配置工作。Sublime Python 插件安装对于 Python 的基础知...">
+
+    <link rel="shortcut icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://at.alicdn.com/t/font_8v3czwksspqlg14i.css">
+    <link rel="stylesheet" href="/css/main.css ">
+    <link rel="canonical" href="http://localhost:4000/2015/02/13/Python-Tutoril-Python-Basic-Knowledge/">
+    <link rel="alternate" type="application/rss+xml" title="柯小小西" href="http://localhost:4000/feed.xml ">
+
+
+    <script>
+    // 百度统计代码
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?a9b0f47a0e50b02dafb8a7088436a9bc";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+    </script>
+
+
+
+
+</head>
+
+
+  <body>
+
+    <header id="top">
+    <div class="wrapper">
+        <a href="/" class="brand">柯小小西</a>
+        <small>留着一点点技术积蓄</small>
+        <button id="headerMenu" class="menu"><i class="fa fa-bars"></i></button>
+        <nav id="headerNav">
+            <ul>
+                <li>
+                    
+                    <a href="/">
+                    
+                        <i class="fa fa-home"></i>Home
+                    </a>
+                </li>
+
+                
+                    
+                    <li>
+                        
+                        <a href="/archive/">
+                        
+                            <i class="fa fa-archive"></i>Archives
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/category/">
+                        
+                            <i class="fa fa-th-list"></i>Categories
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/tag/">
+                        
+                            <i class="fa fa-tags"></i>Tags
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/about/">
+                        
+                            <i class="fa fa-heart"></i>About
+                        </a>
+                    </li>
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+        <div class="page clearfix" post>
+    <div class="left">
+        <h1>Python 教程学习之Python基础知识</h1>
+        <div class="label">
+
+            <div class="label-card">
+                <i class="fa fa-calendar"></i>2015-02-13
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+            
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Python" title="Category: Python" rel="category">Python</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+            </div>
+
+            <div class="label-card">
+            
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+            </div>
+
+        </div>
+        <hr>
+        <article itemscope itemtype="http://schema.org/BlogPosting">
+        <h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p>2015年春节临近，提前请假回家，闲下来的功夫，系统学习下 python 语言，倒是也好。</p>
+
+<p>Python 在日常工作中，主要是脚本语言的开发，由于开发快捷容易，并且在所有 Linux 版本都会安装 Python 的语言环境，不需要额外的配置工作。</p>
+
+<h2 id="sublime-python-插件安装"><a id="Sublime">Sublime Python 插件安装</a></h2>
+
+<p>对于 Python 的基础知识的学习，已经工作中脚本语言的开发，使用 Sublime 编辑器可以非常好的满足我们的需求，并且 Sublime 提供了丰富的插件供使用，非常便捷。</p>
+
+<p>开发 Python(Django) 语言，一般推荐安装 :</p>
+
+<ul>
+  <li>
+    <p><code class="highlighter-rouge">SublimeCodeIntel</code> 插件：一款代码自动提示的插件。</p>
+  </li>
+  <li>
+    <p><code class="highlighter-rouge">Python PEP8 Autoformat</code> 插件：一款针对 Python 的代码格式化插件，快捷键为<code class="highlighter-rouge">Ctrl + Shift + R</code>。</p>
+  </li>
+  <li>
+    <p><code class="highlighter-rouge">SublimeTmpl</code> 插件：一款自定义文件模板的插件，可以跟进我们的配置在创建文件时，跟进模板完成初始化填充。关于 Python 的代码模板如下所示：</p>
+  </li>
+</ul>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="c">#!/usr/bin/env python</span>
+<span class="c"># -*- coding: utf-8 -*-</span>
+<span class="c"># @Date    : ${date}</span>
+<span class="c"># @Author  : ${author}</span>
+<span class="c"># @Version : \$Id\$</span>
+
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="err">$</span><span class="p">{</span><span class="mi">1</span><span class="p">:</span><span class="kn">import</span> <span class="nn">os</span><span class="p">}</span>
+
+<span class="nb">reload</span><span class="p">(</span><span class="n">sys</span><span class="p">)</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">setdefaultencoding</span><span class="p">(</span><span class="s">'utf8'</span><span class="p">)</span>
+<span class="err">$</span><span class="mi">0</span>
+
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Notes：打开 <code class="highlighter-rouge">preferences --&gt; pachages</code>，在打开的目录下依次找到<code class="highlighter-rouge">sublimeTmpl --&gt; templates --&gt; python.tmpl</code>，直接修改就好了。</p>
+
+  </blockquote>
+</blockquote>
+
+<!-- more -->
+
+<h2 id="python-基础知识"><a id="BasicKnowledge">Python 基础知识</a></h2>
+
+<p>基础知识都非常简单，这里贴一下学习的测试代码，就好了。</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="c">#!/usr/bin/env python</span>
+<span class="c"># -*- coding: utf-8 -*-</span>
+
+
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="nb">reload</span><span class="p">(</span><span class="n">sys</span><span class="p">)</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">setdefaultencoding</span><span class="p">(</span><span class="s">'utf8'</span><span class="p">)</span>
+
+<span class="c"># 100</span>
+<span class="n">a</span> <span class="o">=</span> <span class="o">-</span><span class="mi">100</span>
+<span class="k">if</span> <span class="n">a</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="k">print</span> <span class="n">a</span>
+<span class="k">elif</span> <span class="n">a</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="k">print</span> <span class="mi">0</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="k">print</span> <span class="o">-</span><span class="n">a</span>
+
+<span class="c"># 中文</span>
+<span class="k">print</span> <span class="s">u'中文'</span>
+
+<span class="c"># 4</span>
+<span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="s">'zhang'</span><span class="p">,</span> <span class="s">'li'</span><span class="p">,</span> <span class="s">'wang'</span><span class="p">,</span> <span class="s">'er'</span><span class="p">]</span>
+<span class="k">print</span> <span class="nb">len</span><span class="p">(</span><span class="n">names</span><span class="p">)</span>
+
+<span class="c"># 5</span>
+<span class="n">names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">'ma'</span><span class="p">)</span>
+<span class="k">print</span> <span class="nb">len</span><span class="p">(</span><span class="n">names</span><span class="p">)</span>
+
+<span class="c"># ['zhang', 'li', 'wang', 'zi', 'er', 'ma']</span>
+<span class="n">names</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="s">'zi'</span><span class="p">)</span>
+<span class="k">print</span> <span class="n">names</span>
+
+<span class="c"># ['zhang', 'li', 'wang', 'zi', 'er']</span>
+<span class="n">names</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+<span class="k">print</span> <span class="n">names</span>
+
+<span class="c"># ['ma', 'li', 'wang', 'zi', 'er']</span>
+<span class="n">names</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="s">'ma'</span>
+<span class="k">print</span> <span class="n">names</span>
+
+<span class="c"># ['ma', 'li', 'wang', 'zi', 'er', ['subzhang', 'subwang']]</span>
+<span class="n">names</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="s">'subzhang'</span><span class="p">,</span> <span class="s">'subwang'</span><span class="p">])</span>
+<span class="k">print</span> <span class="n">names</span>
+
+<span class="c"># ('ma', 'li', 'wang', 'zi', 'er', ['subzhang', 'subwang'])</span>
+<span class="n">tumples</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">names</span><span class="p">)</span>
+<span class="k">print</span> <span class="n">tumples</span>
+
+<span class="c"># ['ma', 'li', 'wang', 'zi', 'er', ['subzhang', 'subwang']]</span>
+<span class="n">names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">tumples</span><span class="p">)</span>
+<span class="k">print</span> <span class="n">names</span>
+
+<span class="c"># 分别打印元素，['subzhang', 'subwang']是一体的</span>
+<span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">tumples</span><span class="p">:</span>
+    <span class="k">print</span> <span class="n">x</span>
+<span class="c"># dict字典，ketao</span>
+<span class="n">maps</span> <span class="o">=</span> <span class="p">{</span><span class="s">'name'</span><span class="p">:</span> <span class="s">'ketao'</span><span class="p">,</span> <span class="s">'age'</span><span class="p">:</span> <span class="mi">25</span><span class="p">,</span> <span class="s">'job'</span><span class="p">:</span> <span class="s">'dev'</span><span class="p">}</span>
+<span class="k">print</span> <span class="n">maps</span><span class="p">[</span><span class="s">'name'</span><span class="p">]</span>
+
+<span class="c"># {'job': 'dev', 'age': 25, 'program': 'python', 'name': 'ketao'}</span>
+<span class="n">maps</span><span class="p">[</span><span class="s">'program'</span><span class="p">]</span> <span class="o">=</span> <span class="s">'python'</span>
+<span class="k">print</span> <span class="n">maps</span>
+
+<span class="c"># {'job': 'dev', 'gender': 'male', 'age': 25, 'program': 'python', 'name': 'ketao'}</span>
+<span class="k">if</span> <span class="s">'gender'</span> <span class="ow">in</span> <span class="n">maps</span><span class="p">:</span>
+    <span class="k">pass</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">maps</span><span class="p">[</span><span class="s">'gender'</span><span class="p">]</span> <span class="o">=</span> <span class="s">'male'</span>
+
+<span class="k">if</span> <span class="n">maps</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">'gender'</span><span class="p">):</span>
+    <span class="k">print</span> <span class="n">maps</span>
+
+<span class="c"># set(['wang', 14, 'zhang'])</span>
+<span class="n">sets</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="s">'zhang'</span><span class="p">,</span> <span class="s">"wang"</span><span class="p">,</span> <span class="mi">14</span><span class="p">])</span>
+<span class="k">print</span> <span class="n">sets</span>
+
+<span class="c"># set(['li', 'wang', 14, 'zhang'])</span>
+<span class="n">sets</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">'li'</span><span class="p">)</span>
+<span class="k">print</span> <span class="n">sets</span>
+
+<span class="c"># set([14, 'zhang']); set(['ma', 'wang', 'zhang', 14, 'li'])</span>
+<span class="n">setss</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="s">'zhang'</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="s">'ma'</span><span class="p">])</span>
+<span class="k">print</span> <span class="n">setss</span> <span class="o">&amp;</span> <span class="n">sets</span>
+<span class="k">print</span> <span class="n">setss</span> <span class="o">|</span> <span class="n">sets</span>
+
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Notes : 需要说明的是，必须在python 脚本中，注入 utf-8 相关配置，不然会出现下面的编码问题。如果使用模板，请参考上一节。</p>
+
+  </blockquote>
+</blockquote>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+Traceback (most recent call last):
+  File "/Users/ketao/python/test.py", line 20, in &lt;module&gt;
+    print u'中文'
+UnicodeEncodeError: 'ascii' codec can't encode characters in position 0-1: ordinal not in range(128)
+[Finished in 0.0s with exit code 1]
+[shell_cmd: python -u "/Users/ketao/python/test.py"]
+[dir: /Users/ketao/python]
+[path: /usr/bin:/bin:/usr/sbin:/sbin]
+
+</code></pre></div></div>
+
+
+        </article>
+        <hr>
+
+        
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+        
+
+        <div class="post-recent">
+    <div class="pre">
+        
+        <p><strong>上一篇</strong> <a href="/2015/02/10/Jackson-Deserialize-Java-Object-Implementation/">Jackson 自定义反序列化Java对象实现</a></p>
+        
+    </div>
+    <div class="nex">
+
+        
+        <p><strong>下一篇</strong> <a href="/2015/02/15/Python-Tutoril-Python-Function-And-Advances/">Python 教程学习之 Python 函数和高级特性</a></p>
+        
+    </div>
+</div>
+
+
+        <h2 id="comments">Comments</h2>
+        
+
+
+<div id="disqus_thread"></div>
+<script>
+    /**
+     * RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     * LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+
+    var disqus_config = function() {
+        this.page.url = 'http://localhost:4000/2015/02/13/Python-Tutoril-Python-Basic-Knowledge/'; // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = 'http://localhost:4000/2015/02/13/Python-Tutoril-Python-Basic-Knowledge/'; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+
+    (function() { // DON'T EDIT BELOW THIS LINE
+        var d = document,
+            s = d.createElement('script');
+
+        s.src = '//taocoder.disqus.com/embed.js';
+
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+
+
+
+    </div>
+    <button class="anchor"><i class="fa fa-anchor"></i></button>
+    <div class="right">
+        <div class="wrap">
+
+            <!-- Content -->
+            <div class="side content">
+                <div>
+                    Content
+                </div>
+                <ul id="content-side" class="content-ul">
+                    
+                    <li><a href="#comments">Comments</a></li>
+                </ul>
+            </div>
+            <!-- 其他div框放到这里 -->
+            <!-- <div class="side">bbbb</div> -->
+        </div>
+    </div>
+</div>
+<script>
+/**
+ * target _blank
+ */
+(function() {
+    var aTags = document.querySelectorAll('article a:not([id])')
+    for (var i = 0; i < aTags.length; i++) {
+        aTags[i].setAttribute('target', '_blank')
+    }
+}());
+</script>
+<script src="/js/pageContent.js " charset="utf-8"></script>
+
+
+    <footer class="site-footer">
+
+
+    <div class="wrapper">
+
+        <p class="description">
+             本站保留着一点点技术积蓄！ 
+        </p>
+        <p class="contact">
+            Contact me at: 
+            <a href="https://github.com/ketao1989" title="GitHub"><i class="fa fa-github" aria-hidden="true"></i></a>  
+            <a href="mailto:ketao1989@126.com" title="email"><i class="fa fa-envelope-o" aria-hidden="true"></i></a>  
+            <a href="http://weibo.com/柯小小西" title="Weibo"><i class="fa fa-weibo" aria-hidden="true"></i></a>       
+        </p>
+        <p>
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次，本站访客数<span id="busuanzi_value_site_uv"></span>人次，本文总阅读量<span id="busuanzi_value_page_pv"></span>次
+        </p>
+        <p class="power">
+            <span>
+                Site powered by <a href="https://jekyllrb.com/">Jekyll</a> & <a href="https://pages.github.com/">Github Pages</a>.
+            </span>
+            <span>
+                Theme designed by <a href="https://github.com/Gaohaoyang">HyG</a>.
+            </span>
+        </p>
+    </div>
+</footer>
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+    <div class="back-to-top">
+    <a href="#top" data-scroll>
+        <i class="fa fa-arrow-up" aria-hidden="true"></i>
+    </a>
+</div>
+
+    <script src=" /js/main.js " charset="utf-8"></script>
+    <script src=" /js/smooth-scroll.min.js " charset="utf-8"></script>
+    <script type="text/javascript">
+      smoothScroll.init({
+        speed: 500, // Integer. How fast to complete the scroll in milliseconds
+        easing: 'easeInOutCubic', // Easing pattern to use
+        offset: 20, // Integer. How far to offset the scrolling anchor location in pixels
+      });
+    </script>
+    <!-- <script src=" /js/scroll.min.js " charset="utf-8"></script> -->
+  </body>
+
+</html>

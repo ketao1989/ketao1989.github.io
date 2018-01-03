@@ -1,0 +1,1714 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>柯小小西</title>
+    <meta name="description" content="">
+
+    <link rel="shortcut icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://at.alicdn.com/t/font_8v3czwksspqlg14i.css">
+    <link rel="stylesheet" href="/css/main.css ">
+    <link rel="canonical" href="http://localhost:4000/page6/">
+    <link rel="alternate" type="application/rss+xml" title="柯小小西" href="http://localhost:4000/feed.xml ">
+
+
+    <script>
+    // 百度统计代码
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?a9b0f47a0e50b02dafb8a7088436a9bc";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+    </script>
+
+
+
+
+</head>
+
+
+  <body>
+
+    <header id="top">
+    <div class="wrapper">
+        <a href="/" class="brand">柯小小西</a>
+        <small>留着一点点技术积蓄</small>
+        <button id="headerMenu" class="menu"><i class="fa fa-bars"></i></button>
+        <nav id="headerNav">
+            <ul>
+                <li>
+                    
+                    <a href="/">
+                    
+                        <i class="fa fa-home"></i>Home
+                    </a>
+                </li>
+
+                
+                    
+                    <li>
+                        
+                        <a href="/archive/">
+                        
+                            <i class="fa fa-archive"></i>Archives
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/category/">
+                        
+                            <i class="fa fa-th-list"></i>Categories
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/tag/">
+                        
+                            <i class="fa fa-tags"></i>Tags
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/about/">
+                        
+                            <i class="fa fa-heart"></i>About
+                        </a>
+                    </li>
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+        <div class="page clearfix" index>
+    <div class="left">
+        <h1>Welcome to 柯小小西's Blog!</h1>
+        <small>留着一点点技术积蓄</small>
+        <hr>
+        <ul>
+            
+              <li>
+                <h2>
+                  <a class="post-link" href="/2014/07/03/Query-DB-Python-Shell/">使用Python操作线上数据库脚本</a>
+                </h2>
+                <div class="label">
+                    <div class="label-card">
+                        <i class="fa fa-calendar"></i>2014-07-03
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+
+                    <div class="label-card">
+                    
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Python" title="Category: Python" rel="category">Python</a>&nbsp;
+    
+        <a href="/category/#Script" title="Category: Script" rel="category">Script</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+                    </div>
+
+                    <div class="label-card">
+                    
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+                    </div>
+                </div>
+                <div class="excerpt">
+                    <h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p>最近对于线上一些数据需要进行过滤导到本地来，或者对一些运营人员给的文本数据，需要在线上数据库跑出对应的结果出来，因此，需要通过一个脚本来执行。因为，现在服务器基本上会默认安装python，所以这里存一份脚本备用。</p>
+
+<h2 id="python脚本"><a id="Script">Python脚本</a></h2>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="c">#!/usr/bin/python</span>
+<span class="c">#coding=utf-8</span>
+<span class="kn">import</span> <span class="nn">os</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">MySQLdb</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">sys</span><span class="p">;</span>
+<span class="nb">reload</span><span class="p">(</span><span class="n">sys</span><span class="p">)</span> 
+<span class="n">sys</span><span class="o">.</span><span class="n">setdefaultencoding</span><span class="p">(</span><span class="s">'utf-8'</span><span class="p">)</span>
+<span class="nb">file</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="s">"hotelseq.txt"</span><span class="p">)</span>
+<span class="n">outfile</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="s">"customer.txt"</span><span class="p">,</span><span class="s">'w+'</span><span class="p">)</span>
+<span class="n">conn</span><span class="o">=</span><span class="n">MySQLdb</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s">'127.0.0.1'</span><span class="p">,</span><span class="n">user</span><span class="o">=</span><span class="s">'root'</span><span class="p">,</span><span class="n">passwd</span><span class="o">=</span><span class="s">'123456'</span><span class="p">,</span><span class="n">db</span><span class="o">=</span><span class="s">'test'</span><span class="p">,</span><span class="n">port</span><span class="o">=</span><span class="mi">3306</span><span class="p">,</span><span class="n">charset</span><span class="o">=</span><span class="s">"utf8"</span><span class="p">)</span>
+<span class="n">cur</span><span class="o">=</span><span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+<span class="n">order_cur</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+
+<span class="k">while</span> <span class="mi">1</span><span class="p">:</span>
+    <span class="n">line</span><span class="o">=</span><span class="nb">file</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">print</span> <span class="n">line</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">line</span><span class="p">:</span>
+        <span class="k">break</span>
+    <span class="n">count</span><span class="o">=</span><span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s">"select cus.customer_state,cus.name from crm_customer_hotel as hotel join crm_customer as cus on hotel.customer_serial_number=cus.serial_number where hotel.hotel_seq='</span><span class="si">%</span><span class="s">s'"</span> <span class="o">%</span> <span class="n">line</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+    <span class="k">print</span> <span class="n">result</span>
+    <span class="k">if</span> <span class="n">result</span><span class="p">:</span>
+        <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">+</span><span class="s">"  "</span><span class="o">+</span><span class="n">result</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">'</span><span class="se">\n</span><span class="s">'</span><span class="p">)</span>
+<span class="n">cur</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+<span class="nb">file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+<span class="n">outfile</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+
+</code></pre></div></div>
+
+<!-- more -->
+
+                </div>
+                <div class="read-all">
+                    <a  href="/2014/07/03/Query-DB-Python-Shell/"><i class="fa fa-newspaper-o"></i>Read All</a>
+                </div>
+                <hr>
+              </li>
+            
+              <li>
+                <h2>
+                  <a class="post-link" href="/2014/06/27/Intelij-IDEA-Keymap/">常用快捷键（备用）</a>
+                </h2>
+                <div class="label">
+                    <div class="label-card">
+                        <i class="fa fa-calendar"></i>2014-06-27
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+
+                    <div class="label-card">
+                    
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#IDE" title="Category: IDE" rel="category">IDE</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+                    </div>
+
+                    <div class="label-card">
+                    
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+                    </div>
+                </div>
+                <div class="excerpt">
+                    <h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p>Intelij IDEA一些快捷键和 Eclipse不同，所以对一些快捷键进行记录，备查。</p>
+
+<h2 id="idea-快捷键"><a id="Keymap">Idea 快捷键</a></h2>
+
+<h3 id="视图快捷键">视图快捷键</h3>
+
+<pre><code class="language-kconfig">
+快速查看方法注释文档          Ctrl + Q
+
+快速查询类名                   Ctrl + N
+
+快速查询文件名                Ctrl + Shift + N
+
+</code></pre>
+
+<h3 id="编辑快捷键">编辑快捷键</h3>
+
+<pre><code class="language-kconfig">
+代码生成快捷键                Alt + Insert
+
+自动跳转测试Test类            Alt + T
+
+</code></pre>
+
+<h2 id="sublime-快捷键"><a id="Sublime">Sublime 快捷键</a></h2>
+
+<pre><code class="language-kconfig">
+选择多行操作                          Ctrl + Shift + L
+
+选择单词操作，多次往下移              Ctrl + D
+
+选择一行操作，重复选择下一行          Ctrl + L
+
+注释当前行                            Ctrl + / 
+
+从当前位置开始注释                    Ctrl + Shift + /
+
+</code></pre>
+
+<!-- more -->
+
+                </div>
+                <div class="read-all">
+                    <a  href="/2014/06/27/Intelij-IDEA-Keymap/"><i class="fa fa-newspaper-o"></i>Read All</a>
+                </div>
+                <hr>
+              </li>
+            
+              <li>
+                <h2>
+                  <a class="post-link" href="/2014/06/24/Linux-Software-Install-Understand/">深入理解软件包的配置、编译与安装</a>
+                </h2>
+                <div class="label">
+                    <div class="label-card">
+                        <i class="fa fa-calendar"></i>2014-06-24
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+
+                    <div class="label-card">
+                    
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Linux" title="Category: Linux" rel="category">Linux</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+                    </div>
+
+                    <div class="label-card">
+                    
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+                    </div>
+                </div>
+                <div class="excerpt">
+                    <p>说明：来自互联网，如有版权问题，请告知本人将其撤下。</p>
+
+<p>来源：<a href="http://works.jinbuguo.com/linux/understand_package_install.htm">http://works.jinbuguo.com/linux/understand_package_install.htm</a>l</p>
+
+<h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p>从源代码安装过软件的朋友一定对 <code class="highlighter-rouge">./configure &amp;&amp; make &amp;&amp; make install</code> 安装三步曲非常熟悉了。然而究竟这个过程中的每一步幕后都发生了些什么呢？本文将带领你一探究竟。深入理解这个过程将有助于你在LFS的基础上玩出自己的花样来。不过需要说明的是本文对 <code class="highlighter-rouge">Makefile</code> 和 <code class="highlighter-rouge">make</code> 的讲解是相当近视和粗浅的，但是对于理解安装过程来说足够了。</p>
+
+<h2 id="概述"><a id="About">概述</a></h2>
+
+<p>用一句话来解释这个过程就是：</p>
+
+<p>根据源码包中 Makefile.in 文件的指示，configure 脚本检查当前的系统环境和配置选项，在当前目录中生成 <code class="highlighter-rouge">Makefile</code> 文件(还有其它本文无需关心的文件)，然后 <code class="highlighter-rouge">make</code> 程序就按照当前目录中的 Makefile 文件的指示将源代码编译为二进制文件，最后将这些二进制文件移动(即安装)到指定的地方(仍然按照 <code class="highlighter-rouge">Makefile</code> 文件的指示)。</p>
+
+<p>由此可见 Makefile 文件是幕后的核心。要深入理解安装过程，必须首先对 <code class="highlighter-rouge">Makefile</code> 文件有充分的了解。本文将首先讲述 <code class="highlighter-rouge">Makefile</code> 与 <code class="highlighter-rouge">make</code> ，然后再讲述 <code class="highlighter-rouge">configure</code> 脚本。并且在讲述这两部分内容时，提供了尽可能详细的、可以运用于实践的参考资料。</p>
+
+<h2 id="makefile-与-make"><a id="Make">Makefile 与 make</a></h2>
+
+<p>用一句话来概括<code class="highlighter-rouge">Makefile</code> 与 <code class="highlighter-rouge">make</code> 的关系就是：</p>
+
+<p><code class="highlighter-rouge">Makefile</code> 包含了所有的规则和目标，而 <code class="highlighter-rouge">make</code> 则是为了完成目标而去解释 <code class="highlighter-rouge">Makefiel</code> 规则的工具。</p>
+
+<!-- more -->
+
+<h3 id="make-语法">make 语法</h3>
+
+<p>首先看看 <code class="highlighter-rouge">make</code> 的命令行语法：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+make <span class="o">[</span>options] <span class="o">[</span>targets] <span class="o">[</span><span class="nv">VAR</span><span class="o">=</span>VALUE]...
+
+</code></pre></div></div>
+
+<p><code class="highlighter-rouge">[options]</code>是命令行选项，可以用 <code class="highlighter-rouge">make --help</code> 命令查看全部，<code class="highlighter-rouge">[VAR=VALUE]</code>是在命令行上指定环境变量，这两个大家都很熟悉，将在稍后详细讲解。而<code class="highlighter-rouge">[targets]</code>是什么呢？字面的意思是”目标”，也就是希望本次 make 命令所完成的任务。凭经验猜测，这个<code class="highlighter-rouge">[targets]</code>大概可以用”check”,”install”之类(也就是常见的测试和安装命令)。但是它到底是个啥玩意儿？不带任何”目标”的 <code class="highlighter-rouge">make</code> 命令是什么意思？为什么在安装 LFS 工具链中的 Perl-5.8.8 软件包时会出现”make perl utilities”这样怪异的命令？要回答这些问题必须首先理解 <code class="highlighter-rouge">Makefile</code> 文件中的”规则”。</p>
+
+<h3 id="makefile-规则">Makefile 规则</h3>
+
+<p>Makefile 规则包含了文件之间的依赖关系和更新此规则目标所需要的命令。</p>
+
+<p>一个简单的 Makefile 规则是这样写的：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+TARGET : PREREQUISITES
+	COMMAND
+TARGET
+
+</code></pre></div></div>
+
+<p>规则的目标。也就是可以被 make 使用的”目标”。有些目标可以没有依赖而只有动作(命令行)，比如”clean”，通常仅仅定义一系列删除中间文件的命令。同样，有些目标可以没有动作而只有依赖，比如”all”，通常仅仅用作”终极目标”。</p>
+
+<p><code class="highlighter-rouge">PREREQUISITES</code><br />
+规则的依赖。通常一个目标依赖于一个或者多个文件。</p>
+
+<p><code class="highlighter-rouge">COMMAND</code><br />
+规则的命令行。一个规则可以有零个或多个命令行。</p>
+
+<p>OK! 现在你明白[targets]是什么了，原来它们来自于 <code class="highlighter-rouge">Makefile</code> 文件中一条条规则的目标(TARGET)。另外，<code class="highlighter-rouge">Makefile</code>文件中第一条规则的目标被称为”终极目标”，也就是你省略[targets]参数时的目标(通常为”all”)。</p>
+
+<p>当你查看一个实际的 <code class="highlighter-rouge">Makefile</code> 文件时，你会发现有些规则非常复杂，但是它都符合规则的基本格式。此外，<code class="highlighter-rouge">Makefile</code> 文件中通常还包含了除规则以外的其它很多东西，不过本文只关心其中的变量。</p>
+
+<h3 id="makefile-实例">Makefile 实例</h3>
+
+<p>下面看一个简单的、实际的 <code class="highlighter-rouge">Makefile</code>文件：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="nv">CC</span><span class="o">=</span>gcc
+<span class="nv">CPPFLAGS</span><span class="o">=</span>
+<span class="nv">CFLAGS</span><span class="o">=</span><span class="nt">-O2</span> <span class="nt">-pipe</span>
+<span class="nv">LDFLAGS</span><span class="o">=</span><span class="nt">-s</span>
+<span class="nv">PREFIX</span><span class="o">=</span>/usr
+
+all : prog1 prog2
+
+prog1 : prog1.o
+	<span class="k">$(</span>CC<span class="k">)</span> <span class="k">$(</span>LDFLAGS<span class="k">)</span> <span class="nt">-o</span> prog1 prog1.o
+
+prog1.o : prog1.c
+	<span class="k">$(</span>CC<span class="k">)</span> <span class="nt">-c</span> <span class="k">$(</span>CFLAGS<span class="k">)</span> prog1.c
+
+prog2 : prog2.o
+	<span class="k">$(</span>CC<span class="k">)</span> <span class="k">$(</span>CFLAGS<span class="k">)</span> <span class="k">$(</span>LDFLAGS<span class="k">)</span> <span class="nt">-o</span> prog2 prog2.o
+
+prog2.o : prog2.c
+	<span class="k">$(</span>CC<span class="k">)</span> <span class="nt">-c</span> <span class="k">$(</span>CPPFLAGS<span class="k">)</span> <span class="k">$(</span>CFLAGS<span class="k">)</span> prog2.c
+
+clean :
+	<span class="nb">rm</span> <span class="nt">-f</span> <span class="k">*</span>.<span class="o">{</span>o,a<span class="o">}</span> prog<span class="o">{</span>1,2<span class="o">}</span>
+
+<span class="nb">install</span> : prog1 prog2
+	<span class="k">if</span> <span class="o">(</span> <span class="nb">test</span> <span class="o">!</span> <span class="nt">-d</span> <span class="k">$(</span>PREFIX<span class="k">)</span>/bin <span class="o">)</span> <span class="p">;</span> <span class="k">then </span><span class="nb">mkdir</span> <span class="nt">-p</span> <span class="k">$(</span>PREFIX<span class="k">)</span>/bin <span class="p">;</span> <span class="k">fi
+	</span><span class="nb">cp</span> <span class="nt">-f</span> prog1 <span class="k">$(</span>PREFIX<span class="k">)</span>/bin/prog1
+	<span class="nb">cp</span> <span class="nt">-f</span> prog2 <span class="k">$(</span>PREFIX<span class="k">)</span>/bin/prog2
+
+check <span class="nb">test</span> : prog1 prog2
+	prog1 &lt; sample1.ref <span class="o">&gt;</span> sample1.rz
+	prog1 &lt; sample2.ref <span class="o">&gt;</span> sample3.rz
+	cmp sample1.ok sample1.rz
+	cmp sample2.ok sample2.rz
+	
+</code></pre></div></div>
+
+<p>从中可以看出，<code class="highlighter-rouge">make</code> 与 <code class="highlighter-rouge">make all</code> 以及 <code class="highlighter-rouge">make prog1 prog2</code> 三条命令其实是等价的。而常用的 <code class="highlighter-rouge">make check</code> 和 <code class="highlighter-rouge">make install</code> 也找到了归属。同时我们也看到了 Makefile 中的各种变量是如何影响编译的。针对这个特定的 Makefile ，你甚至可以省略安装三步曲中的 make 命令而直接使用<code class="highlighter-rouge"> make install</code> 进行安装。</p>
+
+<p>同样，为了使用自定义的编译参数编译 prog2 ，我们可以使用 <code class="highlighter-rouge">make prog2 CFLAGS="-O3 -march=athlon64"</code> 或 <code class="highlighter-rouge">CFLAGS="-O3 -march=athlon64" &amp;&amp; make -e prog2</code> 命令达到此目的。</p>
+
+<h3 id="makefile-惯例">Makefile 惯例</h3>
+
+<p>下面是Makefile中一些约定俗成的目标名称及其含义：</p>
+
+<p><code class="highlighter-rouge">all</code><br />
+编译整个软件包，但不重建任何文档。一般此目标作为默认的终极目标。此目标一般对所有源程序的编译和连接使用”-g”选项，以使最终的可执行程序中包含调试信息。可使用 strip 程序去掉这些调试符号。</p>
+
+<p><code class="highlighter-rouge">clean</code><br />
+清除当前目录下在 make 过程中产生的文件。它不能删除软件包的配置文件，也不能删除 build 时创建的那些文件。</p>
+
+<p><code class="highlighter-rouge">distclean</code><br />
+类似于”clean”，但增加删除当前目录下的的配置文件、build 过程产生的文件。</p>
+
+<p><code class="highlighter-rouge">info</code><br />
+产生必要的 Info 文档。</p>
+
+<p><code class="highlighter-rouge">check 或 test</code> <br />
+完成所有的自检功能。在执行检查之前，应确保所有程序已经被创建(但可以尚未安装)。为了进行测试，需要实现在程序没有安装的情况下被执行的测试命令。</p>
+
+<p><code class="highlighter-rouge">install</code><br />
+完成程序的编译并将最终的可执行程序、库文件等拷贝到指定的目录。此种安装一般不对可执行程序进行 strip 操作。</p>
+
+<p><code class="highlighter-rouge">install-strip</code><br />
+和”install”类似，但是会对复制到安装目录下的可执行文件进行 strip 操作。</p>
+
+<p><code class="highlighter-rouge">uninstall</code><br />
+删除所有由”install”安装的文件。</p>
+
+<p><code class="highlighter-rouge">installcheck</code><br />
+执行安装检查。在执行安装检查之前，需要确保所有程序已经被创建并且被安装。</p>
+
+<p><code class="highlighter-rouge">installdirs</code> <br />
+创建安装目录及其子目录。它不能更改软件的编译目录，而仅仅是创建程序的安装目录。</p>
+
+<p>下面是 Makefile 中一些约定俗成的变量名称及其含义：</p>
+
+<p>这些约定俗成的变量分为三类。第一类代表可执行程序的名字，例如 CC 代表编译器这个可执行程序；第二类代表程序使用的参数(多个参数使用空格分开)，例如 CFLAGS 代表编译器执行时使用的参数(一种怪异的做法是直接在 CC 中包含参数)；第三类代表安装目录，例如 prefix 等等，含义简单，下面只列出它们的默认值。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+AR   函数库打包程序，可创建静态库.a文档。默认是<span class="s2">"ar"</span>。
+AS   汇编程序。默认是<span class="s2">"as"</span>。
+CC   C编译程序。默认是<span class="s2">"cc"</span>。
+CXX  C++编译程序。默认是<span class="s2">"g++"</span>。
+CPP  C/C++预处理器。默认是<span class="s2">"</span><span class="k">$(</span>CC<span class="k">)</span><span class="s2"> -E"</span>。
+FC   Fortran编译器。默认是<span class="s2">"f77"</span>。
+PC   Pascal语言编译器。默认是<span class="s2">"pc"</span>。
+YACC Yacc文法分析器。默认是<span class="s2">"yacc"</span>。
+
+ARFLAGS     函数库打包程序的命令行参数。默认值是<span class="s2">"rv"</span>。
+ASFLAGS     汇编程序的命令行参数。
+CFLAGS      C编译程序的命令行参数。
+CXXFLAGS    C++编译程序的命令行参数。
+CPPFLAGS    C/C++预处理器的命令行参数。
+FFLAGS      Fortran编译器的命令行参数。
+PFLAGS      Pascal编译器的命令行参数。
+YFLAGS      Yacc文法分析器的命令行参数。
+LDFLAGS     链接器的命令行参数。
+
+prefix      /usr/local
+exec_prefix <span class="k">$(</span>prefix<span class="k">)</span>
+bindir      <span class="k">$(</span>exec_prefix<span class="k">)</span>/bin
+sbindir     <span class="k">$(</span>exec_prefix<span class="k">)</span>/sbin
+libexecdir  <span class="k">$(</span>exec_prefix<span class="k">)</span>/libexec
+datadir     <span class="k">$(</span>prefix<span class="k">)</span>/share
+sysconfdir  <span class="k">$(</span>prefix<span class="k">)</span>/etc
+sharedstatedir <span class="k">$(</span>prefix<span class="k">)</span>/com
+localstatedir  <span class="k">$(</span>prefix<span class="k">)</span>/var
+libdir      <span class="k">$(</span>exec_prefix<span class="k">)</span>/lib
+infodir     <span class="k">$(</span>prefix<span class="k">)</span>/info
+includedir  <span class="k">$(</span>prefix<span class="k">)</span>/include
+oldincludedir  <span class="k">$(</span>prefix<span class="k">)</span>/include
+mandir      <span class="k">$(</span>prefix<span class="k">)</span>/man
+srcdir      需要编译的源文件所在的目录，无默认值
+
+</code></pre></div></div>
+
+<h3 id="make-选项">make 选项</h3>
+
+<p>最后说说 make 的命令行选项(以Make-3.81版本为准)：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+`-B, --always-make`
+无条件的重建所有规则的目标，而不是根据规则的依赖关系决定是否重建某些目标文件。
+
+`-C DIR, --directory=DIR`
+在做任何动作之前先切换工作目录到 DIR ，然后再执行 make 程序。
+
+`-d`
+在 make 执行过程中打印出所有的调试信息。包括：make 认为那些文件需要重建；那些文件需要比较它们的最后修改时间、比较的结果；重建目标所要执行的命令；使用的隐含规则等。使用该选项我们可以看到 make 构造依赖关系链、重建目标过程的所有信息，它等效于"-debug=a"。
+
+`--debug=FLAGS`
+    在 make 执行过程中打印出调试信息。FLAGS 用于控制调试信息级别：
+    a 输出所有类型的调试信息
+    b 输出基本调试信息。包括：那些目标过期、是否重建成功过期目标文件。
+    v 除 b 级别以外还包括：解析的 makefile 文件名，不需要重建文件等。
+    i 除 b 级别以外还包括：所有使用到的隐含规则描述。
+    j 输出所有执行命令的子进程，包括命令执行的 PID 等。
+    m 输出 make 读取、更新、执行 makefile 的信息。
+
+`-e, --environment-overrides`  
+使用系统环境变量的定义覆盖 Makefile 中的同名变量定义。
+
+`-f FILE, --file=FILE, --makefile=FILE`  
+将 FILE 指定为 Makefile 文件。
+
+`-h, --help`  
+打印帮助信息。
+
+`-i, --ignore-errors`  
+忽略规则命令执行过程中的错误。
+
+`-I DIR, --include-dir=DIR`  
+指定包含 Makefile 文件的搜索目录。使用多个"-I"指定目录时，搜索目录按照指定顺序进行。
+
+`-j [N], --jobs[=N]`  
+指定并行执行的命令数目。在没有指定"-j"参数的情况下，执行的命令数目将是系统允许的最大可能数目。
+
+`-k, --keep-going`  
+遇见命令执行错误时不终止 make 的执行，也就是尽可能执行所有的命令，直到出现致命错误才终止。
+
+`-l [N], --load-average[=N], --max-load[=N]`  
+如果系统负荷超过 LOAD(浮点数)，不再启动新任务。
+
+`-L, --check-symlink-times`  
+同时考察符号连接的时间戳和它所指向的目标文件的时间戳，以两者中较晚的时间戳为准。
+ 
+`-n, --just-print, --dry-run, --recon`  
+  只打印出所要执行的命令，但并不实际执行命令。
+  
+`-o FILE, --old-file=FILE, --assume-old=FILE`  
+即使相对于它的依赖已经过期也不重建 FILE 文件；同时也不重建依赖于此文件任何文件。
+
+`-p, --print-data-base`  
+命令执行之前，打印出 make 读取的 Makefile 的所有数据（包括规则和变量的值），同时打印出 make 的版本信息。如果只需要打印这些数据信息，可以使用 make -qp 命令。查看 make 执行前的预设规则和变量，可使用命令 make -p -f /dev/null 。
+
+`-q, --question`  
+"询问模式"。不运行任何命令，并且无输出，只是返回一个查询状态。返回状态为 0 表示没有目标需要重建，1 表示存在需要重建的目标，2 表示有错误发生。
+ 
+`-r, --no-builtin-rules`  
+取消所有内嵌的隐含规则，不过你可以在 Makefile 中使用模式规则来定义规则。同时还会取消所有支持后追规则的隐含后缀列表，同样我们也可以在 Makefile 中使用".SUFFIXES"定义我们自己的后缀规则。此选项不会取消 make 内嵌的隐含变量。
+
+`-R, --no-builtin-variables`   
+取消 make 内嵌的隐含变量，不过我们可以在 Makefile 中明确定义某些变量。注意，此选项同时打开了"-r"选项。因为隐含规则是以内嵌的隐含变量为基础的。
+
+`-s, --silent, --quiet`  
+不显示所执行的命令。
+
+`-S, --no-keep-going, --stop`  
+取消"-k"选项。在递归的 make 过程中子 make 通过 MAKEFLAGS 变量继承了上层的命令行选项。我们可以在子 make 中使用"-S"选项取消上层传递的"-k"选项，或者取消系统环境变量 MAKEFLAGS 中的"-k"选项。
+
+`-t, --touch`  
+更新所有目标文件的时间戳到当前系统时间。防止 make 对所有过时目标文件的重建。
+
+`-v, --version`  
+打印版本信息。
+
+`-w, --print-directory`  
+在 make 进入一个目录之前打印工作目录。使用"-C"选项时默认打开这个选项。
+
+--no-print-directory 
+取消"-w"选项。可以是用在递归的 make 调用过程中，取消"-C"参数将默认打开"-w"
+
+-W FILE, --what-if=FILE, --new-file=FILE, --assume-new=FILE
+设定 FILE 文件的时间戳为当前时间，但不改变文件实际的最后修改时间。此选项主要是为实现了对所有依赖于 FILE 文件的目标的强制重建。
+
+--warn-undefined-variables 
+在发现 Makefile 中存在对未定义的变量进行引用时给出告警信息。此功能可以帮助我们调试一个存在多级套嵌变量引用的复杂 Makefile 。但是：我们建议在书写 Makefile 时尽量避免超过三级以上的变量套嵌引用。
+</code></pre></div></div>
+
+<h2 id="configure"><a id="Configure">configure</a></h2>
+
+<p>此阶段的主要目的是生成 Makefile 文件，是最关键的运筹帷幄阶段，基本上所有可以对安装过程进行的个性化调整都集中在这一步。</p>
+
+<p>configure 脚本能够对 Makefile 中的哪些内容产生影响呢？基本上可以这么说：所有内容，包括本文最关心的 Makefile 规则与 Makefile 变量。那么又是哪些因素影响着最终生成的 Makefile 文件呢？答曰：系统环境和配置选项。</p>
+
+<p>配置选项的影响是显而易见的。但是”系统环境”的概念却很宽泛，包含很多方面内容，不过我们这里只关心环境变量，具体说来就是将来会在 Makefile 中使用到的环境变量以及与 Makefile 中的变量同名的环境变量。</p>
+
+<h3 id="通用-configure-语法">通用 configure 语法</h3>
+
+<p>在进一步讲述之前，先看看 configure 脚本的语法，一般有两种：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+configure <span class="o">[</span>OPTIONS] <span class="o">[</span><span class="nv">VAR</span><span class="o">=</span>VALUE]...
+
+configure <span class="o">[</span>OPTIONS] <span class="o">[</span>HOST]
+
+</code></pre></div></div>
+
+<p>不管是哪种语法，我们都可以用 <code class="highlighter-rouge">configure --help</code> 查看所有可用的<code class="highlighter-rouge">[OPTIONS]</code>，并且通常在结尾部分还能看到这个脚本所关心的环境变量有哪些。在本文中将对这两种语法进行合并，使用下面这种简化的语法：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+configure <span class="o">[</span>OPTIONS]
+
+</code></pre></div></div>
+
+<p>这种语法能够被所有的 <code class="highlighter-rouge">configure</code> 脚本所识别，同时也能通过设置环境变量和使用特定的<code class="highlighter-rouge">[OPTIONS]</code>完成上述两种语法的一切功能。</p>
+
+<h3 id="通用-configure-选项">通用 configure 选项</h3>
+
+<p>虽然每个软件包的 configure 脚本千差万别，但是它们却都有一些共同的选项，也基本上都遵守相同的选项语法。</p>
+
+<p><strong>脚本自身选项</strong></p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="nt">--help</span>  
+显示帮助信息。
+
+<span class="nt">--version</span>  
+显示版本信息。
+
+<span class="nt">--cache-file</span><span class="o">=</span>FILE  
+在FILE文件中缓存测试结果<span class="o">(</span>默认禁用<span class="o">)</span>。
+
+<span class="nt">--no-create</span>  
+configure脚本运行结束后不输出结果文件，常用于正式编译前的测试。
+
+<span class="nt">--quiet</span>, <span class="nt">--silent</span>  
+不显示脚本工作期间输出的<span class="s2">"checking ..."</span>消息。
+
+</code></pre></div></div>
+
+<p><strong>目录选项</strong></p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="nt">--srcdir</span><span class="o">=</span>DIR  
+源代码文件所在目录，默认为configure脚本所在目录或其父目录。
+
+<span class="nt">--prefix</span><span class="o">=</span>PREFIX  
+体系无关文件的顶级安装目录PREFIX ，默认值一般是 /usr/local 或 /usr/local/pkgName
+
+<span class="nt">--exec-prefix</span><span class="o">=</span>EPREFIX  
+体系相关文件的顶级安装目录EPREFIX ，默认值一般是 PREFIX
+
+<span class="nt">--bindir</span><span class="o">=</span>DIR  
+用户可执行文件的存放目录DIR ，默认值一般是 EPREFIX/bin
+
+<span class="nt">--sbindir</span><span class="o">=</span>DIR  
+系统管理员可执行目录DIR ，默认值一般是 EPREFIX/sbin
+
+<span class="nt">--libexecdir</span><span class="o">=</span>DIR  
+程序可执行目录DIR ，默认值一般是 EPREFIX/libexec
+
+<span class="nt">--datadir</span><span class="o">=</span>DIR  
+通用数据文件的安装目录DIR ，默认值一般是 PREFIX/share
+
+<span class="nt">--sysconfdir</span><span class="o">=</span>DIR  
+只读的单一机器数据目录DIR ，默认值一般是 PREFIX/etc
+
+<span class="nt">--sharedstatedir</span><span class="o">=</span>DIR  
+可写的体系无关数据目录DIR ，默认值一般是 PREFIX/com
+
+<span class="nt">--localstatedir</span><span class="o">=</span>DIR  
+可写的单一机器数据目录DIR ，默认值一般是 PREFIX/var
+
+<span class="nt">--libdir</span><span class="o">=</span>DIR  
+库文件的安装目录DIR ，默认值一般是 EPREFIX/lib
+
+<span class="nt">--includedir</span><span class="o">=</span>DIR  
+C头文件目录DIR ，默认值一般是 PREFIX/include
+
+<span class="nt">--oldincludedir</span><span class="o">=</span>DIR  
+非gcc的C头文件目录DIR ，默认值一般是 /usr/include
+
+<span class="nt">--infodir</span><span class="o">=</span>DIR  
+Info文档的安装目录DIR ，默认值一般是 PREFIX/info
+
+<span class="nt">--mandir</span><span class="o">=</span>DIR  
+Man文档的安装目录DIR ，默认值一般是 PREFIX/man
+
+</code></pre></div></div>
+
+<p><strong>体系结构选项</strong></p>
+
+<p>玩交叉编译的朋友对这些选项已经很熟悉了，对于不使用交叉编译的朋友也不必担心，不要理它们就可以了。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="nt">--build</span><span class="o">=</span>BUILD  
+工具链当前的运行环境，默认是 config.guess 脚本的输出结果。
+
+<span class="nt">--host</span><span class="o">=</span>HOST  
+编译出的二进制代码将要运行在HOST上，默认值是BUILD。
+
+<span class="nt">--target</span><span class="o">=</span>TARGET  
+编译出的工具链所将来生成的二进制代码要在TARGET上运行，这个选项仅对工具链<span class="o">(</span>也就是GCC和Binutils两者<span class="o">)</span>有意义。
+
+</code></pre></div></div>
+
+<p><strong>特性选项</strong></p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="nt">--enable-FEATURE</span>  
+启用FEATURE特性
+
+<span class="nt">--disable-FEATURE</span>  
+禁用FEATURE特性
+
+<span class="nt">--with-PACKAGE</span><span class="o">[=</span>DIR]  
+启用附加软件包PACKAGE，亦可同时指定PACKAGE所在目录DIR
+
+<span class="nt">--without-PACKAGE</span>  
+禁用附加软件包PACKAGE
+
+</code></pre></div></div>
+
+<p><strong>通用环境变量</strong></p>
+
+<p>除了上述通用的选项外，下列环境变量影响着最终生成的 Makefile 文件：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+CPP  
+C预处理器命令  
+
+CXXCPP  
+C++预处理器命令
+
+CPPFLAGS  
+C/C++预处理器命令行参数
+
+CC  
+C编译器命令
+
+CFLAGS  
+C编译器命令行参数
+
+CXX  
+C++编译器命令
+
+CXXFLAGS  
+C++编译器命令行参数
+
+LDFLAGS  
+连接器命令行参数
+
+</code></pre></div></div>
+
+<p>至于设置这些环境变量的方法，你可以将它们 <code class="highlighter-rouge">export</code> 为全局变量在全局范围内使用，也可以在命令行上使用 <code class="highlighter-rouge">[VAR=VALUE]... configure [OPTIONS]</code> 的语法局部使用。此处就不详细描述了。</p>
+
+
+                </div>
+                <div class="read-all">
+                    <a  href="/2014/06/24/Linux-Software-Install-Understand/"><i class="fa fa-newspaper-o"></i>Read All</a>
+                </div>
+                <hr>
+              </li>
+            
+              <li>
+                <h2>
+                  <a class="post-link" href="/2014/06/10/Ubuntu-Chrome-Start-Fail-Resolve/">Ubuntu Chrome启动失败解决方法</a>
+                </h2>
+                <div class="label">
+                    <div class="label-card">
+                        <i class="fa fa-calendar"></i>2014-06-10
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+
+                    <div class="label-card">
+                    
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Linux" title="Category: Linux" rel="category">Linux</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+                    </div>
+
+                    <div class="label-card">
+                    
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+                    </div>
+                </div>
+                <div class="excerpt">
+                    <h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p>使用<code class="highlighter-rouge">Ubuntu</code>系统时，由于系统是默认安装的，所以机器名没有修改成一个合适的名字。在<code class="highlighter-rouge">Ubuntu</code>下通过命令<code class="highlighter-rouge">sudo vim /etc/hostname</code>来修改成自己想要的命令，然后注销用户，重新进入系统。</p>
+
+<p>接着，就出现了一个很奇怪的问题，我的桌面上的chrome图标不能点击进入，一直都是无响应状态，但是其他浏览器，比如自带的<code class="highlighter-rouge">Firefox</code>就可以正常启动和使用。</p>
+
+<h2 id="chrome启动失败解决方法"><a id="Chrome">Chrome启动失败解决方法</a></h2>
+
+<p>点击<code class="highlighter-rouge">chrome</code>图标不管用，并且看不到任何出错信息，无法定位问题出在哪里。只好，从<code class="highlighter-rouge">终端</code>使用<code class="highlighter-rouge">google-chrome</code>命令来启动<code class="highlighter-rouge">chrome</code>浏览器客户端了。于是，出现以下错误信息：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ketao@ketao-Latitude:~<span class="nv">$ </span>google-chrome
+
+<span class="o">[</span>5901:5901:0610/183033:ERROR:process_singleton_linux.cc<span class="o">(</span>309<span class="o">)]</span> 其他计算机 <span class="o">(</span>ketao-Latitude-E5430-non-vPro<span class="o">)</span> 的另一个 Google Chrome 进程 <span class="o">(</span>7578<span class="o">)</span> 好像正在使用此个人资料。Chrome 已锁定此个人资料以防止其受损。如果您确定其他进程目前未使用此个人资料，请为其解锁并重新启动 Chrome。
+
+<span class="o">[</span>5901:5901:0610/183033:ERROR:simple_message_box_views.cc<span class="o">(</span>208<span class="o">)]</span> Unable to show a dialog outside the UI thread message loop: Google Chrome - 其他计算机 <span class="o">(</span>ketao-Latitude-E5430-non-vPro<span class="o">)</span> 的另一个 Google Chrome 进程 <span class="o">(</span>7578<span class="o">)</span> 好像正在使用此个人资料。Chrome 已锁定此个人资料以防止其受损。如果您确定其他进程目前未使用此个人资料，请为其解锁并重新启动 Chrome。
+
+</code></pre></div></div>
+
+<!-- more -->
+
+<blockquote>
+  <blockquote>
+    <p>Note：显然，上面的错误信息告诉我们，尼玛，<code class="highlighter-rouge">chrome</code>会记录我们在计算机上的操作数据在本地，然后我们修改主机名后，导致老数据被锁住了，这样新的主机名下chrome无法获取用户对应的浏览器数据，因此chrome无法正常启动，并且在UI上还无法看到相关错误，导致假死现象出现。</p>
+  </blockquote>
+</blockquote>
+
+<h3 id="解决方法">解决方法：</h3>
+
+<p>先把本机上的<code class="highlighter-rouge">chrome</code>卸载掉，当然这不会把那些被锁定的数据也一并删除掉，不然我也不会写一篇博客记录下。因此，接下来，你需要删除掉自个目录下的残留的<code class="highlighter-rouge">chrome</code>用户数据。</p>
+
+<p>在当前用户目录下面执行命令：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ketao@ketao-Latitude:~<span class="nv">$ </span><span class="nb">cd</span> .config/
+ketao@ketao-Latitude:~/.config<span class="nv">$ </span><span class="nb">ls
+</span>chromium        gedit             monitors.xml     Trolltech.conf
+compiz-1        gnome-session     nautilus         ubuntu-ui-toolkit
+dconf           google-chrome     pulse            update-notifier
+enchant         gtk-2.0           ReText project   upstart
+evolution       gtk-3.0           software-center  user-dirs.dirs
+fcitx           ibus              SogouPY          user-dirs.locale
+fcitx-qimpanel  libaccounts-glib  SogouPY.users    VirtualBox
+ketao@ketao-Latitude:~/.config<span class="nv">$ </span><span class="nb">rm</span> <span class="nt">-rf</span> chromium/
+ketao@ketao-Latitude:~/.config<span class="nv">$ </span><span class="nb">rm</span> <span class="nt">-rf</span> google-chrome/
+</code></pre></div></div>
+
+<p>然后，重装<code class="highlighter-rouge">chrome</code>浏览器，安装成功之后，就可以启动<code class="highlighter-rouge">chrome</code>了。</p>
+
+<h2 id="小结"><a id="Finally">小结</a></h2>
+
+<p>一般，如果程序出现问题，通过重装都无法解决的，都是应用在用户目录下面添加来一些配置文件，并且这些文件在应用卸载之后并不会删除，所以会出现重装失败的问题。</p>
+
+                </div>
+                <div class="read-all">
+                    <a  href="/2014/06/10/Ubuntu-Chrome-Start-Fail-Resolve/"><i class="fa fa-newspaper-o"></i>Read All</a>
+                </div>
+                <hr>
+              </li>
+            
+              <li>
+                <h2>
+                  <a class="post-link" href="/2014/06/04/Ubuntu-Software-Configure-and-Install/">Ubuntu Subversion软件安装和配置</a>
+                </h2>
+                <div class="label">
+                    <div class="label-card">
+                        <i class="fa fa-calendar"></i>2014-06-04
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+
+                    <div class="label-card">
+                    
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Linux" title="Category: Linux" rel="category">Linux</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+                    </div>
+
+                    <div class="label-card">
+                    
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+                    </div>
+                </div>
+                <div class="excerpt">
+                    <h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p>最近，系统从 <code class="highlighter-rouge">windows</code>切换到<code class="highlighter-rouge">Ubuntu</code>，一些开发软件需要重新安装和配置。但是，众所周知，<code class="highlighter-rouge">windows</code>上的开发软件客户端比<code class="highlighter-rouge">ubuntu</code>等linux系系统使用要便捷和傻瓜得多，所以切换到<code class="highlighter-rouge">ubuntu</code>有很多软件需要安装，但是这些软件需要进行代码编译，就在这里记录下。</p>
+
+<h2 id="subversion安装和配置"><a id="Subversion">subversion安装和配置</a></h2>
+
+<p>一般，如果对<code class="highlighter-rouge">subversion</code>的版本不限制，那些直接使用<code class="highlighter-rouge">sudo apt-get install subversion</code>命令就可以安装来，但是如果对版本有要求，比如由于<code class="highlighter-rouge">svn</code>的1.8版本在很多<code class="highlighter-rouge">svn</code>服务器端不被支持，所以需要安装低于1.8的svn客户端。这就需要我们在本地编译完了之后再安装。</p>
+
+<h3 id="21-subversion源码下载">2.1 subversion源码下载</h3>
+
+<p>点击进入下载页面：<a href="http://subversion.apache.org/download/#supported-releases">http://subversion.apache.org/download/#supported-releases</a> , 选择当前最新的<code class="highlighter-rouge">1.7</code>的子版本下载；</p>
+
+<p>或者，也可以直接在终端使用命令：<code class="highlighter-rouge">wget http://apache.fayea.com/apache-mirror/subversion/subversion-1.7.17.tar.gz</code>下载。</p>
+
+<h3 id="22-subversion-源码编译准备">2.2 subversion 源码编译准备</h3>
+
+<p>在<code class="highlighter-rouge">Linux</code>编译安装<code class="highlighter-rouge">subversion</code>需要事先准备很多的工作，安装很多相关的工具包，否则代码无法编译通过。因此，在安装<code class="highlighter-rouge"> subversion</code>之前，需要先做一些准备工作。</p>
+
+<!-- more -->
+
+<h3 id="221-安装-autoconf-和-libtool">2.2.1 安装 autoconf 和 libtool</h3>
+
+<p>编译<code class="highlighter-rouge">subversion</code>首先需要安装<code class="highlighter-rouge">autoconf</code>和<code class="highlighter-rouge">libtool</code>两个工具，如果你的电脑上没有安装这两个工具包，很简单，直接执行安装命令就可以来了：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>1.  sudo apt-get install autoconf
+
+2.  sudo apt-get install libtool
+</code></pre></div></div>
+
+<p>但是，如果你就接下来运行<code class="highlighter-rouge">./configure</code>命令，则会出现下面错误:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+configure: Apache Portable Runtime (APR) library configuration
+checking for APR... no
+configure: WARNING: APR not found
+The Apache Portable Runtime (APR) library cannot be found.
+Please install APR on this system and supply the appropriate
+--with-apr option to 'configure'
+
+or
+
+get it with SVN and put it in a subdirectory of this source:
+
+   svn co \
+    http://svn.apache.org/repos/asf/apr/apr/branches/1.3.x \
+    apr
+
+Run that right here in the top level of the Subversion tree.
+Afterwards, run apr/buildconf in that subdirectory and
+then run configure again here.
+
+Whichever of the above you do, you probably need to do
+something similar for apr-util, either providing both
+--with-apr and --with-apr-util to 'configure', or
+getting both from SVN with:
+
+   svn co \
+    http://svn.apache.org/repos/asf/apr/apr-util/branches/1.3.x \
+    apr-util
+
+configure: error: no suitable apr found
+
+</code></pre></div></div>
+
+<h3 id="222-安装-apr">2.2.2 安装 APR</h3>
+
+<p>因此，你还需要<code class="highlighter-rouge">APR</code>,首先，在安装<code class="highlighter-rouge">apr</code>之前需要<code class="highlighter-rouge">sqlite-autoconf</code>，因此<code class="highlighter-rouge">subversion</code>需要使用<code class="highlighter-rouge">sqlite</code>来存储数据。</p>
+
+<ol>
+  <li>sqlite-autoconf：<a href="http://www.sqlite.org/2014/sqlite-autoconf-3080403.tar.gz">http://www.sqlite.org/2014/sqlite-autoconf-3080403.tar.gz</a></li>
+</ol>
+
+<p>解压缩文件，然后在<code class="highlighter-rouge">subversion-1.7.17</code>目录下面，新建一个目录<code class="highlighter-rouge">sqlite-amalgamation</code>，然后在目录下面，从解压缩后的<code class="highlighter-rouge">sqlite-autoconf</code>目录里面复制一个文件<code class="highlighter-rouge">sqlite3.c</code>到该新建目录中。</p>
+
+<blockquote>
+  <blockquote>
+    <p>Note：需要注意的是，新建目录名必须为<code class="highlighter-rouge">sqlite-amalgamation</code>，虽然下载的文件是<code class="highlighter-rouge">sqlite-autoconf</code>，这主要是因为<code class="highlighter-rouge">sqlite-autoconf</code>工具是由<code class="highlighter-rouge">sqlite-amalgamation</code>来的，后来改了名字了，但是<code class="highlighter-rouge">subversion</code>编译的时候，并没有改变相应代码配置，所以还是需要用原来的命名。</p>
+  </blockquote>
+</blockquote>
+
+<p>接下来，就可以下载apr.tar.gz和apr-util.tar.gz两个源码包：</p>
+
+<ol>
+  <li>
+    <p>apr：<a href="http://mirrors.cnnic.cn/apache//apr/apr-1.5.1.tar.gz">http://mirrors.cnnic.cn/apache//apr/apr-1.5.1.tar.gz</a></p>
+  </li>
+  <li>
+    <p>apr-util：<a href="http://mirrors.cnnic.cn/apache//apr/apr-util-1.5.3.tar.gz">http://mirrors.cnnic.cn/apache//apr/apr-util-1.5.3.tar.gz</a></p>
+  </li>
+</ol>
+
+<p>解压缩完了之后，分别在<code class="highlighter-rouge">subversion-1.7.17</code>目录下面新建<code class="highlighter-rouge">apr</code>目录和<code class="highlighter-rouge">apr-util</code>目录，然后把解压缩后的内容复制到对应的新建目录中，分别执行<code class="highlighter-rouge">./buildconf</code></p>
+
+<blockquote>
+  <blockquote>
+    <p>Note：这里的目录名字不能改变，必须为<code class="highlighter-rouge">apr</code>和<code class="highlighter-rouge">apr-util</code>，否则会编译失败。</p>
+  </blockquote>
+</blockquote>
+
+<p>当然，在这里运行<code class="highlighter-rouge">./configure</code>还是会出现问题，错误如下：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+checking zlib.h usability... no
+checking zlib.h presence... no
+checking for zlib.h... no
+configure: error: subversion requires zlib
+
+</code></pre></div></div>
+
+<h3 id="223-安装-zlib">2.2.3 安装 zlib</h3>
+
+<p>好吧，这里还需要<code class="highlighter-rouge">zlib</code>库，所以接下来，还需要下载<code class="highlighter-rouge">zlib</code>源码包：</p>
+
+<ol>
+  <li>zlib：<a href="http://cznic.dl.sourceforge.net/project/libpng/zlib/1.2.8/zlib-1.2.8.tar.gz">http://cznic.dl.sourceforge.net/project/libpng/zlib/1.2.8/zlib-1.2.8.tar.gz</a></li>
+</ol>
+
+<p>然后解压缩，在<code class="highlighter-rouge">subversion-1.7.17</code>目录下面，新建一个<code class="highlighter-rouge">zlib</code>目录，然后把解压缩的内容复制到该目录下，执行<code class="highlighter-rouge">./configure --shared</code>，然后在<code class="highlighter-rouge">make</code>，OK了。</p>
+
+<h3 id="224-安装-neon">2.2.4 安装 neon</h3>
+
+<p>如果不安装<code class="highlighter-rouge">neon</code>库，在使用<code class="highlighter-rouge">svn co http://...</code> 的时候，则会出现错误。</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+svn: E170000: Unrecognized URL scheme for http...
+
+</code></pre></div></div>
+
+<p>因此，我们需要安装<code class="highlighter-rouge">neon</code>库来提供<code class="highlighter-rouge">HTTP</code>库给svn工具使用。在安装<code class="highlighter-rouge">neon</code>前需要安装<code class="highlighter-rouge">libxml2</code>和<code class="highlighter-rouge">libxml2-dev</code>，直接使用<code class="highlighter-rouge">sudo apt-get install </code>安装就可以了。</p>
+
+<p>然后，下载neon，地址为：<a href="http://www.webdav.org/neon/neon-0.30.0.tar.gz">http://www.webdav.org/neon/neon-0.30.0.tar.gz</a>，解压缩之后，进入目录，执行<code class="highlighter-rouge">./configure</code>、<code class="highlighter-rouge">make</code>、<code class="highlighter-rouge">sudo make install</code>。</p>
+
+<h3 id="23-subversion源码编译安装">2.3 subversion源码编译安装</h3>
+
+<p>准备工作做好了之后，就可以开始编译安装了。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+ ./configure <span class="nt">--with-neon</span><span class="o">=</span>/usr/local <span class="nv">CPPFLAGS</span><span class="o">=</span><span class="s2">"-I/home/ketao/java/subversion-1.7.17/zlib/ -L/home/ketao/java/subversion-1.7.17/zlib/"</span>
+make
+make <span class="nb">install</span>
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Note：网上嗖的时候，说是<code class="highlighter-rouge">./configure CPPFLAGS="-Izlib/ -Lzlib/"</code>就可以，但是在执行的时候出现问题，找不到<code class="highlighter-rouge">zlib</code>目录，所以需要写绝对路径。</p>
+  </blockquote>
+</blockquote>
+
+<p>接下来，你可以在终端执行命名，查看安装版本是否正确。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+svnversion <span class="nt">--version</span>
+</code></pre></div></div>
+<p>然后会出现：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+svnversion, version 1.7.17 (r1591372)
+   compiled Jun  4 2014, 17:39:27
+
+Copyright (C) 2014 The Apache Software Foundation.
+This software consists of contributions made by many people; see the NOTICE
+file for more information.
+Subversion is open source software, see http://subversion.apache.org/
+
+</code></pre></div></div>
+
+<h2 id="小结"><a id="Finally">小结</a></h2>
+
+<p>Linux下面安装软件，通过编译安装实在是比较复杂，有时候，涉及到多个类库，需要一个个去下载编译安装，比较麻烦。所以，一般情况下，推荐使用<code class="highlighter-rouge">apt-get install </code>来打包安装。</p>
+
+                </div>
+                <div class="read-all">
+                    <a  href="/2014/06/04/Ubuntu-Software-Configure-and-Install/"><i class="fa fa-newspaper-o"></i>Read All</a>
+                </div>
+                <hr>
+              </li>
+            
+              <li>
+                <h2>
+                  <a class="post-link" href="/2014/05/30/Linux-Awk-Study-Note/">Linux Awk 使用学习笔记</a>
+                </h2>
+                <div class="label">
+                    <div class="label-card">
+                        <i class="fa fa-calendar"></i>2014-05-30
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+                    <div class="label-card">
+                        
+                    </div>
+
+                    <div class="label-card">
+                    
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Script" title="Category: Script" rel="category">Script</a>&nbsp;
+    
+        <a href="/category/#Linux" title="Category: Linux" rel="category">Linux</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+                    </div>
+
+                    <div class="label-card">
+                    
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+                    </div>
+                </div>
+                <div class="excerpt">
+                    <h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p><code class="highlighter-rouge">linux Awk</code> 脚本语言，算来也有很长的一段历史了。在如今各种更全更简单的脚本语言遍地生成的年代，关注<code class="highlighter-rouge">Awk</code>的新人越来越少了。最近，在项目组同事的影响下，去学习了下<code class="highlighter-rouge">Awk</code>的基本使用方法。</p>
+
+<blockquote>
+  <blockquote>
+    <p>Note：本文只是学习笔记，很多示例和描述都来自最后推荐的文章里面。</p>
+  </blockquote>
+</blockquote>
+
+<p>起意写关于<code class="highlighter-rouge">Awk</code>学习笔记的主要原因是，学习皓哥的<a href="http://coolshell.cn/articles/9070.html">AWK 简明教程</a> 完了之后，完全还是云里雾里的，不知所以然。所以，找了个<a href="http://www.aslibra.com/doc/awk.htm">AWK 手册</a>好好学习。但是，对于前者介绍太多浅，初学者对于<code class="highlighter-rouge">Awk</code>使用没有任何概念；后者又过于长，不方便我去查资料，所以合计起来，就写一个学习总结罢了。</p>
+
+<h2 id="awk命令行"><a id="Console">Awk命令行</a></h2>
+
+<p>关于<code class="highlighter-rouge">Awk</code>的历史，语言优势什么的，就不浪费时间介绍了。</p>
+
+<h3 id="21-awk-程序结构">2.1 Awk 程序结构</h3>
+
+<p>首先，我们在服务器上查看日志信息，大部分时候都希望使用一行命令搞定问题，因此，显然命令行方式使用<code class="highlighter-rouge">Awk</code>是很频繁的事情。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">awk</span> <span class="s1">'awk程序主体'</span> <span class="o">[</span>操作的文本] 
+</code></pre></div></div>
+
+<p>在写一个<code class="highlighter-rouge">awk</code>脚本之前，首先需要的是了解 <code class="highlighter-rouge">awk</code>程序组成结构，如果你不了解它的程序一般的结构，那么你去看皓哥或者其他人写的入门级<code class="highlighter-rouge">Awk</code>小程序，你也无法真正去了解或者深入。</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Pattern1 {Actions1}
+Pattern2 { Actions2 }
+......
+Pattern3 { Actions3 }
+</code></pre></div></div>
+
+<!-- more -->
+
+<blockquote>
+  <blockquote>
+    <p>Note：<code class="highlighter-rouge">Pattern （模式）</code>，如同正则一样，就是判断<code class="highlighter-rouge">Pattern</code>是否满足，如果满足，则执行就下来的<code class="highlighter-rouge">Actions</code>动作行为。<code class="highlighter-rouge">awk</code>提供的比较运算符和<code class="highlighter-rouge">C</code>语言一样，不过新加了 ` ~ <code class="highlighter-rouge">(匹配) 及 </code> !~ `(不匹配) 二个关系运算符.</p>
+  </blockquote>
+</blockquote>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>其用法与涵义如下:
+若 A 为一字符串, B 为一正则表达式(Regular Expression)
+A ~ B 判断 字符串A 中是否 包含 能匹配(match)B表达式的子字符串.
+A !~ B 判断 字符串A 中是否 不包含 能匹配(match)B表达式的子字符串.
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Note：<code class="highlighter-rouge">Action</code>，就是动作，但是需要指出的是，一个<code class="highlighter-rouge">Pattern</code>所对应的<code class="highlighter-rouge">Action</code>应该要放进<code class="highlighter-rouge">{ }</code>内。当然，存在一种情况，就是没有<code class="highlighter-rouge">Pattern</code>,直接就是<code class="highlighter-rouge">{Action}</code>，这表示，“无条件执行指定的Action动作”。</p>
+  </blockquote>
+</blockquote>
+
+<p>了解了<code class="highlighter-rouge">awk</code>程序的基本结构，下面给一个简单示例：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">awk</span> <span class="s1">' $0&gt;1 {print "hello world"}'</span> 
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>这个程序意思就是：<code class="highlighter-rouge">$0&gt;1</code>模式成立，则打印后面的<code class="highlighter-rouge">hello world</code>，在console上输入3，回车，则会打印<code class="highlighter-rouge">hello world</code>；如果输入0，则不会打印该消息。</p>
+  </blockquote>
+</blockquote>
+
+<h3 id="22-awk-程序说明">2.2 Awk 程序说明</h3>
+
+<p>首先，需要了解<code class="highlighter-rouge">$0</code>这种格式： <code class="highlighter-rouge">$0</code>表示<code class="highlighter-rouge">awk</code>所读入的一行字符串；<code class="highlighter-rouge">$1</code>则表示所读入的字符串的第一个数据，默认安装<code class="highlighter-rouge">空格/tab</code>来分隔；<code class="highlighter-rouge">$2</code>则表示所读入的字符串的第二个数据；以此类推…..</p>
+
+<p>其次，这个程序是从控制台，或者文本中读取变量值（需要在后面写操作的文本名）。如果你测试了这个小脚本，你会发现，它会一直读，知道遇到<code class="highlighter-rouge">ctrl+d</code>或者<code class="highlighter-rouge">EOF</code>才会结束。但是，如果你初始化一些变量或者其他只需要执行一次的逻辑，怎么办呢？你需要<code class="highlighter-rouge">BEGIN</code>和<code class="highlighter-rouge">END</code>。</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>1. BEGIN ：程序一开始执行时执行的，仅被执行一次。
+2. END	 ：程序处理完所有数据即将返回的时候，执行一次。
+</code></pre></div></div>
+
+<p>比如上面的程序，可以写成：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">awk</span> <span class="s1">' BEGIN{n=3} $0&gt;1 &amp;&amp; --n&gt;0 {print "hello world"} END{print "EXIT AWK TEST"}'</span>
+</code></pre></div></div>
+
+<p>执行完了结果如下：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[tao.ke@l-rtools1.ops.cn6 ~]$ awk ' BEGIN{n=3} $0&gt;1 &amp;&amp; --n&gt;0 {print "hello world"} END{print "EXIT AWK TEST"}'         
+3
+hello world
+2
+hello world
+1
+0 #（在这里的时候输入 ctrl+d）
+EXIT AWK TEST
+</code></pre></div></div>
+
+<p>最后，说说<code class="highlighter-rouge">Awk</code>中使用<code class="highlighter-rouge">linux shell</code>命令。和<code class="highlighter-rouge">linux</code>一样，使用<code class="highlighter-rouge">|</code>来操作管道流，使用<code class="highlighter-rouge">""</code>标识<code class="highlighter-rouge">linux</code>命令。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">awk</span> <span class="s1">' BEGIN{while("who"|getline){print $0}} '</span>  
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>这里可以打印出，所有的登陆在系统上的用户。	关于<code class="highlighter-rouge">while</code>的使用，和<code class="highlighter-rouge">c</code>语言一样；此外，其他控制语言<code class="highlighter-rouge">if</code>、<code class="highlighter-rouge">do-while</code>、<code class="highlighter-rouge">for</code>，也和<code class="highlighter-rouge">c</code>一样。需要说明的是，<code class="highlighter-rouge">for</code>可以使用类似<code class="highlighter-rouge">foreach</code>的形式，具体见下一节。</p>
+  </blockquote>
+</blockquote>
+
+<h2 id="推荐教程"><a id="Recommend">推荐教程</a></h2>
+
+<ul>
+  <li>
+    <p>awk手册，<a href="http://www.aslibra.com/doc/awk.htm">http://www.aslibra.com/doc/awk.htm</a></p>
+  </li>
+  <li>
+    <p>AWK 简明教程，<a href="http://coolshell.cn/articles/9070.html">http://coolshell.cn/articles/9070.html</a></p>
+  </li>
+</ul>
+
+                </div>
+                <div class="read-all">
+                    <a  href="/2014/05/30/Linux-Awk-Study-Note/"><i class="fa fa-newspaper-o"></i>Read All</a>
+                </div>
+                <hr>
+              </li>
+            
+        </ul>
+
+
+
+        <!-- Pagination links -->
+        <div class="pagination">
+          
+            <a href="/index.html" class="previous"><i class="fa fa-angle-double-left"></i></a>
+            <a href="/page5" class="previous"><i class="fa fa-angle-left"></i></a>
+          
+          <span class="page_number ">6/8</span>
+          
+            <a href="/page7" class="next"><i class="fa fa-angle-right"></i></a>
+            <a href="/page8" class="next"><i class="fa fa-angle-double-right"></i></a>
+          
+        </div>
+    </div>
+    <!-- <button class="anchor"><i class="fa fa-anchor"></i></button> -->
+    <div class="right">
+        <div class="wrap">
+            <div class="side">
+                <div>
+                    <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
+                    Recent Posts
+                </div>
+                <ul class="content-ul" recent>
+                    
+                        <li><a href="/2017/03/29/java-server-in-action/">深入浅出Java服务端原理之基础篇</a></li>
+                    
+                        <li><a href="/2016/12/10/rpc-theory-in-action/">深入浅出RPC原理</a></li>
+                    
+                        <li><a href="/2016/05/29/talk-about-java-gc/">聊聊 Java GC</a></li>
+                    
+                        <li><a href="/2016/04/29/thrift-service-discory-using-zookeeper-ourea/">Ourea-基于Zookeeper的Thrift服务发现框架实现</a></li>
+                    
+                        <li><a href="/2016/03/10/junit-mockito-guice-in-action-and-junit-test-mechanism/">基于JUnit Mockito Guice测试实践及JUnit运行机制浅析</a></li>
+                    
+                        <li><a href="/2016/01/02/delayed-message-consume-service-use-kafka/">基于kafka的定时消息/任务服务</a></li>
+                    
+                        <li><a href="/2015/09/05/zookeeper-programmer-guide/">Zookeeper 编程指南</a></li>
+                    
+                        <li><a href="/2015/08/30/nginx-proxy-configure-and-sduty/">Nginx 反向代理配置和工作原理</a></li>
+                    
+                        <li><a href="/2015/04/29/LogBack-Implemention-And-Slf4j-Mdc/">Slf4j MDC 使用和 基于 Logback 的实现分析</a></li>
+                    
+                        <li><a href="/2015/02/26/Python-Tutoril-Python-Object-Oriented-Programming/">Python 教程学习之 Python 面向对象编程</a></li>
+                    
+                </ul>
+            </div>
+
+            <!-- Content -->
+            <div class="side ">
+                <div>
+                    <i class="fa fa-th-list"></i>
+                    Categories
+                </div>
+                <ul class="content-ul" cate>
+                    
+                    <li>
+                        <a href="/category/#Java" class="categories-list-item" cate="Java">
+                            <span class="name">
+                                Java
+                            </span>
+                            <span class="badge">19</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#IDE" class="categories-list-item" cate="IDE">
+                            <span class="name">
+                                IDE
+                            </span>
+                            <span class="badge">2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Log" class="categories-list-item" cate="Log">
+                            <span class="name">
+                                Log
+                            </span>
+                            <span class="badge">2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Thread" class="categories-list-item" cate="Thread">
+                            <span class="name">
+                                Thread
+                            </span>
+                            <span class="badge">2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Spring" class="categories-list-item" cate="Spring">
+                            <span class="name">
+                                Spring
+                            </span>
+                            <span class="badge">2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#GC" class="categories-list-item" cate="GC">
+                            <span class="name">
+                                GC
+                            </span>
+                            <span class="badge">2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Mysql" class="categories-list-item" cate="Mysql">
+                            <span class="name">
+                                Mysql
+                            </span>
+                            <span class="badge">2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Script" class="categories-list-item" cate="Script">
+                            <span class="name">
+                                Script
+                            </span>
+                            <span class="badge">3</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Linux" class="categories-list-item" cate="Linux">
+                            <span class="name">
+                                Linux
+                            </span>
+                            <span class="badge">5</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Python" class="categories-list-item" cate="Python">
+                            <span class="name">
+                                Python
+                            </span>
+                            <span class="badge">5</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Redis" class="categories-list-item" cate="Redis">
+                            <span class="name">
+                                Redis
+                            </span>
+                            <span class="badge">6</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Redis Cookbook" class="categories-list-item" cate="Redis Cookbook">
+                            <span class="name">
+                                Redis Cookbook
+                            </span>
+                            <span class="badge">6</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#tools" class="categories-list-item" cate="tools">
+                            <span class="name">
+                                tools
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Json" class="categories-list-item" cate="Json">
+                            <span class="name">
+                                Json
+                            </span>
+                            <span class="badge">3</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Dubbo" class="categories-list-item" cate="Dubbo">
+                            <span class="name">
+                                Dubbo
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Git" class="categories-list-item" cate="Git">
+                            <span class="name">
+                                Git
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Nginx" class="categories-list-item" cate="Nginx">
+                            <span class="name">
+                                Nginx
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Zookeeper" class="categories-list-item" cate="Zookeeper">
+                            <span class="name">
+                                Zookeeper
+                            </span>
+                            <span class="badge">2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Translation" class="categories-list-item" cate="Translation">
+                            <span class="name">
+                                Translation
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Kafka" class="categories-list-item" cate="Kafka">
+                            <span class="name">
+                                Kafka
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#JUnit" class="categories-list-item" cate="JUnit">
+                            <span class="name">
+                                JUnit
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Guice" class="categories-list-item" cate="Guice">
+                            <span class="name">
+                                Guice
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#Thrift" class="categories-list-item" cate="Thrift">
+                            <span class="name">
+                                Thrift
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#rpc" class="categories-list-item" cate="rpc">
+                            <span class="name">
+                                rpc
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#dubbo" class="categories-list-item" cate="dubbo">
+                            <span class="name">
+                                dubbo
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#thrift" class="categories-list-item" cate="thrift">
+                            <span class="name">
+                                thrift
+                            </span>
+                            <span class="badge">2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#java" class="categories-list-item" cate="java">
+                            <span class="name">
+                                java
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="/category/#socket" class="categories-list-item" cate="socket">
+                            <span class="name">
+                                socket
+                            </span>
+                            <span class="badge">1</span>
+                        </a>
+                    </li>
+                    
+                </ul>
+            </div>
+            <!-- 其他div框放到这里 -->
+            <div class="side">
+                <div>
+                    <i class="fa fa-tags"></i>
+                    Tags
+                </div>
+                <div class="tags-cloud">
+                    
+                    
+                    
+                    
+
+                    
+
+                    
+                </div>
+            </div>
+
+            <!-- <div class="side">
+                <div>
+                    <i class="fa fa-external-link"></i>
+                    Links
+                </div>
+                <ul  class="content-ul">
+
+                </ul>
+            </div> -->
+        </div>
+    </div>
+</div>
+<!-- <script src="/js/scroll.min.js " charset="utf-8"></script> -->
+<!-- <script src="/js/pageContent.js " charset="utf-8"></script> -->
+
+
+    <footer class="site-footer">
+
+
+    <div class="wrapper">
+
+        <p class="description">
+             本站保留着一点点技术积蓄！ 
+        </p>
+        <p class="contact">
+            Contact me at: 
+            <a href="https://github.com/ketao1989" title="GitHub"><i class="fa fa-github" aria-hidden="true"></i></a>  
+            <a href="mailto:ketao1989@126.com" title="email"><i class="fa fa-envelope-o" aria-hidden="true"></i></a>  
+            <a href="http://weibo.com/柯小小西" title="Weibo"><i class="fa fa-weibo" aria-hidden="true"></i></a>       
+        </p>
+        <p>
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次，本站访客数<span id="busuanzi_value_site_uv"></span>人次，本文总阅读量<span id="busuanzi_value_page_pv"></span>次
+        </p>
+        <p class="power">
+            <span>
+                Site powered by <a href="https://jekyllrb.com/">Jekyll</a> & <a href="https://pages.github.com/">Github Pages</a>.
+            </span>
+            <span>
+                Theme designed by <a href="https://github.com/Gaohaoyang">HyG</a>.
+            </span>
+        </p>
+    </div>
+</footer>
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+    <div class="back-to-top">
+    <a href="#top" data-scroll>
+        <i class="fa fa-arrow-up" aria-hidden="true"></i>
+    </a>
+</div>
+
+    <script src=" /js/main.js " charset="utf-8"></script>
+    <script src=" /js/smooth-scroll.min.js " charset="utf-8"></script>
+    <script type="text/javascript">
+      smoothScroll.init({
+        speed: 500, // Integer. How fast to complete the scroll in milliseconds
+        easing: 'easeInOutCubic', // Easing pattern to use
+        offset: 20, // Integer. How far to offset the scrolling anchor location in pixels
+      });
+    </script>
+    <!-- <script src=" /js/scroll.min.js " charset="utf-8"></script> -->
+  </body>
+
+</html>

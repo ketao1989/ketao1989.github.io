@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Python 教程学习之 Python 函数和高级特性</title>
+    <meta name="description" content="前言上一篇博客简单介绍了 Python 基本的概念和操作方法。但是，和其他编程语言一样，是缺少不了函数的。有了函数，代码才会被多次复用，程序才会简洁和易读。同样，也是为了开发的简洁，Python 还为提供了 Slice切片等高级特性。切片可让我们更方便的操作列表数据结构，也使得代码更易开发和阅读。Python 函...">
+
+    <link rel="shortcut icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico?" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://at.alicdn.com/t/font_8v3czwksspqlg14i.css">
+    <link rel="stylesheet" href="/css/main.css ">
+    <link rel="canonical" href="http://localhost:4000/2015/02/15/Python-Tutoril-Python-Function-And-Advances/">
+    <link rel="alternate" type="application/rss+xml" title="柯小小西" href="http://localhost:4000/feed.xml ">
+
+
+    <script>
+    // 百度统计代码
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?a9b0f47a0e50b02dafb8a7088436a9bc";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+    </script>
+
+
+
+
+</head>
+
+
+  <body>
+
+    <header id="top">
+    <div class="wrapper">
+        <a href="/" class="brand">柯小小西</a>
+        <small>留着一点点技术积蓄</small>
+        <button id="headerMenu" class="menu"><i class="fa fa-bars"></i></button>
+        <nav id="headerNav">
+            <ul>
+                <li>
+                    
+                    <a href="/">
+                    
+                        <i class="fa fa-home"></i>Home
+                    </a>
+                </li>
+
+                
+                    
+                    <li>
+                        
+                        <a href="/archive/">
+                        
+                            <i class="fa fa-archive"></i>Archives
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/category/">
+                        
+                            <i class="fa fa-th-list"></i>Categories
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/tag/">
+                        
+                            <i class="fa fa-tags"></i>Tags
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li>
+                        
+                        <a href="/about/">
+                        
+                            <i class="fa fa-heart"></i>About
+                        </a>
+                    </li>
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+        <div class="page clearfix" post>
+    <div class="left">
+        <h1>Python 教程学习之 Python 函数和高级特性</h1>
+        <div class="label">
+
+            <div class="label-card">
+                <i class="fa fa-calendar"></i>2015-02-15
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+                
+            </div>
+
+            <div class="label-card">
+            
+
+
+<!-- <span class="point">•</span> -->
+<span class="categories">
+  <i class="fa fa-th-list"></i>
+  
+    
+        <a href="/category/#Python" title="Category: Python" rel="category">Python</a>
+    
+  
+
+  <!-- <span class="point">•</span> -->
+</span>
+
+
+            </div>
+
+            <div class="label-card">
+            
+<!-- <span class="point">•</span> -->
+<span class="pageTag">
+  <i class="fa fa-tags"></i>
+  
+    
+  
+
+</span>
+
+            </div>
+
+        </div>
+        <hr>
+        <article itemscope itemtype="http://schema.org/BlogPosting">
+        <h2 id="前言"><a id="Intro">前言</a></h2>
+
+<p>上一篇博客简单介绍了 Python 基本的概念和操作方法。但是，和其他编程语言一样，是缺少不了函数的。有了函数，代码才会被多次复用，程序才会简洁和易读。</p>
+
+<p>同样，也是为了开发的简洁，Python 还为提供了 Slice切片等高级特性。切片可让我们更方便的操作列表数据结构，也使得代码更易开发和阅读。</p>
+
+<h2 id="python-函数"><a id="Function">Python 函数</a></h2>
+
+<p>Python 函数和数学中函数的概念是一致的，都是对逻辑的一种抽象表示。在 Python 中，我们通过def来定义一个函数方法。</p>
+
+<!-- more -->
+
+<p>Python 的一些函数方法使用，如下所示：</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="c">#!/usr/bin/env python</span>
+<span class="c"># -*- coding: utf-8 -*-</span>
+<span class="c"># @Date    : 2015-02-14 11:08:03</span>
+<span class="c"># @Author  : ketao1989</span>
+<span class="c"># @Version : $Id$</span>
+
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="nb">reload</span><span class="p">(</span><span class="n">sys</span><span class="p">)</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">setdefaultencoding</span><span class="p">(</span><span class="s">'utf8'</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">funTypeCheck</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="nb">TypeError</span><span class="p">(</span><span class="s">'类型不一致'</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="mi">10</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">'x is my number'</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">'x is not my number'</span>
+
+
+<span class="k">def</span> <span class="nf">moreReturns</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">x</span> <span class="o">&gt;</span> <span class="n">y</span><span class="p">:</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="mi">101</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="mi">101</span>
+    <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span>
+
+
+<span class="k">def</span> <span class="nf">defaultParams</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="n">multiply</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">while</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">n</span> <span class="o">-=</span> <span class="mi">1</span>
+        <span class="n">multiply</span> <span class="o">=</span> <span class="n">multiply</span> <span class="o">*</span> <span class="n">x</span>
+    <span class="k">return</span> <span class="n">multiply</span> <span class="o">+</span> <span class="n">extra</span>
+
+
+<span class="k">def</span> <span class="nf">variableParams</span><span class="p">(</span><span class="o">*</span><span class="n">numbers</span><span class="p">):</span>
+    <span class="n">sum1</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">num</span> <span class="ow">in</span> <span class="n">numbers</span><span class="p">:</span>
+        <span class="n">sum1</span> <span class="o">+=</span> <span class="n">num</span>
+    <span class="k">return</span> <span class="n">sum1</span>
+
+
+<span class="k">def</span> <span class="nf">variableDictParams</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="k">print</span> <span class="s">'----'</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="s">'----'</span>
+    <span class="k">print</span> <span class="n">kw</span>
+
+<span class="c"># @tail_call_optimized</span>
+<span class="k">def</span> <span class="nf">factFunction</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+
+    <span class="k">if</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">s</span>
+    <span class="k">return</span> <span class="n">factFunction</span><span class="p">(</span><span class="n">s</span> <span class="o">*</span> <span class="n">n</span><span class="p">,</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">'__main__'</span><span class="p">:</span>
+    <span class="n">funTypeCheck</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">moreReturns</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+    <span class="k">print</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span>
+
+    <span class="n">multiply</span> <span class="o">=</span> <span class="n">defaultParams</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+    <span class="k">print</span> <span class="n">multiply</span>
+    <span class="n">multiply</span> <span class="o">=</span> <span class="n">defaultParams</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="k">print</span> <span class="n">multiply</span>
+    <span class="n">multiply</span> <span class="o">=</span> <span class="n">defaultParams</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">print</span> <span class="n">multiply</span>
+
+    <span class="n">sum1</span> <span class="o">=</span> <span class="n">variableParams</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+    <span class="k">print</span> <span class="n">sum1</span>
+
+    <span class="n">variableDictParams</span><span class="p">(</span><span class="s">'ketao1989'</span><span class="p">,</span> <span class="n">web</span><span class="o">=</span><span class="s">'ketao1989.github.com'</span><span class="p">)</span>
+
+    <span class="k">print</span> <span class="n">factFunction</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">100</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">'-------------'</span><span class="p">)</span>
+    <span class="n">funTypeCheck</span><span class="p">(</span><span class="s">'error'</span><span class="p">)</span>
+
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Notes：<code class="highlighter-rouge">isinstance</code> 方法判断是否是指定类型。</p>
+
+    <ul>
+      <li>
+        <p><code class="highlighter-rouge">moreReturns(x, y)</code> 函数，返回多个结果。其本质上，就是返回一个tuple.</p>
+      </li>
+      <li>
+        <p><code class="highlighter-rouge">defaultParams(x, n=2, extra=0)</code> 函数，设置默认的参数值。在调用的时候，我们可以替换任意一个默认的参数，比如extra，可以：<code class="highlighter-rouge">defaultParams(5, extra=2)</code></p>
+      </li>
+      <li>
+        <p><code class="highlighter-rouge">variableParams(*numbers)</code> 函数，设置可变个值。</p>
+      </li>
+      <li>
+        <p><code class="highlighter-rouge">variableDictParams(name, **kv)</code>函数，设置可变你的参数。其实，其类似Map来根据调用方确定参数。</p>
+      </li>
+    </ul>
+
+  </blockquote>
+</blockquote>
+
+<h2 id="python-高级特性"><a id="Advanced">Python 高级特性</a></h2>
+
+<h3 id="切片">切片</h3>
+
+<p>切片，很简单。就是我们日常对列表进行sub操作的时候，一般需要<code class="highlighter-rouge">for</code>循环操作，而 Python 提供了一个更简单的方法来处理这些问题，就是切片。其，表示形式为:<code class="highlighter-rouge">[i:j:k]</code>，其中，i表示列表的开始位置索引，j表示列表的结束位置索引（不包含该文章）,k表示循环步长。</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="n">ll</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">8</span><span class="p">]</span>
+
+<span class="c"># [4, 6],开始:结束:步长</span>
+<span class="k">print</span> <span class="n">ll</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">:</span><span class="mi">1</span><span class="p">]</span>
+
+<span class="c"># (1, 3, 5)</span>
+<span class="k">print</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">,)[</span><span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span>
+
+</code></pre></div></div>
+
+<h3 id="迭代">迭代</h3>
+
+<p>Python 的迭代，相对于 C 语言的迭代语法，有了很大的进步。使用 <code class="highlighter-rouge">for ... in</code> 方式来遍历一个集合或者 Map 数据，方便快捷。</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="n">ll</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">24</span><span class="p">,</span> <span class="mi">23</span><span class="p">,</span> <span class="mi">56</span><span class="p">]</span>
+<span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">ll</span><span class="p">:</span>
+    <span class="k">print</span> <span class="n">x</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ll</span><span class="p">):</span>
+    <span class="k">print</span> <span class="n">i</span><span class="p">,</span> <span class="n">value</span>
+
+<span class="n">lt</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">)]</span>
+<span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">lt</span><span class="p">:</span>
+    <span class="k">print</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span>
+
+<span class="n">dd</span> <span class="o">=</span> <span class="p">{</span><span class="s">'a'</span><span class="p">:</span> <span class="s">'A'</span><span class="p">,</span> <span class="s">'b'</span><span class="p">:</span> <span class="s">'B'</span><span class="p">,</span> <span class="s">'c'</span><span class="p">:</span> <span class="s">'C'</span><span class="p">,</span> <span class="s">'d'</span><span class="p">:</span> <span class="s">'D'</span><span class="p">}</span>
+
+<span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">dd</span><span class="p">:</span>
+    <span class="k">print</span> <span class="n">key</span>
+<span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">dd</span><span class="o">.</span><span class="n">itervalues</span><span class="p">():</span>
+    <span class="k">print</span> <span class="n">value</span>
+<span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">dd</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+    <span class="k">print</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span>
+
+</code></pre></div></div>
+
+<h3 id="列表生成器">列表生成器</h3>
+
+<p>迭代对于列表的优化还不够，Python 还提供了更牛逼的特性：让我们一行代码生成一个列表。</p>
+
+<p>比如，生成一个 1 到 10 数字的平方数，组成一个列表，使用列表生成器，可以如下：</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="n">lg</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="o">*</span> <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">)]</span>
+<span class="k">print</span> <span class="n">lg</span>
+
+<span class="c"># 产生偶数的平方数</span>
+<span class="n">lo</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="o">*</span> <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">11</span><span class="p">)</span> <span class="k">if</span> <span class="n">x</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span>
+<span class="k">print</span> <span class="n">lo</span>
+
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Notes ：由于列表生成器，是一次生成所有的列表元素，对于很大的列表，如果一次生成完成，然后全部放在内存里，肯定是不好的，因此，Python 还提供了 <code class="highlighter-rouge">生成器</code>。</p>
+
+  </blockquote>
+</blockquote>
+
+<p>生成器，可以根据生成规则，在使用的时候，才会构造元素。构造简单的生成器，和列表生成器一样，只需要把<code class="highlighter-rouge">[ ]</code> 替换成<code class="highlighter-rouge">( )</code>即可。例如：</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="c"># &lt;generator object &lt;genexpr&gt; at 0x107de44b0&gt;</span>
+<span class="n">lg</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="o">*</span> <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">)]</span>
+<span class="k">print</span> <span class="n">lg</span>
+
+</code></pre></div></div>
+
+<blockquote>
+  <blockquote>
+    <p>Tips：如果需要打印，可以使用for，单个使用.next()方法依次调用，直到出现异常。</p>
+  </blockquote>
+</blockquote>
+
+<p>对于复杂一点的生成器，则需要使用 <code class="highlighter-rouge">yield</code> 关键字来完成。比如，在我们的一些函数中，某一个变量连续产生的数组，可以使用<code class="highlighter-rouge">yield x</code>来完成生成器设置。</p>
+
+<p>例如，构造一个通俗的生成器，如下：</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="k">def</span> <span class="nf">generateFun</span><span class="p">():</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="n">x</span> <span class="o">*</span> <span class="n">x</span>
+<span class="c"># &lt;generator object generateFun at 0x102f5a5a0&gt;</span>
+<span class="n">gf</span> <span class="o">=</span> <span class="n">generateFun</span><span class="p">()</span>
+<span class="k">print</span> <span class="n">gf</span>
+
+<span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">gf</span><span class="p">:</span>
+    <span class="k">print</span> <span class="n">x</span>
+
+</code></pre></div></div>
+
+        </article>
+        <hr>
+
+        
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+        
+        
+
+        <div class="post-recent">
+    <div class="pre">
+        
+        <p><strong>上一篇</strong> <a href="/2015/02/13/Python-Tutoril-Python-Basic-Knowledge/">Python 教程学习之Python基础知识</a></p>
+        
+    </div>
+    <div class="nex">
+
+        
+        <p><strong>下一篇</strong> <a href="/2015/02/17/Python-Tutoril-Python-Functional-Programing/">Python 教程学习之 Python 函数式编程</a></p>
+        
+    </div>
+</div>
+
+
+        <h2 id="comments">Comments</h2>
+        
+
+
+<div id="disqus_thread"></div>
+<script>
+    /**
+     * RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     * LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+
+    var disqus_config = function() {
+        this.page.url = 'http://localhost:4000/2015/02/15/Python-Tutoril-Python-Function-And-Advances/'; // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = 'http://localhost:4000/2015/02/15/Python-Tutoril-Python-Function-And-Advances/'; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+
+    (function() { // DON'T EDIT BELOW THIS LINE
+        var d = document,
+            s = d.createElement('script');
+
+        s.src = '//taocoder.disqus.com/embed.js';
+
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+
+
+
+    </div>
+    <button class="anchor"><i class="fa fa-anchor"></i></button>
+    <div class="right">
+        <div class="wrap">
+
+            <!-- Content -->
+            <div class="side content">
+                <div>
+                    Content
+                </div>
+                <ul id="content-side" class="content-ul">
+                    
+                    <li><a href="#comments">Comments</a></li>
+                </ul>
+            </div>
+            <!-- 其他div框放到这里 -->
+            <!-- <div class="side">bbbb</div> -->
+        </div>
+    </div>
+</div>
+<script>
+/**
+ * target _blank
+ */
+(function() {
+    var aTags = document.querySelectorAll('article a:not([id])')
+    for (var i = 0; i < aTags.length; i++) {
+        aTags[i].setAttribute('target', '_blank')
+    }
+}());
+</script>
+<script src="/js/pageContent.js " charset="utf-8"></script>
+
+
+    <footer class="site-footer">
+
+
+    <div class="wrapper">
+
+        <p class="description">
+             本站保留着一点点技术积蓄！ 
+        </p>
+        <p class="contact">
+            Contact me at: 
+            <a href="https://github.com/ketao1989" title="GitHub"><i class="fa fa-github" aria-hidden="true"></i></a>  
+            <a href="mailto:ketao1989@126.com" title="email"><i class="fa fa-envelope-o" aria-hidden="true"></i></a>  
+            <a href="http://weibo.com/柯小小西" title="Weibo"><i class="fa fa-weibo" aria-hidden="true"></i></a>       
+        </p>
+        <p>
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次，本站访客数<span id="busuanzi_value_site_uv"></span>人次，本文总阅读量<span id="busuanzi_value_page_pv"></span>次
+        </p>
+        <p class="power">
+            <span>
+                Site powered by <a href="https://jekyllrb.com/">Jekyll</a> & <a href="https://pages.github.com/">Github Pages</a>.
+            </span>
+            <span>
+                Theme designed by <a href="https://github.com/Gaohaoyang">HyG</a>.
+            </span>
+        </p>
+    </div>
+</footer>
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+    <div class="back-to-top">
+    <a href="#top" data-scroll>
+        <i class="fa fa-arrow-up" aria-hidden="true"></i>
+    </a>
+</div>
+
+    <script src=" /js/main.js " charset="utf-8"></script>
+    <script src=" /js/smooth-scroll.min.js " charset="utf-8"></script>
+    <script type="text/javascript">
+      smoothScroll.init({
+        speed: 500, // Integer. How fast to complete the scroll in milliseconds
+        easing: 'easeInOutCubic', // Easing pattern to use
+        offset: 20, // Integer. How far to offset the scrolling anchor location in pixels
+      });
+    </script>
+    <!-- <script src=" /js/scroll.min.js " charset="utf-8"></script> -->
+  </body>
+
+</html>
