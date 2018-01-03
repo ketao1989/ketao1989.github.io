@@ -45,8 +45,8 @@ $0
 
 ```
 
->> Notes：打开 `preferences --> pachages`，在打开的目录下依次找到`sublimeTmpl --> templates --> python.tmpl`，直接修改就好了。
->> 
+> Notes：打开 `preferences --> pachages`，在打开的目录下依次找到`sublimeTmpl --> templates --> python.tmpl`，直接修改就好了。
+> 
 
 <!-- more -->
 
@@ -144,8 +144,8 @@ print setss | sets
 
 ```
 
->> Notes : 需要说明的是，必须在python 脚本中，注入 utf-8 相关配置，不然会出现下面的编码问题。如果使用模板，请参考上一节。
->> 
+> Notes : 需要说明的是，必须在python 脚本中，注入 utf-8 相关配置，不然会出现下面的编码问题。如果使用模板，请参考上一节。
+> 
 
 ``` 
 

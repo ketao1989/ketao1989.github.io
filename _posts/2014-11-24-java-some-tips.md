@@ -22,7 +22,7 @@ comments: true
 
 JDK代码对把-128 到127 之间的整数转换成`Integer`的时候，并不会new一个新的Integer对象，而是从 内部的`IntegerCache`中直接获取已经创建好的对象（第一次调用时会创建这个`IntegerCache`）。
 
->> 由于内部`IntegerCache`共用，所以在不同的地方对同一个数值调用`valueOf`获取cache中同一个对象，这样很可能会导致死锁。此外，关于整数范围可以使用VM初始设置（-XX:AutoBoxCacheMax=<size>，但是不能比127小）
+> 由于内部`IntegerCache`共用，所以在不同的地方对同一个数值调用`valueOf`获取cache中同一个对象，这样很可能会导致死锁。此外，关于整数范围可以使用VM初始设置（-XX:AutoBoxCacheMax=<size>，但是不能比127小）
 
 ### valueOf方法实现代码
 
@@ -59,9 +59,9 @@ private static class IntegerCache {
 
 ```
 
->> 之所以会导致死锁，主要原因是因为当两个线程不断的调用valueOf时，比如一个为 `Integer a=Integer.valueOf(10) + Integer.valueOf(20)`，另外一个线程调用`Integer b= Integer.valueOf(20) +Integer.valueOf(10)`，while中不停的调用，就可能出现死锁异常。
->> 
->> 
+> 之所以会导致死锁，主要原因是因为当两个线程不断的调用valueOf时，比如一个为 `Integer a=Integer.valueOf(10) + Integer.valueOf(20)`，另外一个线程调用`Integer b= Integer.valueOf(20) +Integer.valueOf(10)`，while中不停的调用，就可能出现死锁异常。
+> 
+> 
 
 <!-- more -->
 
@@ -111,10 +111,10 @@ public class StringChange {
 
 ```
 
->> Note: 其实就是一个反射特性的有趣应用。其内部运行流程为：当运行(1)的时候，应用会去String池中寻找该字符串常量对应的引用，如果没有则新建一个，并且会把引用对应的值更改为新设置的值`Change Now！`。
->> 
->> 然后在程序运行main的时候，会去String池中寻找`Immutable String`对应的引用，但是这个引用内部的值以及被更改为`Change Now！`，所以打印的时候就会输出`Change Now！`.
->> 
+> Note: 其实就是一个反射特性的有趣应用。其内部运行流程为：当运行(1)的时候，应用会去String池中寻找该字符串常量对应的引用，如果没有则新建一个，并且会把引用对应的值更改为新设置的值`Change Now！`。
+> 
+> 然后在程序运行main的时候，会去String池中寻找`Immutable String`对应的引用，但是这个引用内部的值以及被更改为`Change Now！`，所以打印的时候就会输出`Change Now！`.
+> 
 
 ## <a id="VolatileUnsafe">volatile 非线程安全性</a>
 

@@ -36,6 +36,6 @@ comments: true
 
 ```
 
->> Tips：获取`the_commit_id` 使用`git log`，然后找到需要回滚到的那个提交的id hash值。
+> Tips：获取`the_commit_id` 使用`git log`，然后找到需要回滚到的那个提交的id hash值。
 
 <!-- more -->

@@ -82,7 +82,7 @@ configure: error: no suitable apr found
 
 解压缩文件，然后在`subversion-1.7.17`目录下面，新建一个目录`sqlite-amalgamation`，然后在目录下面，从解压缩后的`sqlite-autoconf`目录里面复制一个文件`sqlite3.c`到该新建目录中。
 
->> Note：需要注意的是，新建目录名必须为`sqlite-amalgamation`，虽然下载的文件是`sqlite-autoconf`，这主要是因为`sqlite-autoconf`工具是由`sqlite-amalgamation`来的，后来改了名字了，但是`subversion`编译的时候，并没有改变相应代码配置，所以还是需要用原来的命名。
+> Note：需要注意的是，新建目录名必须为`sqlite-amalgamation`，虽然下载的文件是`sqlite-autoconf`，这主要是因为`sqlite-autoconf`工具是由`sqlite-amalgamation`来的，后来改了名字了，但是`subversion`编译的时候，并没有改变相应代码配置，所以还是需要用原来的命名。
 
 接下来，就可以下载apr.tar.gz和apr-util.tar.gz两个源码包：
 
@@ -92,7 +92,7 @@ configure: error: no suitable apr found
 
 解压缩完了之后，分别在`subversion-1.7.17`目录下面新建`apr`目录和`apr-util`目录，然后把解压缩后的内容复制到对应的新建目录中，分别执行`./buildconf`
 
->> Note：这里的目录名字不能改变，必须为`apr`和`apr-util`，否则会编译失败。
+> Note：这里的目录名字不能改变，必须为`apr`和`apr-util`，否则会编译失败。
 
 当然，在这里运行`./configure`还是会出现问题，错误如下：
 
@@ -139,7 +139,7 @@ make
 make install
 ```
 
->> Note：网上嗖的时候，说是`./configure CPPFLAGS="-Izlib/ -Lzlib/"`就可以，但是在执行的时候出现问题，找不到`zlib`目录，所以需要写绝对路径。
+> Note：网上嗖的时候，说是`./configure CPPFLAGS="-Izlib/ -Lzlib/"`就可以，但是在执行的时候出现问题，找不到`zlib`目录，所以需要写绝对路径。
 
 接下来，你可以在终端执行命名，查看安装版本是否正确。
 

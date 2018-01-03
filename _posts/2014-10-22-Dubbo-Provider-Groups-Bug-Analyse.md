@@ -123,7 +123,7 @@ public class DubboNamespaceHandler extends NamespaceHandlerSupport {
 
 Spring的自定义标签代码实现和内部原理，可以google一下。
 
->> 说明：`DubboNamespaceHandler`在初始化的时候，会把所有，针对不同xml节点的对应解析其注册到Spring `NamespaceHandlerSupport`的 `BeanDefinitionParser` Map上来。这样，在Spring 初始化解析xml配置时，就可以完成对自定义标签的兼容和实例化了。
+> 说明：`DubboNamespaceHandler`在初始化的时候，会把所有，针对不同xml节点的对应解析其注册到Spring `NamespaceHandlerSupport`的 `BeanDefinitionParser` Map上来。这样，在Spring 初始化解析xml配置时，就可以完成对自定义标签的兼容和实例化了。
 
 对于Dubbo 自定义解析器`DubboBeanDefinitionParser`的说明，如[附录](#End)所示。
 
@@ -185,7 +185,7 @@ Spring的自定义标签代码实现和内部原理，可以google一下。
 
 ```
 
->> Note：在Factory中会创建Registery对象，该对象中，会实现注册，取消注册，订阅，取消订阅等方法来提供给`service`和`reference`完成需要的注册和订阅服务。
+> Note：在Factory中会创建Registery对象，该对象中，会实现注册，取消注册，订阅，取消订阅等方法来提供给`service`和`reference`完成需要的注册和订阅服务。
 
 ``` java
 
@@ -425,7 +425,7 @@ public interface RegistryService {
 
 代码会从spring的`applicationContext`中构造出`Map<String, RegistryConfig> `类型变量，然后获取`map.values()`从而拿到所有在spring中已经存在上下文中的注册信息了。这样，把结果（所有注册的registry信息）放到service配置中。
 
->> Note：那么，为什么可以获取应用上下文环境中所有的`RegistryConfig`呢？还记得解析顺序吗！？最开始就是解析注册节点的数据哦！`registerBeanDefinitionParser("registry", new DubboBeanDefinitionParser(RegistryConfig.class, true));`早于`registerBeanDefinitionParser("service", new DubboBeanDefinitionParser(ServiceBean.class, true));`，此外，判断逻辑里面，其他节点数据解析，也是早于serviceBean的。
+> Note：那么，为什么可以获取应用上下文环境中所有的`RegistryConfig`呢？还记得解析顺序吗！？最开始就是解析注册节点的数据哦！`registerBeanDefinitionParser("registry", new DubboBeanDefinitionParser(RegistryConfig.class, true));`早于`registerBeanDefinitionParser("service", new DubboBeanDefinitionParser(ServiceBean.class, true));`，此外，判断逻辑里面，其他节点数据解析，也是早于serviceBean的。
 
 ## <a id="End">附录</a>
 

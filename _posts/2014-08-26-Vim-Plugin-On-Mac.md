@@ -43,7 +43,7 @@ echo "安装完成"
             
 ```
 
->> Note：上面的脚本是直接从一键安装命令中的build脚本部分拷贝的，因为我的Mac无法直接执行一键安装命令。此外，Mac必须安装HomeBrew工具，关于该工具的安装使用，请参考 <http://brew.sh/index_zh-cn.html>
+> Note：上面的脚本是直接从一键安装命令中的build脚本部分拷贝的，因为我的Mac无法直接执行一键安装命令。此外，Mac必须安装HomeBrew工具，关于该工具的安装使用，请参考 <http://brew.sh/index_zh-cn.html>
 
 <!-- more -->
 

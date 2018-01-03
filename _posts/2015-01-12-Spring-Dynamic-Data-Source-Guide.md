@@ -31,8 +31,8 @@ Spring提供了一个抽象类`AbstractRoutingDataSource`，该类可以让开�
 
 <img src="/images/2015/01/ards.png" />
 
->> Notes: 抽象类最终继承`javax.sql.DataSource`类，该数据源类提供的一些接口就是我们最终需要实现的。
->> 
+> Notes: 抽象类最终继承`javax.sql.DataSource`类，该数据源类提供的一些接口就是我们最终需要实现的。
+> 
 
 DataSource接口主要提供了两个方法给开发者实现，因此实现动态数据源，我们只需要把这两个方法的实现，在调用数据库查询的时候，告知执行上下文，运行环境拿到对应的数据库连接，就可以连接到对应的数据库进行查询更新等操作。
 
@@ -53,7 +53,7 @@ public interface DataSource  extends CommonDataSource,Wrapper {
 
 解析来，需要分析Spring提供给我们的抽象数据源路由类。既然`AbstractRoutingDataSource`简化了大家实现动态数据源功能的开发工作，那么该类必然会实现DataSource的两个接口方法。其需要决定，在什么情况下，使用哪个数据源的Connection连接。
 
->> `AbstractRoutingDataSource`怎样来获取数据源连接呢？
+> `AbstractRoutingDataSource`怎样来获取数据源连接呢？
 
 使用Map数据结构存放所有配置中使用的数据源，value是数据源DataSource对象，key则是根据我们自己的爱好来取名的，比如：master，slave等。这样，我们可以根据具体Dao方法配置的数据源key来获取对应的DataSource对象，从而告知运行环境该sql查询使用哪一个connection连接。
 
@@ -222,7 +222,7 @@ public class DynamicDataSourceHolder {
 
 通过上面两个类，我们就可以从上下文中获取当前操作需要使用的key值，然后通过实现的抽象路由数据源类来找到配置的DataSource，这样spring上下文就知道具体使用哪个connection连接来操作数据库sql了。
 
->> Tips: 这里需要注意ThreadLocal类中实现了clear方法，主要是在一个线程中会存在多个sql操作，可能设计不同的数据源，如果不清除当前sql的数据源，可能接下来的sql操作也会使用前一个操作设置的数据源连接，导致错误。
+> Tips: 这里需要注意ThreadLocal类中实现了clear方法，主要是在一个线程中会存在多个sql操作，可能设计不同的数据源，如果不清除当前sql的数据源，可能接下来的sql操作也会使用前一个操作设置的数据源连接，导致错误。
 
 ### 3.2 实现AOP简化配置
 

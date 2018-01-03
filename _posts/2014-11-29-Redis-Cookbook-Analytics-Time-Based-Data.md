@@ -142,41 +142,41 @@ end
 
 ```
 
->> Notes：我们保持了`ZUNIONSTORE`的结果，然后在它上面设置一个超时时间戳。这是一个通用的Redis模式：缓存一个计算昂贵的操作结果，然后每次有请求过来，都会在重新操作之前先检查缓存情况。
->> 在上面的例子中，我们使用hash的地方，我们也可以存储SORT操作的结果，然后使用和EXISTS相似的方式检查它的缓存对象的存在性。
->> 
+> Notes：我们保持了`ZUNIONSTORE`的结果，然后在它上面设置一个超时时间戳。这是一个通用的Redis模式：缓存一个计算昂贵的操作结果，然后每次有请求过来，都会在重新操作之前先检查缓存情况。
+> 在上面的例子中，我们使用hash的地方，我们也可以存储SORT操作的结果，然后使用和EXISTS相似的方式检查它的缓存对象的存在性。
+> 
 
 当我们使用有序集合sorted sets时，这些top操作会更高效率的多（因为数据已经是排好序了），但是我们的内存使用率也会更高。
 
->> Warns：这个特定的例子有一个竞争条件：如果缓存不存在，我们可能在结束之前会进行多次`ZUNIONSTORE`操作。因为我们最后期待的输出显然是相同或者更新的数值结果，因此存在竞争条件比使用`WATCH`，然后在我们在做客户端的计算时锁定其他访问者，效果可能会更好。
+> Warns：这个特定的例子有一个竞争条件：如果缓存不存在，我们可能在结束之前会进行多次`ZUNIONSTORE`操作。因为我们最后期待的输出显然是相同或者更新的数值结果，因此存在竞争条件比使用`WATCH`，然后在我们在做客户端的计算时锁定其他访问者，效果可能会更好。
 
 -
 
->> *Redis 命令*:
->> 
->> - `HINCRBY hash-name field increment-value`
->>
->>      按照给定的increment-value值增加hash表中存储的对应整数。这个命令和INCRBY很相似，但是和增加字符串不一样，这个使用在hash表中。而且increment-value的值也允许为负数。
->>
->> - `HMGET hash-name field1 [field2 ...]`
->>
->>      从给定的hash表中获取一些field值。这个命令和HGET很相似，但是这个允许你在一个单操作中获取一些field值。
->>
->> - `SORT key [BY pattern] [LIMIT offset count] [GET pattern1 [GET pattern2 ...]] [ASC| DESC] [ALPHA] [STORE destination]`
->>
->>     允许你排序一个list,set,或者sorted set，比较他们的值。排序也可以是使用外键完成，使用来自字符串或者hashes的模式匹配查询，就像我们在上面的例子中那样：`SORT clients BY stats/client:*->20110407`。其中，通配符*可以被set中成员所替换，所以在这些hash表中排序是基于匹配field 为20110407的值来完成的。如果我们把分析数据存储在strings中而不是hash表，则我们可以提交命令：`SORT clients BY stats/client:*/20110407`。
->>      使用相同的模式，你除了排好序的list也可以获取更多地数据（比如你用来排序的值）.可选择地，在list里SORT的输出也可以被排序。
->>      
->> - `ZRANK set-name member`
->>      
->>      返回在给定的有序集合中给定成员的排名。
->>      
->> - `ZUNIONSTORE destination number-of-keys sorted-set1 [sorted-set2 ...] [WEIGHTS weight1 [weight2 ...]] [AGGREGATE SUM|MIN|MAX]`
->>      
->>      聚合sorted sets集合，然后作为一个新的sorted set存储。可选择地，你可以为每一个set指定 weight，并且只需聚合函数：sum（默认）,maximum scores, 或者 minimum scores。
->>
->> - `EXISTS key`
->>      
->>      检查key是否存在。如果key存在则返回1；否则返回0.
->>
+> *Redis 命令*:
+> 
+> - `HINCRBY hash-name field increment-value`
+>
+>      按照给定的increment-value值增加hash表中存储的对应整数。这个命令和INCRBY很相似，但是和增加字符串不一样，这个使用在hash表中。而且increment-value的值也允许为负数。
+>
+> - `HMGET hash-name field1 [field2 ...]`
+>
+>      从给定的hash表中获取一些field值。这个命令和HGET很相似，但是这个允许你在一个单操作中获取一些field值。
+>
+> - `SORT key [BY pattern] [LIMIT offset count] [GET pattern1 [GET pattern2 ...]] [ASC| DESC] [ALPHA] [STORE destination]`
+>
+>     允许你排序一个list,set,或者sorted set，比较他们的值。排序也可以是使用外键完成，使用来自字符串或者hashes的模式匹配查询，就像我们在上面的例子中那样：`SORT clients BY stats/client:*->20110407`。其中，通配符*可以被set中成员所替换，所以在这些hash表中排序是基于匹配field 为20110407的值来完成的。如果我们把分析数据存储在strings中而不是hash表，则我们可以提交命令：`SORT clients BY stats/client:*/20110407`。
+>      使用相同的模式，你除了排好序的list也可以获取更多地数据（比如你用来排序的值）.可选择地，在list里SORT的输出也可以被排序。
+>      
+> - `ZRANK set-name member`
+>      
+>      返回在给定的有序集合中给定成员的排名。
+>      
+> - `ZUNIONSTORE destination number-of-keys sorted-set1 [sorted-set2 ...] [WEIGHTS weight1 [weight2 ...]] [AGGREGATE SUM|MIN|MAX]`
+>      
+>      聚合sorted sets集合，然后作为一个新的sorted set存储。可选择地，你可以为每一个set指定 weight，并且只需聚合函数：sum（默认）,maximum scores, 或者 minimum scores。
+>
+> - `EXISTS key`
+>      
+>      检查key是否存在。如果key存在则返回1；否则返回0.
+>
 

@@ -266,7 +266,7 @@ Json数据格式这两年发展的很快，其声称相对XML格式有很对好�
     };
 ```
 
->> Note: 在枚举最后有一个公共静态方法`collectDefaults()`，这个方法返回一个整形，整形包含的是所有枚举项对应位bit为初始默认值（true：1；false：0），如果默认属性为true，则通过对`1 << ordinal()`的值和flags进行亦或来置位。
+> Note: 在枚举最后有一个公共静态方法`collectDefaults()`，这个方法返回一个整形，整形包含的是所有枚举项对应位bit为初始默认值（true：1；false：0），如果默认属性为true，则通过对`1 << ordinal()`的值和flags进行亦或来置位。
 	
 
 
@@ -749,7 +749,7 @@ public <T> T readValue(String content, Class<T> valueType)
 
 构造函数有三个参数，`managedResource`，我们在配置上讲过，Jackson对于外部的资源会默认自动关闭流，但是对`自己拥有的流Reader`，会自动关闭，无论设置与否。`Object sourceRef`参数其实就是我们通过`content`构造出来的Reader引用。`BufferRecycler br`这是一个很重要的参数，涉及到内存分配优化。
 
->> Note： `BufferRecycler`其实就是一个小的工具类，主要负责初始字节/字符缓存的重复使用。在Jackson中，主要用来通过引用该类的`SoftReference`形式作为`ThreadLocal`成员，这样可以达到低负载GC循环的效果，显然是使用流reader所期待的结果。
+> Note： `BufferRecycler`其实就是一个小的工具类，主要负责初始字节/字符缓存的重复使用。在Jackson中，主要用来通过引用该类的`SoftReference`形式作为`ThreadLocal`成员，这样可以达到低负载GC循环的效果，显然是使用流reader所期待的结果。
 其主要定义四种类型缓存：
 		
 ``` java
@@ -828,7 +828,7 @@ public <T> T readValue(String content, Class<T> valueType)
 
 ```
 
->> 代码逻辑很简单，就是通过对参数类型进行不同的处理构造，最后返回`JavaType`某一具体的实现类实例。和其他处理一样，一般都是从精确类型开始匹配，慢慢抽象。
+> 代码逻辑很简单，就是通过对参数类型进行不同的处理构造，最后返回`JavaType`某一具体的实现类实例。和其他处理一样，一般都是从精确类型开始匹配，慢慢抽象。
 
 接下来，为了简单起见，我们不对非常用设置进行分析，看下面代码：
 
@@ -1040,7 +1040,7 @@ protected final void _configAndWriteValue(JsonGenerator jgen, Object value)
 
 因此，这里就选择常用的`writeValueAsString(Object value)`来解析器内部实现。
 
->> Note：虽然在`Jackson`中提供了`public void writeValue(Writer w, Object value)`的通用方法来序列化java对象，对于需要转换为String类型的需求，只需要`StringWriter`就可以调用writeValue，但是由于这种序列化对性能要求高，并且使用频繁，所以单独提供更高效的实现方式。而正由于在项目代码中AsString 场景十分多，所以这里选择`writeValueAsString`方法分析。
+> Note：虽然在`Jackson`中提供了`public void writeValue(Writer w, Object value)`的通用方法来序列化java对象，对于需要转换为String类型的需求，只需要`StringWriter`就可以调用writeValue，但是由于这种序列化对性能要求高，并且使用频繁，所以单独提供更高效的实现方式。而正由于在项目代码中AsString 场景十分多，所以这里选择`writeValueAsString`方法分析。
 
 ### 序列化方法处理流程
 

@@ -81,7 +81,7 @@ end
 
 ```
 
->> Notes: `sinter方法`：求指定多个集合的交集
+> Notes: `sinter方法`：求指定多个集合的交集
 
 
 ###  排序计分
@@ -111,7 +111,7 @@ end
 
 ```
 
->> Notes: 这里使用了前面代码中多个方法，这是因为我们在有序的`temp_set`集合中有一个潜在的竞争条件。当你必须在任务其他人也尝试访问他们改变的数据之前，都使用这两个或者更多命令（在`ZREVRANGE`命令之前完成`ZINTERSTORE`命令），就会有潜在的竞争条件存在。
+> Notes: 这里使用了前面代码中多个方法，这是因为我们在有序的`temp_set`集合中有一个潜在的竞争条件。当你必须在任务其他人也尝试访问他们改变的数据之前，都使用这两个或者更多命令（在`ZREVRANGE`命令之前完成`ZINTERSTORE`命令），就会有潜在的竞争条件存在。
 
 为了避免在运行的时候出现竞争条件，当我们执行并发的搜索查询的时候，我们必须要么使用Redis的`MULTI/EXEC`命令，要么可能为每一个查询搜索产生一个唯一键。（在上例中，我们必须在我们自己之后清除并且删除临时的排序set集合）。
 
@@ -121,19 +121,19 @@ end
 
 `redis-rb`没有直接的`EXEC`调用。换句话说，在提交给你的`multi方法`的块的开始和结束，表明也是事务的开始和结束。在你块结束的时候，`redis-rb`内部会调用`EXEC`。
 
->> *Redis 命令*:
->> 
->> - `ZINCRBY zset-name increment element`
->>
->>      添加或者增长在有序集合中元素的分数。而使用ZADD和SADD，则如果集合不存在则将会被创建。
->>
->> - `ZINTERSTORE destination-zset number-of-zsets-to-intersect zset1 [zset2 ...] [WEIGHTS weight1 [weight2 ...]] [AGGREGATE SUM | MIN | MAX]`
->>
->>      计算给定的一些ZSETS集合的交集，然后把结果存储在新的ZSET中。此外，也可以使用增长因子或者聚合方法来获取新的集合。默认情况下，它是所有集合中分数的和，但是它也可以是最大或者最小值。
->>
->> - `ZREVRANGE zset-name start-index stop-index [WITHSCORES]`
->>
->>      返回在有序集合中给定范围内的元素，以递减的顺序。这个命令也可以选择在返回结果中包含元素的分数。ZRANGE命令执行相同的操作，但是是以递增的顺序。
+> *Redis 命令*:
+> 
+> - `ZINCRBY zset-name increment element`
+>
+>      添加或者增长在有序集合中元素的分数。而使用ZADD和SADD，则如果集合不存在则将会被创建。
+>
+> - `ZINTERSTORE destination-zset number-of-zsets-to-intersect zset1 [zset2 ...] [WEIGHTS weight1 [weight2 ...]] [AGGREGATE SUM | MIN | MAX]`
+>
+>      计算给定的一些ZSETS集合的交集，然后把结果存储在新的ZSET中。此外，也可以使用增长因子或者聚合方法来获取新的集合。默认情况下，它是所有集合中分数的和，但是它也可以是最大或者最小值。
+>
+> - `ZREVRANGE zset-name start-index stop-index [WITHSCORES]`
+>
+>      返回在有序集合中给定范围内的元素，以递减的顺序。这个命令也可以选择在返回结果中包含元素的分数。ZRANGE命令执行相同的操作，但是是以递增的顺序。
 
 ### 其他优化
 

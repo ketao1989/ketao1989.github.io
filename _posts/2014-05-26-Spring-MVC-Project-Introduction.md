@@ -15,7 +15,7 @@ comments: true
 
 走入社会工作接近一年了,感慨颇多.一年前的现在,自己对java知之甚少,更不知道怎么去创建一个满足`spring mvc`架构思想的web项目。最近，为了学习`Spring MVC`框架的实现原理，首先新建了一个web项目，该项目包含 `Spring + Mybatis`涉及数据库，DAO，service，API，业务，controller多个模块。
 
->> Note：这个项目代码完成的功能只是为了演示一个大项目应该具备的结构，而显然在实际工程中，这么简单地功能，是不需要如此繁杂的结构模块的。
+> Note：这个项目代码完成的功能只是为了演示一个大项目应该具备的结构，而显然在实际工程中，这么简单地功能，是不需要如此繁杂的结构模块的。
 
 此外，关于`Spring MVC`演示项目的代码，可以从`github`上`clone`一份到本地，项目为：[SimpleSpringProject](https://github.com/ketao1989/simpleSpringProject)。`git clone` 地址为：`https://github.com/ketao1989/simpleSpringProject.git`
 
@@ -40,7 +40,7 @@ comments: true
 	
 	8. simple-spring-model模块：该模块主要提供一些模型，各个类需要使用的对象。比如，我们需要获取一个学生个体信息，显然会作为一个对象类来实现。
 	
->> Note：显然，对于各个模块的具体详细分工，其实还是可以调整的，比如可能有些地方会在`service`层来做稍微复杂的服务实现，而在`biz`层则稍微组合就可以了。这里，demo的模块分类，只是正常情况下，业务规模有一些大的情况下，才会进行多个模块的分工。
+> Note：显然，对于各个模块的具体详细分工，其实还是可以调整的，比如可能有些地方会在`service`层来做稍微复杂的服务实现，而在`biz`层则稍微组合就可以了。这里，demo的模块分类，只是正常情况下，业务规模有一些大的情况下，才会进行多个模块的分工。
 
 <!-- more -->
 
@@ -48,7 +48,7 @@ comments: true
 
 `Spring`作为一个主打配置的框架，配置文件的位置，十分重要。如果，一些配置文件的一个符号错误，都会导致整个`MVC` web 项目无法正常启动。
 
->> 首先，来看看web项目中，重中之重的配置文件`web.xml`，
+> 首先，来看看web项目中，重中之重的配置文件`web.xml`，
 
 ``` xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -115,11 +115,11 @@ comments: true
 
 ```
 
->> 接下来默认`springmvc-servlet.xml`文件和`applicationContext.xml`文件。`springmvc-servlet.xml`配置文件，主要定义servlet相关配置，比如scan 基本包名，视图velocity配置，jsp配置设置等信息。由于这里只有一个 mapping servlet，所以只有一个对应的配置文件，当然也可以把这个文件放置其他地方，然后再`web.xml`中定义对于的servlet就可以了。`applicationContext.xml`配置文件，则是整个项目的公共配置，比如指定数据库配置，连接池相关信息，一些spring bean 注册信息，默认的视图解析器等等。
+> 接下来默认`springmvc-servlet.xml`文件和`applicationContext.xml`文件。`springmvc-servlet.xml`配置文件，主要定义servlet相关配置，比如scan 基本包名，视图velocity配置，jsp配置设置等信息。由于这里只有一个 mapping servlet，所以只有一个对应的配置文件，当然也可以把这个文件放置其他地方，然后再`web.xml`中定义对于的servlet就可以了。`applicationContext.xml`配置文件，则是整个项目的公共配置，比如指定数据库配置，连接池相关信息，一些spring bean 注册信息，默认的视图解析器等等。
 
 -
 
->> 接下来，就是`mybatis.xml`配置文件，这个配置主要是针对`Mybatis`而存在的，其指定项目中`Mybatis`设置，以及一些`typeHandler`，`mapper`实现的位置。下面给出demo中的配置示例：
+> 接下来，就是`mybatis.xml`配置文件，这个配置主要是针对`Mybatis`而存在的，其指定项目中`Mybatis`设置，以及一些`typeHandler`，`mapper`实现的位置。下面给出demo中的配置示例：
 
 ``` xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -160,14 +160,14 @@ comments: true
 
 -
 
->> 最后，介绍下`pom.xml`文件，这个实际上，不算是MVC 所仅有的。但是，作为一个maven项目，很多配置都比较关键，一般模块的`pom.xml`都比较简单，但是`	main`模块由于涉及编译成war包，并且针对不同的运行环境，对应打包的配置文件不同，因此，其内部配置会比较复杂。具体参考demo项目代码。
+> 最后，介绍下`pom.xml`文件，这个实际上，不算是MVC 所仅有的。但是，作为一个maven项目，很多配置都比较关键，一般模块的`pom.xml`都比较简单，但是`	main`模块由于涉及编译成war包，并且针对不同的运行环境，对应打包的配置文件不同，因此，其内部配置会比较复杂。具体参考demo项目代码。
 
 
 ## <a id="DataOp">SimpleSpringProject 数据操作实现介绍</a>
 
 整个项目代码都非常简单，不需要过多的去说明。在这里，对于初学者，需要介绍下，数据库相关的访问代码实现逻辑。
 
->> 首先，定义一个接口，该接口里面会声明一些需要在	`sql`中去实现的方法名，如下所示：
+> 首先，定义一个接口，该接口里面会声明一些需要在	`sql`中去实现的方法名，如下所示：
 
 ``` java
 /**
@@ -195,7 +195,7 @@ public interface VersionDao {
 
 ```
 
->> 当`dao`模块则存在了需要实现的接口，则接下来可以在`config`模块中去实现它，具体实现，如下所示：
+> 当`dao`模块则存在了需要实现的接口，则接下来可以在`config`模块中去实现它，具体实现，如下所示：
 
 ``` xml
 <?xml version="1.0" encoding="UTF-8" ?>
@@ -240,7 +240,7 @@ public interface VersionDao {
 
 ```
 
->> Note：这样在`service`模块调用 `dao`模块的接口，就可以操作数据库了。当然，你在`applicationContext.xml`中需要配置下面一段代码：
+> Note：这样在`service`模块调用 `dao`模块的接口，就可以操作数据库了。当然，你在`applicationContext.xml`中需要配置下面一段代码：
 
 ``` xml
 <!-- 创建SqlSessionFactory -->

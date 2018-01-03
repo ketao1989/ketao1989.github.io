@@ -64,7 +64,7 @@ public class ThreadTest {
 
 来自Java 并发大家 Doug Lea 关于线程的描述（[中文版](http://ifeve.com/java-concurrency-constructs/)）：
 
->> 线程：其是一个独立执行的调用序列，同一个进程的线程在同一时刻共享一些系统资源（比如文件句柄等）也能访问同一个进程所创建的对象资源（内存资源）。
+> 线程：其是一个独立执行的调用序列，同一个进程的线程在同一时刻共享一些系统资源（比如文件句柄等）也能访问同一个进程所创建的对象资源（内存资源）。
 
 由于一般的系统，最小的基本调度单位是线程，因此如果一个程序中只有一个线程的话，当该线程因为远程调用或者数据库访问，或者其他大量数学计算导致IO/CPU阻塞时，就会导致整个处理性能大幅度的降低。即使没有这些阻塞，对于当前多核处理系统来讲，单线程也会导致资源的浪费。因此，多线程可以帮助我们很好地提高系统的处理能力和吞吐能力。
 
@@ -114,7 +114,7 @@ public class ThreadTest {
 对于上面的两种创建线程的方法，推荐使用`Runnable`来实现，因为我们知道在java 线程池`ExecutorService`可以管理和使用`Runnable`接口的线程。
 当请求超过线程池设置的大小后，新的请求会排队等待执行，直到所有的线程池空闲为止，如果通过`Thread 子类`来实现线程池，则会比较复杂。
 
->> Tip: 在demo中使用`thread.run()`也可以得到相同的输出结果，但是，**run() 的输出是由当前线程执行的，而不是新创建的线程**。
+> Tip: 在demo中使用`thread.run()`也可以得到相同的输出结果，但是，**run() 的输出是由当前线程执行的，而不是新创建的线程**。
 
 ### 2.2 创建守护线程
 
@@ -166,7 +166,7 @@ public class ThreadTest {
 }}
 ```
 
->> Note: 守护线程不要去做一些文件、数据库等操作，因为一旦用户线程都完成操作退出后，守护线程也需要退出，这个时候可能会导致内存溢出等风险。
+> Note: 守护线程不要去做一些文件、数据库等操作，因为一旦用户线程都完成操作退出后，守护线程也需要退出，这个时候可能会导致内存溢出等风险。
 
 ## <a id="ThreadPool">Java线程池API</a>
 
@@ -231,25 +231,25 @@ public ThreadPoolExecutor(int corePoolSize,
 		
 **ArrayBlockingQueue：**	  
 
->> Note: `ArrayBlockingQueue`队列是有界的队列，所以当队列满的时候，如果还向该队列插入元素，则会导致操作被阻塞住，当然，如果从空的队列中获取元素，该操作也会被阻塞。此外，构造`ArrayBlockingQueue`队列时，有一个参数为：` boolean fair` ：如果为 true，则按照 FIFO 顺序访问插入或移除时受阻塞线程的队列；如果为 false，则访问顺序是不确定的. 
+> Note: `ArrayBlockingQueue`队列是有界的队列，所以当队列满的时候，如果还向该队列插入元素，则会导致操作被阻塞住，当然，如果从空的队列中获取元素，该操作也会被阻塞。此外，构造`ArrayBlockingQueue`队列时，有一个参数为：` boolean fair` ：如果为 true，则按照 FIFO 顺序访问插入或移除时受阻塞线程的队列；如果为 false，则访问顺序是不确定的. 
 
 **LinkedBlockingQueue：**  
 
->> Note: `LinkedBlockingQueue` 队列的吞吐量也要高于数组的阻塞队列，这主要是因为数组的特性和链表的特性决定的，链表在处理元素的offer队头元素和add队尾元素的速度要快于相应地数组操作。不过，显然这样会造成部分元素插入顺序的不确定性。
+> Note: `LinkedBlockingQueue` 队列的吞吐量也要高于数组的阻塞队列，这主要是因为数组的特性和链表的特性决定的，链表在处理元素的offer队头元素和add队尾元素的速度要快于相应地数组操作。不过，显然这样会造成部分元素插入顺序的不确定性。
 
 **`DelayQueue<E extends Delayed>`：** 
 
->> Note: `DelayQueue<E extends Delayed>`队列中的元素需要实现`Delayed`接口，该接口只有`long getDelay(TimeUnit unit);`方法即可使用延迟阻塞队列。此外，需要注意，可能存在的时间延时，即任务元素不一定会准时执行，会有一点点的延迟。
+> Note: `DelayQueue<E extends Delayed>`队列中的元素需要实现`Delayed`接口，该接口只有`long getDelay(TimeUnit unit);`方法即可使用延迟阻塞队列。此外，需要注意，可能存在的时间延时，即任务元素不一定会准时执行，会有一点点的延迟。
 
 **LinkedBlockingDeque：**  
 
->> Note: `LinkedBlockingDeque`队列用的最多的地方，就是使用`工作窃取算法`的地方。工作窃取（work-stealing）算法是指某个线程从其他队列里窃取任务来执行。如下图（参考[工作窃取运行说明](http://ifeve.com/talk-concurrency-forkjoin/)）：
+> Note: `LinkedBlockingDeque`队列用的最多的地方，就是使用`工作窃取算法`的地方。工作窃取（work-stealing）算法是指某个线程从其他队列里窃取任务来执行。如下图（参考[工作窃取运行说明](http://ifeve.com/talk-concurrency-forkjoin/)）：
 
 <img src="/images/2014/05/work-stealing.png" />
 
 **PriorityBlockingQueue：** 
 
->> Note: `PriorityBlockingQueue`队列，默认情况下元素采取自然顺序排列，也可以通过比较器comparator来指定元素的排序规则。比较器可使用修改键断开主优先级值之间的联系。元素默认按照升序排列。
+> Note: `PriorityBlockingQueue`队列，默认情况下元素采取自然顺序排列，也可以通过比较器comparator来指定元素的排序规则。比较器可使用修改键断开主优先级值之间的联系。元素默认按照升序排列。
 
 选择其中的`LinkedBlockingQueue`来简单分析下，其内部实现结构和细节：
 
@@ -324,7 +324,7 @@ public ThreadPoolExecutor(int corePoolSize,
 
 ```
 
->> Note: `put`在插入的时候，会一直等待插入成功；如果需要设置等待超时时间，需要使用`offer(E e, long timeout, TimeUnit unit)`来插入元素。
+> Note: `put`在插入的时候，会一直等待插入成功；如果需要设置等待超时时间，需要使用`offer(E e, long timeout, TimeUnit unit)`来插入元素。
 此外，`take`方法和`put`方法整体流程基本一样。
 
 ### 3.2 ThreadFactory 介绍
@@ -381,7 +381,7 @@ public interface ThreadFactory {
     }
 ```
 
->> Note: 除了`Executors`使用的默认的线程工厂类之外，还提供了一个线程工厂类：`PrivilegedThreadFactory`类。该类继承了`DefaultThreadFactory`，增加了访问控制上下文和类加载器，会检查类的调用者是否有相关权限。例如：`System.getSecurityManager().checkPermission(SecurityConstants.GET_CLASSLOADER_PERMISSION);`以及`System.getSecurityManager().checkPermission(new RuntimePermission("setContextClassLoader"));`。
+> Note: 除了`Executors`使用的默认的线程工厂类之外，还提供了一个线程工厂类：`PrivilegedThreadFactory`类。该类继承了`DefaultThreadFactory`，增加了访问控制上下文和类加载器，会检查类的调用者是否有相关权限。例如：`System.getSecurityManager().checkPermission(SecurityConstants.GET_CLASSLOADER_PERMISSION);`以及`System.getSecurityManager().checkPermission(new RuntimePermission("setContextClassLoader"));`。
 
 ### 3.3 RejectedExecutionHandler 介绍
 
@@ -520,7 +520,7 @@ JDK 6 提供了 4 种处理拒绝执行任务的策略：
 
 在前言部分使用了`Executors.newFixedThreadPool`来创建固定线程数的线程池。因此，我们就对这个代码的整个流程进行说明。
 
->> Note： 代码首先new 一个线程池，如上面代码所示，直接调用`ThreadPoolExecutor`构造函数即可。接下来就是创建任务放在线程池中执行了。
+> Note： 代码首先new 一个线程池，如上面代码所示，直接调用`ThreadPoolExecutor`构造函数即可。接下来就是创建任务放在线程池中执行了。
 
 ``` java
 	/**
@@ -564,7 +564,7 @@ JDK 6 提供了 4 种处理拒绝执行任务的策略：
         return removed;
     }
 ```
->> Tips: 在代码中，获取当前程序中运行的线程数，是一个很有趣的实现。核心代码如下：
+> Tips: 在代码中，获取当前程序中运行的线程数，是一个很有趣的实现。核心代码如下：
 
 ``` java
 	// 主线程池控制状态 ctl，表示当前有效地线程数，此外还可以指示是否是running、shutdown等状态
@@ -600,7 +600,7 @@ JDK 6 提供了 4 种处理拒绝执行任务的策略：
 
 
 
->> Note: addWorker方法，会检查如果增加一个新的worker后，是否满足当前线程池的状态和最初创建线程池设置的大小限制。这可能会创建一个新的工作线程worker来运行该任务。但是，如果线程池停止或者将要关闭，再或者使用线程工厂创建新线程失败，都将返回false。
+> Note: addWorker方法，会检查如果增加一个新的worker后，是否满足当前线程池的状态和最初创建线程池设置的大小限制。这可能会创建一个新的工作线程worker来运行该任务。但是，如果线程池停止或者将要关闭，再或者使用线程工厂创建新线程失败，都将返回false。
 > `Worker`的继承`AbstractQueuedSynchronizer`类，该类是实现基于FIFO等待队列的阻塞锁和相关同步器的一个基本的框架，其可以依靠单个原子int值来表示状态。因此，`Worker`类其实主要目的就是为了维持线程的运行的任务的状态而存在的工作者队列。
 
 ``` java
@@ -686,7 +686,7 @@ private boolean addWorker(Runnable firstTask, boolean core) {
 **Worker中任务的执行**  
 但是，从上面的代码中，我们看到`worker`的新建流程，并且把新任务作为参数来初始化worker，但是执行worker有一个目的只是为了测试worker实例是否创建成功。根据上面的API介绍，应该猜到其实大部分的任务到达线程池的时候，显然不是都新建一个线程来处理，而是放进`queue`中，然后执行。在`Worker`类中，封装需要执行的Runnable任务，然后其重写了run方法，内部调用`runWorker`执行任务。
 
->> Note:`runWorker`是`worker`主要的工作。就是重复的从queue中获取任务，然后执行他们。整个流程大概如下：    
+> Note:`runWorker`是`worker`主要的工作。就是重复的从queue中获取任务，然后执行他们。整个流程大概如下：    
 >1. 我们可能会从一个初始的任务开始，当然非core数创建的`worker`则没有第一个`task`。此外
     在pool运行期间，我们使用`getTask`方法来获取任务。如果返回null的时候，则退出worker线程。
     另外，如果执行的任务会抛出异常，也会导致worker突然地完成，进而会使用`processWorkerExit`来代替该线程。    

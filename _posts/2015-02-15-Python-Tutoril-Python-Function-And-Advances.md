@@ -108,16 +108,16 @@ if __name__ == '__main__':
 
 ```
 
->> Notes：`isinstance` 方法判断是否是指定类型。
->> 
->> - `moreReturns(x, y)` 函数，返回多个结果。其本质上，就是返回一个tuple.
->>
->> - `defaultParams(x, n=2, extra=0)` 函数，设置默认的参数值。在调用的时候，我们可以替换任意一个默认的参数，比如extra，可以：`defaultParams(5, extra=2)`
->> 
->> - `variableParams(*numbers)` 函数，设置可变个值。
->>
->> - `variableDictParams(name, **kv)`函数，设置可变你的参数。其实，其类似Map来根据调用方确定参数。
->> 
+> Notes：`isinstance` 方法判断是否是指定类型。
+> 
+> - `moreReturns(x, y)` 函数，返回多个结果。其本质上，就是返回一个tuple.
+>
+> - `defaultParams(x, n=2, extra=0)` 函数，设置默认的参数值。在调用的时候，我们可以替换任意一个默认的参数，比如extra，可以：`defaultParams(5, extra=2)`
+> 
+> - `variableParams(*numbers)` 函数，设置可变个值。
+>
+> - `variableDictParams(name, **kv)`函数，设置可变你的参数。其实，其类似Map来根据调用方确定参数。
+> 
 
 
 ## <a id="Advanced">Python 高级特性</a>
@@ -182,8 +182,8 @@ print lo
 
 ```
 
->> Notes ：由于列表生成器，是一次生成所有的列表元素，对于很大的列表，如果一次生成完成，然后全部放在内存里，肯定是不好的，因此，Python 还提供了 `生成器`。
->> 
+> Notes ：由于列表生成器，是一次生成所有的列表元素，对于很大的列表，如果一次生成完成，然后全部放在内存里，肯定是不好的，因此，Python 还提供了 `生成器`。
+> 
 
 生成器，可以根据生成规则，在使用的时候，才会构造元素。构造简单的生成器，和列表生成器一样，只需要把`[ ]` 替换成`( )`即可。例如：
 
@@ -195,7 +195,7 @@ print lg
 
 ```
 
->> Tips：如果需要打印，可以使用for，单个使用.next()方法依次调用，直到出现异常。
+> Tips：如果需要打印，可以使用for，单个使用.next()方法依次调用，直到出现异常。
 
 对于复杂一点的生成器，则需要使用 `yield` 关键字来完成。比如，在我们的一些函数中，某一个变量连续产生的数组，可以使用`yield x`来完成生成器设置。
 

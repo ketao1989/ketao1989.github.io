@@ -15,7 +15,7 @@ comments: true
 slf4j:简洁的java日志统一接口(Simple Logging Facade for Java),顾名思义,就是一个使用Facade设计模式实现的面向java Logging框架的接口开源包. 
 其和java数据库连接工具包JDBC很像, 在JDBC框架中, 各个不同数据库连接器分别针对不同数据库系统来实现对应的连接操作, 而普通程序员只需要使用统一的JDBC接口而不需要关注具体底层使用的数据库类型, 或者针对不同的数据库系统写各种兼容代码.
 
->> Note: slf4j其实类似于适配器,但是这里不称呼适配器,是因为当底层log日志系统不支持slf4j扩展时,比如log4j,就需要在两者中间增加一个适配器层来完成slf4j调用相关日志系统的操作接口动作.例如,slf4j为log4j提高的slf4j-log412.jar类库,但是logback支持slf4J扩展,所以其不需适配层转换.
+> Note: slf4j其实类似于适配器,但是这里不称呼适配器,是因为当底层log日志系统不支持slf4j扩展时,比如log4j,就需要在两者中间增加一个适配器层来完成slf4j调用相关日志系统的操作接口动作.例如,slf4j为log4j提高的slf4j-log412.jar类库,但是logback支持slf4J扩展,所以其不需适配层转换.
 
 同样，slf4j 不参与具体的日志代码实现，它只是在代码编译的时候根据程序的配置来绑定具体的日志系统。这样，使用slf4j类库就可以让你的代码独立于任意一个特定的日志API。因此，如果编写一个对外开发的API活着一个同样的类库，那么为了不限制使用你类库的代码必须使用指定的日志系统，你应该使用slf4j。
 
@@ -214,7 +214,7 @@ slf4j在适配器层或者在兼容slf4j扩展的log-api 中会有一个`org/slf
 
 slf4j的打印日志基本一致，主要分为：`trace`,`debug`,`info`,`warn`,`error`,比log4j少了`fatal`级别日志。由于每个级别对于的API方法级别一致，因此，这里选用info来介绍不同输入参数的API使用。
 
->> Tip: SLF4J 认为 ERROR 与 FATAL 并没有实质上的差别，所以拿掉了 FATAL 等级，只剩下其他五种。
+> Tip: SLF4J 认为 ERROR 与 FATAL 并没有实质上的差别，所以拿掉了 FATAL 等级，只剩下其他五种。
 
 ``` java
  /**
@@ -336,7 +336,7 @@ public class LogTest {
 		at com.intellij.rt.execution.application.AppMain.main(AppMain.java:120) [idea_rt.jar:na]
 	[2014-05-03 03:47:14 [34mINFO [0;39m com.qunar.dubbo.LogTest.main(LogTest.java:39)] 三个参数:agrs1:args1;agrs2:args2;args3:java.io.IOException: 测试抛出IO异常信息 的info级别日志
 
->> Note: 从代码调用可以看到，throwable 异常信息单独作为一个参数输入，因此，如果把异常信息作为`{}`占位符中的字符串，则会调用其对应toString方法，而无法打印异常堆栈信息。可以看看下面的截取源码：  
+> Note: 从代码调用可以看到，throwable 异常信息单独作为一个参数输入，因此，如果把异常信息作为`{}`占位符中的字符串，则会调用其对应toString方法，而无法打印异常堆栈信息。可以看看下面的截取源码：  
 
 ``` java
   public void info(String msg, Throwable t) {
@@ -417,7 +417,7 @@ public class LogTest {
 
 ```
 
->> Note: 上面代码只是一般的步骤，对于调用`Object[]`形式的方法，则`ThrowableProxy`之前，还会对`Object[]`中的元素进行过滤处理，提取出最后一个元素判断是不是 `Throwable`类型的对象。代码参考如下：
+> Note: 上面代码只是一般的步骤，对于调用`Object[]`形式的方法，则`ThrowableProxy`之前，还会对`Object[]`中的元素进行过滤处理，提取出最后一个元素判断是不是 `Throwable`类型的对象。代码参考如下：
 
 ``` java
 

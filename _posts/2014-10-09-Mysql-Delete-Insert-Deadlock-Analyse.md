@@ -46,7 +46,7 @@ RECORD LOCKS space id 244 page no 817 n bits 824 index `uniq_serial_number_busin
 *** WE ROLL BACK TRANSACTION (1)
 ```
 
->> Note: 数据库中，`CH01313318`和`CH01313320`序列号是连着的两个记录。
+> Note: 数据库中，`CH01313318`和`CH01313320`序列号是连着的两个记录。
 
 ## <a id="Problem">死锁问题定位</a>
 
@@ -130,13 +130,13 @@ CREATE TABLE `crm_business` (
 
 数据表里面，字段很简单，但是里面涉及一个唯一键索引。
 
->> Note: 上面的代码，`delete`和`insert`操作不在一个事务里面，因为代码上没有添加@transaction 注解，也就是单纯delete`和`insert`操作在多线程环境下，竟然会产生死锁。此外，需要注意，操作唯一键相关字段，经常会不注意就产生死锁问题。
+> Note: 上面的代码，`delete`和`insert`操作不在一个事务里面，因为代码上没有添加@transaction 注解，也就是单纯delete`和`insert`操作在多线程环境下，竟然会产生死锁。此外，需要注意，操作唯一键相关字段，经常会不注意就产生死锁问题。
 
 ## <a id="Analyse">死锁问题分析</a>
 
 首先，给出一篇博客，mysql大神写的<http://hedengcheng.com/?p=844>,一下分析，借鉴使用该博客的分析。
 
->> Tips: 有兴趣，请直接阅读该博客的分析。
+> Tips: 有兴趣，请直接阅读该博客的分析。
 
 ### Mysql日志分析
 
@@ -150,7 +150,7 @@ CREATE TABLE `crm_business` (
 
 事务1正在等待事务2释放锁的S模式，从而获取X模式的锁；但是事务2已经获取了S模式，但是其等待继续获取锁的X模型,这个模式事务1优先申请获取，因此就导致死锁。
 
->> Note: 事务1优先去等待获取锁的X模式，是因为在Mysql中为了公平竞争，杜绝事务1发生饥饿现象。这样会导致上述死锁出现。
+> Note: 事务1优先去等待获取锁的X模式，是因为在Mysql中为了公平竞争，杜绝事务1发生饥饿现象。这样会导致上述死锁出现。
 
 那么为什么会出现`delete`操作抛出死锁失败，事务回滚。
 
@@ -168,7 +168,7 @@ WHERE serial_number = 'xxxx'
 
 ` serial_number`是unique索引，而主键是id列。因此delete语句会选择走`serial_number`列的索引进行where条件的过滤，在找到`serial_number = 'xxxx'`的记录后，首先会将unique索引上的`serial_number = 'xxxx'`索引记录加上X锁，同时，会根据读取到的`id`列，回主键索引(聚簇索引)，然后将聚簇索引上的`id = 10` 对应的主键索引项加X锁。为什么聚簇索引上的记录也要加锁？试想一下，如果并发的一个SQL，是通过主键索引来更新：`update crm_business set serial_number = xyy where id = 10`; 此时，如果delete语句没有将主键索引上的记录加锁，那么并发的update就会感知不到delete语句的存在，违背了同一记录上的更新/删除需要串行执行的约束。
 
->> Note：和delete操作类似的加锁操作，还有：  
+> Note：和delete操作类似的加锁操作，还有：  
 
 ``` sql
 
@@ -179,6 +179,6 @@ WHERE serial_number = 'xxxx'
     delete from table where ?;  
 ```
 
->> 上述操作都是当前读，需要读取记录的最新操作，读取之后，为了保证其他并发事务不能修改当前记录，会对读的记录加锁，可能是S模式锁，或者X模式锁。
+> 上述操作都是当前读，需要读取记录的最新操作，读取之后，为了保证其他并发事务不能修改当前记录，会对读的记录加锁，可能是S模式锁，或者X模式锁。
 
 

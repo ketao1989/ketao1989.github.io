@@ -19,18 +19,18 @@ comments: true
 
 `jstat`的命令查看系统`GC`情况，很简单，只需要先通过`jps`或者`ps -aux |grep tomcat`来查看对应服务所在的进程数，然后使用下面命令查看。
 
->> jstat 查看 gc 使用方法如下：  
+> jstat 查看 gc 使用方法如下：  
 
 ``` bash
 
 jstat -gcutil `线程值` `间隔时间数(ms)`
 ```
 
->> 执行命令`sudo jstat -gcutil 11694 3600`，结果会显示内存各个区域大小的情况，如图：
+> 执行命令`sudo jstat -gcutil 11694 3600`，结果会显示内存各个区域大小的情况，如图：
 
 <img src="/images/2014/05/jstat-gc.jpg" />
 
->> Note: 结果里面列出每个区间的内存大小，新生代gc的次数和时间，老年代gc的次数和时间。	
+> Note: 结果里面列出每个区间的内存大小，新生代gc的次数和时间，老年代gc的次数和时间。	
 
 	1. S0  — Heap上的 Survivor space 0 区已使用空间的百分比;
 	2. S1  — Heap上的 Survivor space 1 区已使用空间的百分比;
@@ -49,13 +49,13 @@ jstat -gcutil `线程值` `间隔时间数(ms)`
 
 当我们使用`jstat`命令查看`GC`时，发现`YoungGC`或者`FullGC`频率过高时，就需要分析服务的具体情况了。这个时候，可以使用`Jmap`来查看当前系统的实例使用内存大小，一般地，需要`dump`到本地进行分析，使用可视化工具可以使分析效率得到很大的提高。
 
->> `Jmap`的使用方法如下所示：  
+> `Jmap`的使用方法如下所示：  
 
 ``` bash
 jmap -dump:format=b,file=log.bin `进程id`    
 ```
 
->> 使用`sudo jmap -dump:format=b,file=log.bin  -F 11694`命令，写入文件内容如下:
+> 使用`sudo jmap -dump:format=b,file=log.bin  -F 11694`命令，写入文件内容如下:
     
 	JAVA PROFILE 1.0.1
 	JAVA PROFILE 1.0.1
@@ -72,7 +72,7 @@ jmap -dump:format=b,file=log.bin `进程id`
 	Ampersand
 	......
 
->> Note：有很多可视化的工具来分析`dump`文件，为了简单，这里使用java自带的工具`jvisualvm`工具，在`文件`选项中`装入` dump 下来的 文件`log.bin`，就可以看到各个对象实例所占用的内存大小和实例数量了。如下图：
+> Note：有很多可视化的工具来分析`dump`文件，为了简单，这里使用java自带的工具`jvisualvm`工具，在`文件`选项中`装入` dump 下来的 文件`log.bin`，就可以看到各个对象实例所占用的内存大小和实例数量了。如下图：
 
 <img src="/images/2014/05/jmap-gc.jpg" />
 

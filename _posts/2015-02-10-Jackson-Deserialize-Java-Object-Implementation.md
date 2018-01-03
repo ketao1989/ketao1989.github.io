@@ -83,8 +83,8 @@ public abstract class JsonDeserializer<T>
 }
 ```
 
->> Tips：这个反序列化方法实现起来很简单，只需要实现核心的`deserialize`方法，使用`jp.getText`获取 value 然后对字符串进行我们需要的各种操作转换，赋值给创建的对象实例，就 OK 了。
->> 
+> Tips：这个反序列化方法实现起来很简单，只需要实现核心的`deserialize`方法，使用`jp.getText`获取 value 然后对字符串进行我们需要的各种操作转换，赋值给创建的对象实例，就 OK 了。
+> 
 
 <!-- more -->
 
@@ -133,8 +133,8 @@ public class SimpleModule extends Module
 }
 ```
 
->> Tips：显然，我们在`objectMapper.registerModule`中注册构造的simpleModule对象实例，这个实例调用`addDeserializer`把我们自定义的反序列化方法添加进去就可以了。
->> 
+> Tips：显然，我们在`objectMapper.registerModule`中注册构造的simpleModule对象实例，这个实例调用`addDeserializer`把我们自定义的反序列化方法添加进去就可以了。
+> 
 
 ### @JsonDeserialize 注解
 

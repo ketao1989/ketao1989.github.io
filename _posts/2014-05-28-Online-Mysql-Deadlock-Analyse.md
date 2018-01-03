@@ -45,7 +45,7 @@ CREATE TABLE `room_rate_plan_id` (
 
 ## <a id="Reproduce">问题重现</a>
 
->> 执行下面语句：
+> 执行下面语句：
 
 * `session 1`执行：
 
@@ -67,7 +67,7 @@ SELECT id FROM qunar.room_rate_plan_id where value='elong_abcd'for update;
 insert into qunar.room_rate_plan_id(value) values ('elong_abcd');
 ```
 
->> 执行上面的操作，则在`Mysql`控制台上打出死锁日志信息：
+> 执行上面的操作，则在`Mysql`控制台上打出死锁日志信息：
 
 <img src="/assets/img/2014/5/28/mysql-dead.png" />
 
@@ -79,7 +79,7 @@ insert into qunar.room_rate_plan_id(value) values ('elong_abcd');
 
 3. 使用`insert ignore` 插入，然后select ，由于是value是`unique key`，所以select可以获取正确id，并且还可以不需要添加事务。可能会多一次insert ignore。这种方法之所以这样子，是因为在业务中没有update操作，只有insert和select，并且value是唯一的，这样子就可以只采用select而不需要采用select for update，并且还可以不需要事务，提供效率。
 
->> 如果采用第3中解决方案，不会出现死锁问题，但是当锁一直被占用时，会出现等待超时，当然，如果不使用事务，则肯定不会有锁的问题了。
+> 如果采用第3中解决方案，不会出现死锁问题，但是当锁一直被占用时，会出现等待超时，当然，如果不使用事务，则肯定不会有锁的问题了。
 
 	* session 1：
         ``` sql

@@ -19,7 +19,7 @@ comments: true
 
 首先贴出一个很简单的代码demo，这段代码是对上篇博文中代码，用`ForkJoin` API方式来实现（实际上，这并不是一个好的介绍`ForkJoin`功能的例子，但是我们先用它来入门了）
 
->> `ForkJoin`任务，继承自`RecursiveAction`，因为我们不需要任务返回什么计算结果：
+> `ForkJoin`任务，继承自`RecursiveAction`，因为我们不需要任务返回什么计算结果：
 
 ``` java
 
@@ -70,7 +70,7 @@ public class ListTask extends RecursiveAction {
 
 <!-- more -->
 
->> `ForkJoin`的DEMO主函数，最后如果任务正常结束，则打印`任务顺利完成`信息：
+> `ForkJoin`的DEMO主函数，最后如果任务正常结束，则打印`任务顺利完成`信息：
 
 ``` java
 
@@ -105,7 +105,7 @@ public class ForkJoinTest {
 
 ```
 
->> 执行结果如下，如我们所期望的那样：
+> 执行结果如下，如我们所期望的那样：
 	
 	ForkJoinPool-1-worker-1----
 	ForkJoinPool-1-worker-1----
@@ -146,7 +146,7 @@ Fork/Join 和Executor框架主要的区别是`work-stealing`算法，可以参�
 
 工作窃取算法，`work-stealing`算法存在可以帮助我们充分利用线程资源来减少执行时间。
 
->> Tips: 我们把一个大的任务分割成多个不相互依赖的小的子任务，并且把这些子任务分别放在不同的执行队列中，每个执行队列分别创建一个单独的线程来执行任务。默认线程数（队列数）为执行机器的CPU核数+1，具体可以看看上面DEMO执行的线程编号。每个队列分别有一个线程单独去执行，是为了避免或减少线程间的竞争。当某线程执行完队列中得所有任务时，而有其他线程没有完成对应队列中的任务时，线程会协助其他线程完成其对应队列中剩余的任务。为了避免线程间获取队列任务时产生竞争，显然会采取双端队列从而线程可以从队列尾部拿到还未被执行的任务，而真正执行队列任务的线程，则依然从队列头部获取任务。当然，该算法遇到队列只有一个任务时，也会产生竞争，并且多个队列和多个线程，也会消耗更多的系统资源。
+> Tips: 我们把一个大的任务分割成多个不相互依赖的小的子任务，并且把这些子任务分别放在不同的执行队列中，每个执行队列分别创建一个单独的线程来执行任务。默认线程数（队列数）为执行机器的CPU核数+1，具体可以看看上面DEMO执行的线程编号。每个队列分别有一个线程单独去执行，是为了避免或减少线程间的竞争。当某线程执行完队列中得所有任务时，而有其他线程没有完成对应队列中的任务时，线程会协助其他线程完成其对应队列中剩余的任务。为了避免线程间获取队列任务时产生竞争，显然会采取双端队列从而线程可以从队列尾部拿到还未被执行的任务，而真正执行队列任务的线程，则依然从队列头部获取任务。当然，该算法遇到队列只有一个任务时，也会产生竞争，并且多个队列和多个线程，也会消耗更多的系统资源。
 
 为实现这个目标，Fork/Join框架执行的任务有以下局限性：
 
@@ -166,7 +166,7 @@ Fork/Join框架的核心是由以下两个类：
 
 一般地，你需要按照下面两种情况下使用`ForkJoin`框架的API：
 
->> `RecursiveAction`任务对应的API使用模型：
+> `RecursiveAction`任务对应的API使用模型：
 
 ``` java
 
@@ -178,7 +178,7 @@ Fork/Join框架的核心是由以下两个类：
         }
 ```
 
->> `RecursiveTask<V>`类任务对应的API使用模型：
+> `RecursiveTask<V>`类任务对应的API使用模型：
 
 ``` java
 
@@ -372,7 +372,7 @@ public class ForkJoinTest {
 	["thread-11-test","thread-21-test","thread-31-test","thread-41-test","thread-51-test","thread-61-test","thread-71-test","thread-81-test"]
 	Task 任务顺利完成！
 
->> demo代码很简单，这里不进行说明。
+> demo代码很简单，这里不进行说明。
 
 ## <a id="Analyze">ForkJoin 实现剖析</a>
 
@@ -419,11 +419,11 @@ public class ForkJoinTest {
 
 ```
 
->> `ForkJoinPool`代码中变量`volatile long ctl`包含了`forkjoinpool`几个核心的数值，使用bit位来表示。具体为： AC(16 bits)--活跃运行的`worker`数量减去当前系统`parallelism`值；TC(16 bits)--总的`worker`数减去当前系统`parallelism`值；ST（1 bits）-- `pool`是否结束；EC(15 bits) --等待线程组的头部的等待数；ID（16 bits）-- 正在等待的线程组栈顶的索引`poolIndex`. 
+> `ForkJoinPool`代码中变量`volatile long ctl`包含了`forkjoinpool`几个核心的数值，使用bit位来表示。具体为： AC(16 bits)--活跃运行的`worker`数量减去当前系统`parallelism`值；TC(16 bits)--总的`worker`数减去当前系统`parallelism`值；ST（1 bits）-- `pool`是否结束；EC(15 bits) --等待线程组的头部的等待数；ID（16 bits）-- 正在等待的线程组栈顶的索引`poolIndex`. 
 
 ---
 
->> Tips: 在构造函数中，创建了两个对象，分别是大小为`8`的`ForkJoinTask`数组 和 大小为`n+1`（4核Cpu为8）的 `ForkJoinWorkerThread`。因此，可以知道**在初始化的时候，提交任务队列的大小 和 执行任务的线程数 很可能不相等**。
+> Tips: 在构造函数中，创建了两个对象，分别是大小为`8`的`ForkJoinTask`数组 和 大小为`n+1`（4核Cpu为8）的 `ForkJoinWorkerThread`。因此，可以知道**在初始化的时候，提交任务队列的大小 和 执行任务的线程数 很可能不相等**。
 
 接下来需要说明的是，`ForkJoinPool`的`submit`方法，其会调用`forkOrSubmit(ForkJoinTask<T> task)`，实现代码如下：
 
@@ -443,11 +443,11 @@ public class ForkJoinTest {
     
 ```
 
->> 因此，需要执行的任务task已经被放进了队列中，执行线程可以获取任务来进行执行了。`addSubmission`运行时会使用`this.submissionLock`锁，并且入队之后，会调用`signalWork()`方法，该方法会根据当前`pool`中`worker`数量和状态来决定 唤醒或者创建一个worker。
+> 因此，需要执行的任务task已经被放进了队列中，执行线程可以获取任务来进行执行了。`addSubmission`运行时会使用`this.submissionLock`锁，并且入队之后，会调用`signalWork()`方法，该方法会根据当前`pool`中`worker`数量和状态来决定 唤醒或者创建一个worker。
 
 ---
 
->> 在`pool`中有一个核心的顶层循环，所有的工作线程都会按照这个步骤执行：
+> 在`pool`中有一个核心的顶层循环，所有的工作线程都会按照这个步骤执行：
 
 ``` java
 
@@ -469,7 +469,7 @@ public class ForkJoinTest {
     
 ```
 
->> `Scan`方法的逻辑其实很简单，就是首先获取其线程内部的queue，执行任务；如果完了，则steal其他`worker`线程的任务；如果还没有，则执行pool中的`submissionQueue`。再没有，则返回true。
+> `Scan`方法的逻辑其实很简单，就是首先获取其线程内部的queue，执行任务；如果完了，则steal其他`worker`线程的任务；如果还没有，则执行pool中的`submissionQueue`。再没有，则返回true。
 
 ``` java
 
@@ -569,7 +569,7 @@ public class ForkJoinTest {
 
 ```
 
->> Tips: 在构造方法里面，新建的线程实例，会注册到`pool`的`worker`数组中去，当`worker`数组大小不够，会进行`CopyOf`操作，把大小扩大原来的一倍。此外，代码的实现被没有获取lock操作。此外，创建的线程被指定为`守护进程`。
+> Tips: 在构造方法里面，新建的线程实例，会注册到`pool`的`worker`数组中去，当`worker`数组大小不够，会进行`CopyOf`操作，把大小扩大原来的一倍。此外，代码的实现被没有获取lock操作。此外，创建的线程被指定为`守护进程`。
 
 接着来看看了`pushTask(ForkJoinTask<?> t)`方法的实现，该方法和`pool`的`addSubmission`方法基本一致，除了`addSubmission`会增加互斥锁操作。代码如下：
 
@@ -596,11 +596,11 @@ public class ForkJoinTest {
 
 ```
 
->> 关于`UNSAFE`的实现，底层实现的`native`方法是C++，具体代码可以参见：[UNSAFE 源码实现链接](http://www.oschina.net/code/explore/gcc-4.5.2/libjava/sun/misc)
+> 关于`UNSAFE`的实现，底层实现的`native`方法是C++，具体代码可以参见：[UNSAFE 源码实现链接](http://www.oschina.net/code/explore/gcc-4.5.2/libjava/sun/misc)
 
 ---
 
->> 作为一个`Thread`的继承子类，必然需要实现`run`方法，实现细节如下：
+> 作为一个`Thread`的继承子类，必然需要实现`run`方法，实现细节如下：
 
 ``` java
 
@@ -638,7 +638,7 @@ public class ForkJoinTest {
 
 ```
 
->> `fork`方法实际上就是把新创建的子任务提交给当前线程，由当前线程push到它自身的队列数组中。
+> `fork`方法实际上就是把新创建的子任务提交给当前线程，由当前线程push到它自身的队列数组中。
 
 接下来看看`join`方法的实现：
 
@@ -656,7 +656,7 @@ public class ForkJoinTest {
     }
 ```
 
->> `doJoin()`方法算是`ForkJoinTask`类主要方法之一，其他的方法`doInvoke`、`doExec`方法和`doJoin`一样，都会执行核心的任务自定义`compute`方法。
+> `doJoin()`方法算是`ForkJoinTask`类主要方法之一，其他的方法`doInvoke`、`doExec`方法和`doJoin`一样，都会执行核心的任务自定义`compute`方法。
 
 ``` java
 

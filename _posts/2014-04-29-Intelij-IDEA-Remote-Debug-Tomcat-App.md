@@ -43,7 +43,7 @@ chown -R tomcat:tomcat $CATALINA_BASE/temp
 -server -Xdebug -Xnoagent -Djava.compiler=NONE -Xrunjdwp:transport=dt_socket,address=9999,server=y,suspend=n
 ```
 
->> Note: 这里的端口指定为9999，你也可以自己指定。主要是JVM绑定端口使用。
+> Note: 这里的端口指定为9999，你也可以自己指定。主要是JVM绑定端口使用。
 
 	-Xdebug					|启用调试特性
 	-Xrunjdwp				|启用JDWP实现，它包含若干子选项：
@@ -61,10 +61,10 @@ chown -R tomcat:tomcat $CATALINA_BASE/temp
 
 1、 在IDEA上面新建一个 tomcat remote server服务：
 <img src="/images/2014/04/newremote.png" />
->> Note:图片中的端口是web服务的端口号，而不是JVM监听绑定的端口号。
+> Note:图片中的端口是web服务的端口号，而不是JVM监听绑定的端口号。
 
 <img src="/images/2014/04/debugaddress.png" />
->> Note:图片中的端口是JVM监听绑定的端口号，即我们在服务端设置绑定的address值。
+> Note:图片中的端口是JVM监听绑定的端口号，即我们在服务端设置绑定的address值。
 
 2、 接下来就可以通过debug来启动本地服务，当出现下面字样时，表示连接成功，可以debug了。
 
