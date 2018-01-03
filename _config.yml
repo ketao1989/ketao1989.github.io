@@ -28,8 +28,9 @@ description_footer: 本站保留着一点点技术积蓄！
 # comments
 # two ways to comment, only choose one, and use your own short name
 # 两种评论插件，选一个就好了，使用自己的 short_name
-duoshuo_shortname: #taocoder
-disqus_shortname: taocoder
+duoshuo_shortname: 
+disqus_shortname: 
+youyan_uid: 2086729
 
 # statistic analysis 统计代码
 # 百度统计 id，将统计代码替换为自己的百度统计id，即
