@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "dubbo序列化机制处理-泛化&普通RPC"
-date: 2017-03-29 20:52:39 +0800
+date: 2018-01-04 01:18:00 +0800
 comments: true
 categories: 
   - java
