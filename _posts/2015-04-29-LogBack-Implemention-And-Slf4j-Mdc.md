@@ -49,8 +49,8 @@ public class MDC {
 
 ```
 
->> 接口定义非常简单，此外，其使用也非常简单。
->> 
+> 接口定义非常简单，此外，其使用也非常简单。
+> 
 
 <!-- more -->
 
@@ -104,12 +104,12 @@ public class LogTest {
 
 
 
->> 当我们在web应用中，对服务的所有请求前进行filter拦截，然后加上自定义的唯一标识到MDC中，就可以在所有日志输出中，清楚看到某用户的操作流程。关于web MDC，会单独一遍博客介绍。
->> 
->> 此外，关于logback 是如何将模板中的变量替换成具体的值，会在下一节分析。
->> 
->> 在日志模板logback.xml 中，使用 `%X{ }`来占位，替换到对应的 MDC 中 key 的值。
->> 
+> 当我们在web应用中，对服务的所有请求前进行filter拦截，然后加上自定义的唯一标识到MDC中，就可以在所有日志输出中，清楚看到某用户的操作流程。关于web MDC，会单独一遍博客介绍。
+> 
+> 此外，关于logback 是如何将模板中的变量替换成具体的值，会在下一节分析。
+> 
+> 在日志模板logback.xml 中，使用 `%X{ }`来占位，替换到对应的 MDC 中 key 的值。
+> 
 
 ## <a id="PrepareKnowledge">前置知识介绍</a>
 
@@ -121,13 +121,13 @@ public class LogTest {
 
 javadoc 文档对 InheritableThreadLocal 说明：
 
->>  该类扩展了 ThreadLocal，为子线程提供从父线程那里继承的值：在创建子线程时，子线程会接收所有可继承的线程局部变量的初始值，以获得父线程所具有的值。通常，子线程的值与父线程的值是一致的；但是，通过重写这个类中的 childValue 方法，子线程的值可以作为父线程值的一个任意函数。
+>  该类扩展了 ThreadLocal，为子线程提供从父线程那里继承的值：在创建子线程时，子线程会接收所有可继承的线程局部变量的初始值，以获得父线程所具有的值。通常，子线程的值与父线程的值是一致的；但是，通过重写这个类中的 childValue 方法，子线程的值可以作为父线程值的一个任意函数。
 
->> 当必须将变量（如用户 ID 和 事务 ID）中维护的每线程属性（per-thread-attribute）自动传送给创建的所有子线程时，应尽可能地采用可继承的线程局部变量，而不是采用普通的线程局部变量。
+> 当必须将变量（如用户 ID 和 事务 ID）中维护的每线程属性（per-thread-attribute）自动传送给创建的所有子线程时，应尽可能地采用可继承的线程局部变量，而不是采用普通的线程局部变量。
 
 代码对比可以看出两者区别：
 
->> ThreadLocal:
+> ThreadLocal:
 
 ``` java
 
@@ -150,7 +150,7 @@ public class ThreadLocal<T> {
 
 ```
 
->> InheritableThreadLocal:
+> InheritableThreadLocal:
 
 ``` java
 
@@ -213,9 +213,9 @@ public class CopyOnInheritThreadLocal extends
 
 ```
 
->> 为了支持InheritableThreadLocal的父子线程传递变量，JDK在Thread中，定义了`ThreadLocal.ThreadLocalMap inheritableThreadLocals` 属性。该属性变量在线程初始化的时候，如果父线程的该变量不为null，则会把其值复制到ThreadLocal。
+> 为了支持InheritableThreadLocal的父子线程传递变量，JDK在Thread中，定义了`ThreadLocal.ThreadLocalMap inheritableThreadLocals` 属性。该属性变量在线程初始化的时候，如果父线程的该变量不为null，则会把其值复制到ThreadLocal。
 
->> 从上面的代码实现，还可以看到，如果我们使用原生的 `InheritableThreadLocal`类则在子线程中修改变量，可能会影响到父线程的变量值，及其他子线程的值。因此，一般我们推荐没有特殊情况，最好使用`CopyOnInheritThreadLocal`类，该实现是新建一个map来保持值，而不是直接使用父线程的引用。
+> 从上面的代码实现，还可以看到，如果我们使用原生的 `InheritableThreadLocal`类则在子线程中修改变量，可能会影响到父线程的变量值，及其他子线程的值。因此，一般我们推荐没有特殊情况，最好使用`CopyOnInheritThreadLocal`类，该实现是新建一个map来保持值，而不是直接使用父线程的引用。
 
 ## <a id="Slf4jMdc">Log MDC 实现分析</a>
 
@@ -273,10 +273,10 @@ public class MDC {
 
 ```
 
->> 对于Slf4j的MDC 部分非常简单，MDC的核心实现是在logback方法中的。
->> 
->> 在 logback 中，提供了 `LogbackMDCAdapter`类，其实现了`MDCAdapter`接口。基于性能的考虑，logback 对于InheritableThreadLocal的使用做了一些优化工作。
->> 
+> 对于Slf4j的MDC 部分非常简单，MDC的核心实现是在logback方法中的。
+> 
+> 在 logback 中，提供了 `LogbackMDCAdapter`类，其实现了`MDCAdapter`接口。基于性能的考虑，logback 对于InheritableThreadLocal的使用做了一些优化工作。
+> 
 
 ### Logback MDC 实现分析 
 
@@ -296,7 +296,7 @@ Logback 中基于 MDC 实现了`LogbackMDCAdapter` 类，其 get 方法实现很
 
 public final class LogbackMDCAdapter implements MDCAdapter {
 
-  final InheritableThreadLocal<Map<String, String>> copyOnInheritThreadLocal = new InheritableThreadLocal<Map<String, String>>();
+  final InheritableThreadLocal<Map<String, String>> copyOnInheritThreadLocal = new InheritableThreadLocal<Map<String, String>();
 
   private static final int WRITE_OPERATION = 1;
   private static final int READ_OPERATION = 2;
@@ -363,11 +363,11 @@ public final class LogbackMDCAdapter implements MDCAdapter {
 
 ```
 
->> 需要注意，在上面的代码中，write操作即put会去修改 `lastOperation` ，而get操作则不会。这样就保证了，只会在第一次写时复制。
+> 需要注意，在上面的代码中，write操作即put会去修改 `lastOperation` ，而get操作则不会。这样就保证了，只会在第一次写时复制。
 
 ### MDC clear 操作
 
->> Notes：对于涉及到ThreadLocal相关使用的接口，都需要去考虑在使用完上下文对象时，清除掉对应的数据，以避免内存泄露问题。
+> Notes：对于涉及到ThreadLocal相关使用的接口，都需要去考虑在使用完上下文对象时，清除掉对应的数据，以避免内存泄露问题。
 
     因此，下面来分析下在MDC中如何清除掉不在需要的对象。
 
@@ -385,9 +385,9 @@ public final class LogbackMDCAdapter implements MDCAdapter {
 
 ```
 
->> 这里，就是调用`ThreadLocal#remove`方法完成对象清理工作。
->> 
->> 所有线程的ThreadLocal都是以`ThreadLocalMap`来维护的，也就是，我们获取threadLocal对象时，实际上是根据当前线程去该Map中获取之前的设置。在清除的时候，从这个Map中获取对应的对象，然后移除map.
+> 这里，就是调用`ThreadLocal#remove`方法完成对象清理工作。
+> 
+> 所有线程的ThreadLocal都是以`ThreadLocalMap`来维护的，也就是，我们获取threadLocal对象时，实际上是根据当前线程去该Map中获取之前的设置。在清除的时候，从这个Map中获取对应的对象，然后移除map.
 
 ## <a id="LogbackPrint">Logback 日志输出实现</a>
 
@@ -493,7 +493,7 @@ public class PatternLayout extends PatternLayoutBase<ILoggingEvent> {
 }
 ```
 
->> Notes：日志模板配置，使用 `%`为前缀让解析器识别特殊输出模式，然后以`{}`后缀结尾，内部指定相应的参数设置。
+> Notes：日志模板配置，使用 `%`为前缀让解析器识别特殊输出模式，然后以`{}`后缀结尾，内部指定相应的参数设置。
 
 ### 初始化
 
@@ -563,11 +563,11 @@ public class PatternLayout extends PatternLayoutBase<ILoggingEvent> {
 
 ```
 
->> 上面的部分代码，可以很明显看出，slf4j 会去调用classloader获取当前加载的类中，实现了指定的接口`org/slf4j/impl/StaticLoggerBinder.class`的类，如果多余1个，则会抛出异常。
->> 
->> 以上，依然可以从代码中看出这个只是检测是否存在符合接口的实现类，而没有像正常情况那样，通过反射构建类，返回给调用方。如何实现呢？
->> 
->> 直接在自己的包中实现一个和 `slf4j`要求路径一样的类，实现对应的接口，然后就可以调用了。不明白，看代码吧。:)
+> 上面的部分代码，可以很明显看出，slf4j 会去调用classloader获取当前加载的类中，实现了指定的接口`org/slf4j/impl/StaticLoggerBinder.class`的类，如果多余1个，则会抛出异常。
+> 
+> 以上，依然可以从代码中看出这个只是检测是否存在符合接口的实现类，而没有像正常情况那样，通过反射构建类，返回给调用方。如何实现呢？
+> 
+> 直接在自己的包中实现一个和 `slf4j`要求路径一样的类，实现对应的接口，然后就可以调用了。不明白，看代码吧。:)
 
 ``` java
 
@@ -616,9 +616,9 @@ public class StaticLoggerBinder implements LoggerFactoryBinder {
   }}
 ```
 
->> 从 package 和 import 的信息，可以看出，logback 中实现了一个 `org.slf4j.impl.StaticLoggerBinder` 类，而这个类，在slf4j 的 API 包中直接使用，所以使用slf4j时，必须还要引入其他具体的第三方包来实现相应的接口方法。
->> 
->> 此外，接下来的核心逻辑就是解析logback下各种配置文件信息，以及初始化配置。
+> 从 package 和 import 的信息，可以看出，logback 中实现了一个 `org.slf4j.impl.StaticLoggerBinder` 类，而这个类，在slf4j 的 API 包中直接使用，所以使用slf4j时，必须还要引入其他具体的第三方包来实现相应的接口方法。
+> 
+> 此外，接下来的核心逻辑就是解析logback下各种配置文件信息，以及初始化配置。
 
 ### 输出日志模板解析
 
@@ -731,20 +731,20 @@ public class StaticLoggerBinder implements LoggerFactoryBinder {
   }
 ```
 
->> 代码很简单，就是依次遍历pattern字符串，然后把符合要求的字符串放进tokenList中，这个list就维护了我们最终需要输出的模板的格式化模式了。
->> 
->> 在每个case里面，都会对字符串进行特定的处理，匹配具体的字符。
->> 
->> 在随后的处理中，会将这个tokenList进行转换，成为我们需要的Node类型的拥有head 和 tail 的链表。
->> 
+> 代码很简单，就是依次遍历pattern字符串，然后把符合要求的字符串放进tokenList中，这个list就维护了我们最终需要输出的模板的格式化模式了。
+> 
+> 在每个case里面，都会对字符串进行特定的处理，匹配具体的字符。
+> 
+> 在随后的处理中，会将这个tokenList进行转换，成为我们需要的Node类型的拥有head 和 tail 的链表。
+> 
 
 ### 日志输出分析
 
 构建了各种需要的环境参数，打印日志就很简单了。在需要输出日志的时候，根据初始化得到的Node链表head来解析，遇到%X的时候，从MDC中获取对应的key值，然后append到日志字符串中，然后输出。
 
->> 在配置文件中，我们使用Appender模式，在日志输出类中，显然会调用append类似的方法了。:)
->> 
->> 其调用流程
+> 在配置文件中，我们使用Appender模式，在日志输出类中，显然会调用append类似的方法了。:)
+> 
+> 其调用流程
 
 ``` java
 public class OutputStreamAppender<E> extends UnsynchronizedAppenderBase<E> {
@@ -789,10 +789,10 @@ public class OutputStreamAppender<E> extends UnsynchronizedAppenderBase<E> {
 }
 ```
 
->> Notes：在`prepareForDeferredProcessing`中，查询了一些常用值，比如当前线程名，比如mdc设置赋值到Map中。而这些信息，当准备结束没有出现问题时，则会给后面的输出日志时公用。
->> 
->> 这种方式，其实在我们的代码中，也可以参考。一般我们可能对当前上下文的入参检查会去查询数据库等耗费CPU或者IO的操作，然后check ok的时候，又会在正常的业务中再次做相同的重复工作，导致不必要的性能损失。
->> 
+> Notes：在`prepareForDeferredProcessing`中，查询了一些常用值，比如当前线程名，比如mdc设置赋值到Map中。而这些信息，当准备结束没有出现问题时，则会给后面的输出日志时公用。
+> 
+> 这种方式，其实在我们的代码中，也可以参考。一般我们可能对当前上下文的入参检查会去查询数据库等耗费CPU或者IO的操作，然后check ok的时候，又会在正常的业务中再次做相同的重复工作，导致不必要的性能损失。
+> 
 
 接下来看看，针对模板进行按需获取属性值，然后输出日志的逻辑：
 
@@ -827,8 +827,8 @@ public class OutputStreamAppender<E> extends UnsynchronizedAppenderBase<E> {
 
 ```
 
->> 在`writeLoopOnConverters`方法中，获取对应字符串是不同的，其根据不同的Converter，输出也不同。而Converter的判断，时就是根据我们配置的map映射来的，在初始化一节的时候，介绍的`PatternLayout`就包含各种映射关系。至于具体的convert方法，看看mdc的实现：
->> 
+> 在`writeLoopOnConverters`方法中，获取对应字符串是不同的，其根据不同的Converter，输出也不同。而Converter的判断，时就是根据我们配置的map映射来的，在初始化一节的时候，介绍的`PatternLayout`就包含各种映射关系。至于具体的convert方法，看看mdc的实现：
+> 
 
 ``` java
 
@@ -895,7 +895,7 @@ public class MDCConverter extends ClassicConverter {
 
 ```
 
->> 我们在MDC实现的时候看到的get方法，在这里就使用了。我们将key:value键值对存放到MDC之后，在logback.xml中配置%X{key}，没有直接调用get方法，logback会根据`X`判断是MDC类型，然后根据`key`拿到MDC中对应的value，然后返回给buf中，最后append到后台日志上。
+> 我们在MDC实现的时候看到的get方法，在这里就使用了。我们将key:value键值对存放到MDC之后，在logback.xml中配置%X{key}，没有直接调用get方法，logback会根据`X`判断是MDC类型，然后根据`key`拿到MDC中对应的value，然后返回给buf中，最后append到后台日志上。
 
 ## <a id="End">后记</a>
 
