@@ -26,7 +26,7 @@ comments: true
 
 MDC ( Mapped Diagnostic Contexts )，顾名思义，其目的是为了便于我们诊断线上问题而出现的方法工具类。虽然，Slf4j 是用来适配其他的日志具体实现包的，但是针对 MDC功能，目前只有logback 以及 log4j 支持，或者说由于该功能的重要性，slf4j 专门为logback系列包装接口提供外部调用(玩笑～：）)。
 
->> logback 和 log4j 的作者为同一人，所以这里统称logback系列。
+> logback 和 log4j 的作者为同一人，所以这里统称logback系列。
 
 先来看看 MDC 对外提高的接口：
 
