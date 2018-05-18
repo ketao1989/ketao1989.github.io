@@ -591,7 +591,7 @@ public class NioServer {
 
 在介绍各个bytebuf特性之前，先看看netty bytebuf提供了哪些常用的类
 
-![阻塞式I/O模型](/images/2018/bytebuf_main_class.png)
+![netty bytebuf主要实现类图](/images/2018/bytebuf_main_class.png)
 
 + EmptyByteBuf：一个空的bytebuf，其capacity为0，读写index也为0.
 + WrappedByteBuf：主要是对ByteBuf类进行一些包装的类型，也就是其只是对例如CompositeByteBuf进行一些装饰，额外加一些日志或者记录等。
@@ -600,7 +600,7 @@ public class NioServer {
     + UnreleasableByteBuf：顾名思义，就是不允许release buf空间。调用release直接返回false，不做任何处理。一般，我们在定义一个常量的bytebuf会使用这种类型，比如说，我们对每一个文件都会加以java结尾，则将java定义成一个UnreleasableByteBuf，这样内容不会修改和释放，每一次文件路径过来，加上java buf 返回。
 
 + DuplicatedByteBuf：在底层数据共享的时候，该bytebuf可以对每一个Duplicated出来的对象单独提供readIndex和writeIndex，彼此之间互不影响，但是缓冲区是共享的，这样子可以节省内存占用。
-+ ReadOnlyByteBuf：和上一个bytebuf类似，只不会新创建出来的bytebuf引用，不能操作writeIndex，也就意味着在很多为了数据安全，只能够共享读数据的地方，非常适用。
++ ReadOnlyByteBuf/ReadOnlyByteBufferBuf：和上一个bytebuf类似，只不会新创建出来的bytebuf引用，不能操作writeIndex，也就意味着在很多为了数据安全，只能够共享读数据的地方，非常适用。
 + CompositeByteBuf：一个虚拟的buffer，实际上他本身并不额外分配buffer空间，而是引用组合的各个buffer为一个list和迭代器。有的时候，我们可能从好几个地方获取到buf数据，然后聚合起来返回。使用CompositeByteBuf可以避免申请新的空间，然后复制数据的过程。
 > 需要说明下，SlicedByteBuf这种和CompositeByteBuf刚好相反，只截取bytebuf部分缓冲区数据的类型。现在这种类型之间使用bytebuf.slice方法构造。
 
@@ -967,6 +967,100 @@ private final ReferenceQueue<Object> refQueue = new ReferenceQueue<Object>();
 
 ### 3.2.2 零拷贝优化
 
+一般，我们拷贝，主要存在两种情况：
+
++ 我们创建新buf的时候，当需要从某个已存在的buf对象的部分或全部类型来回写新buf时，就需要拷贝这部分内容。
++ 当我们需要把数据从不同空间转移的时候，例如内核区到用户区，就需要进行数据拷贝的操作。
+
+针对以上两种情况，netty都存在一些针对使用场景的优化，来避免不必要的拷贝。这些操作，我们统一称之为零拷贝。
+
+#### 3.2.2.1 零拷贝之ByteBuf创建
+
+##### CompositeByteBuf
+
+当我们从不同的解析方法里面返回了header bytebuf和body bytebuf，然后想组合成一个请求整体进行后续反序列化等操作的时候，就需要将不同的buf组合成新的bytebuf，于是，就有了CompositeByteBuf。
+
+CompositeByteBuf并没有真的copy多个bytebuf的数据到最终的buf中，而只是维护各个bytebuf的对象引用。
+
+``` java
+public class CompositeByteBuf extends AbstractReferenceCountedByteBuf implements Iterable<ByteBuf> {
+    
+    private static final Iterator<ByteBuf> EMPTY_ITERATOR = Collections.<ByteBuf>emptyList().iterator();
+
+    CompositeByteBuf(ByteBufAllocator alloc, boolean direct, int maxNumComponents, ByteBuf[] buffers, int offset, int len) {
+        super(AbstractByteBufAllocator.DEFAULT_MAX_CAPACITY);
+
+        this.alloc = alloc;
+        this.direct = direct;
+        this.maxNumComponents = maxNumComponents;
+        components = newList(maxNumComponents);
+
+        // 这里讲buffer的数据加入到components列表中
+        addComponents0(false, 0, buffers, offset, len);
+        //当前components size 超过指定maxSize，触发copy数据操作
+        consolidateIfNeeded();
+        setIndex(0, capacity());
+    }
+
+    private int addComponent0(boolean increaseWriterIndex, int cIndex, ByteBuf buffer) {
+
+        boolean wasAdded = false;
+        try {
+
+            int readableBytes = buffer.readableBytes();
+
+            Component c = new Component(buffer.order(ByteOrder.BIG_ENDIAN).slice());
+            if (cIndex == components.size()) {
+                wasAdded = components.add(c);
+                // 维护各个offset:对应buf在list中基于字节的开始偏移量和结束偏移量
+                if (cIndex == 0) {
+                    c.endOffset = readableBytes;
+                } else {
+                    Component prev = components.get(cIndex - 1);
+                    c.offset = prev.endOffset;
+                    c.endOffset = c.offset + readableBytes;
+                }
+            } else {
+                // 不同之处在于，更新offset将是一个On的操作了
+                components.add(cIndex, c);
+                wasAdded = true;
+                if (readableBytes != 0) {
+                    updateComponentOffsets(cIndex);
+                }
+            }
+            if (increaseWriterIndex) {
+                writerIndex(writerIndex() + buffer.readableBytes());
+            }
+            return cIndex;
+        } finally {
+            // 如果没有更新成功，则需要把对应的buffer引用-1
+            if (!wasAdded) {
+                buffer.release();
+            }
+        }
+    }
+
+}
+```
+> 从上面的代码，可以清晰的看到，正常情况下，完全没有copy每一个组合中的bytebuf数据，而是维护一个包含bytebuf的component list，每个bytebuf的偏移信息等维护在component中，便于后续对CompositeByteBuf对象的操作。
+
+##### DuplicatedByteBuf
+
+ByteBuf维护了writeIndex和readIndex，当多个地方同时操作ByteBuf的时候，就会导致index错乱，这个时候，我们就需要复制一份数据，构造一个全新的ByteBuf对象。但是，另外一个方案，就是我只重新构造index，对于底层的buf，还是沿用原始的bytebuf。这样子，我们就不需要copy bytebuf中的所有数据到新的对象中。
+
+#### 3.2.2.2 零拷贝之数据迁移
+
+在不同系统空间之间会存在数据的来回拷贝，比如网络数据过来时，会从内核区的内存区间，拷贝到用户区的内存区间。如果加上JVM的堆内存，则还需要从用户区的Native内存拷贝到JVM堆内内存中，因此，正常需要好多次内存拷贝操作。
+
+因此，为了快速优化拷贝性能，则需要考虑：
+1. socket数据 --> 内核区空间
+2. 内核区空间 --> Native内存空间
+3. Native内存 --> 堆内内存空间
+
+一般情况下，用户态的内存空间和系统内核的内存空间之间是隔离的，不允许批次操作。
+
+
+
 ## 4. Netty ByteBuf 内存管理
 
 ### 4.1 堆内堆外内存
@@ -976,7 +1070,7 @@ private final ReferenceQueue<Object> refQueue = new ReferenceQueue<Object>();
 ### 4.2 池化非池化内存
 
 
-# 参考文献
+## 参考文献
 
 1. [大话 Select、Poll、Epoll](https://cloud.tencent.com/developer/article/1005481)
 2. [Java NIO 的 wakeup 剖析](http://goldendoc.iteye.com/blog/1152079)
