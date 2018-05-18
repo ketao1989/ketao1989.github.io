@@ -589,7 +589,9 @@ public class NioServer {
 
 由于Nio的ByteBuffer的一些不足，在netty中提供了一个相同功能的类：ByteBuf。但是ByteBuf很好的简化了nio bytebuffer的使用，并且将一些常用的方法包装出来对外提供。
 
-在介绍各个bytebuf特性之前，先看看netty bytebuf提供了哪些常用的类：
+在介绍各个bytebuf特性之前，先看看netty bytebuf提供了哪些常用的类
+
+![阻塞式I/O模型](/images/2018/bytebuf_main_class.png)
 
 + EmptyByteBuf：一个空的bytebuf，其capacity为0，读写index也为0.
 + WrappedByteBuf：主要是对ByteBuf类进行一些包装的类型，也就是其只是对例如CompositeByteBuf进行一些装饰，额外加一些日志或者记录等。
@@ -963,6 +965,8 @@ private final ReferenceQueue<Object> refQueue = new ReferenceQueue<Object>();
 
 ```
 
+### 3.2.2 零拷贝优化
+
 ## 4. Netty ByteBuf 内存管理
 
 ### 4.1 堆内堆外内存
@@ -976,3 +980,6 @@ private final ReferenceQueue<Object> refQueue = new ReferenceQueue<Object>();
 
 1. [大话 Select、Poll、Epoll](https://cloud.tencent.com/developer/article/1005481)
 2. [Java NIO 的 wakeup 剖析](http://goldendoc.iteye.com/blog/1152079)
+
+
+
