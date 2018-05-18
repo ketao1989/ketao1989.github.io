@@ -609,8 +609,8 @@ public class NioServer {
     + PooledHeapByteBuf：使用JVM堆进行内存分配的byteBuf子类型。堆内分配，如果一些数据只是在java进程内部使用，则使用堆内存分配安全性 和速度上都会比较好，毕竟内存的回收有JVM来处理。
     + PooledUnsafeDirectByteBuf：和PooledDirectByteBuf类似，只不过其不是使用directByteBuffer来处理，而是自己通过PlatformDependent来根据不同系统平台使用不同的分配内存方式。
     如下代码：
+    
     ``` java
-
     private static void getBytes(long inAddr, byte[] in, int inOffset, int inLen, OutputStream out, int outLen)
             throws IOException {
         do {
