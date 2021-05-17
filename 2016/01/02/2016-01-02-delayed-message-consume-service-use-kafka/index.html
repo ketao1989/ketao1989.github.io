@@ -24,7 +24,7 @@
 <meta property="og:type" content="article">
 <meta property="og:title" content="基于kafka的定时消息&#x2F;任务服务">
 <meta property="og:url" content="http://example.com/2016/01/02/2016-01-02-delayed-message-consume-service-use-kafka/index.html">
-<meta property="og:site_name" content="Hexo">
+<meta property="og:site_name" content="没有期望的分布">
 <meta property="og:description" content="前言定时任务,在很多业务场景中都会存在.一般,我们简单解决的话,就是使用数据库来存储数据供服务端周期获取执行.显然,对于数据库处理,如果多线程或者多机器处理,就会存在扩展的问题.比如:现在一个任务记录到时间了需要执行,同时被多个executor抓取来执行,就会浪费不必要的资源;并且,这种场景还非常常见. 因此, 需要额外状态处理,或者其他分库分表策略保证尽量一个executor来操作一个记录,并且">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://example.com/images/2016/01/dms.png">
@@ -48,7 +48,7 @@
   };
 </script>
 
-  <title>基于kafka的定时消息/任务服务 | Hexo</title>
+  <title>基于kafka的定时消息/任务服务 | 没有期望的分布</title>
   
 
 
@@ -99,7 +99,7 @@
 
     <a href="/" class="brand" rel="start">
       <span class="logo-line-before"><i></i></span>
-      <h1 class="site-title">Hexo</h1>
+      <h1 class="site-title">没有期望的分布</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
   </div>
@@ -172,7 +172,7 @@
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Hexo">
+      <meta itemprop="name" content="没有期望的分布">
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
@@ -290,7 +290,7 @@
 <p>目前的设计，还处在使用kafka完成我们需要的定时消息的功能，以及基于此的定时任务；其性能和设计上的优化，还有很多进步的空间，代码还没有进行优化和统一等等。</p>
 <p>此外，对于client的使用，显然需要封装成jar包，然后给业务方引入。</p>
 <p>具体的代码请参考：<a target="_blank" rel="noopener" href="https://github.com/ketao1989/JavaApiUtilsProject/tree/master/src/main/java/io/github/ketao1989/scheduler">https://github.com/ketao1989/JavaApiUtilsProject/tree/master/src/main/java/io/github/ketao1989/scheduler</a></p>
-<p>整体的项目在：<a href="mailto:&#103;&#105;&#x74;&#x40;&#103;&#x69;&#x74;&#x68;&#117;&#x62;&#46;&#99;&#111;&#x6d;">&#103;&#105;&#x74;&#x40;&#103;&#x69;&#x74;&#x68;&#117;&#x62;&#46;&#99;&#111;&#x6d;</a>:ketao1989/JavaApiUtilsProject.git</p>
+<p>整体的项目在：<a href="mailto:&#x67;&#105;&#x74;&#x40;&#x67;&#105;&#116;&#104;&#117;&#98;&#46;&#99;&#111;&#x6d;">&#x67;&#105;&#x74;&#x40;&#x67;&#105;&#116;&#104;&#117;&#98;&#46;&#99;&#111;&#x6d;</a>:ketao1989/JavaApiUtilsProject.git</p>
 
     </div>
 
