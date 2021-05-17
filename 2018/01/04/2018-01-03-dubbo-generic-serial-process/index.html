@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="1. 背景当前，存在各种API网关，这些网关的定位之一就是管理域内各个服务需要对外的接口，统一做降级限流，权限控制，安全校验等工作。内部一般使用各种RPC服务，因此，基于微服务的不断扩展和升级，一般网关都是使用RPC 泛化机制来完成对内部服务的调用。 泛化机制，和普通的rpc调用有一些不同，它不需要引入各个依赖服务的jar包，调用方如果知道接口方法的具体信息：名称，版本，参数类型等，就可以完成r">
+<meta property="og:type" content="article">
+<meta property="og:title" content="dubbo序列化机制处理-泛化&amp;普通RPC">
+<meta property="og:url" content="http://example.com/2018/01/04/2018-01-03-dubbo-generic-serial-process/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="1. 背景当前，存在各种API网关，这些网关的定位之一就是管理域内各个服务需要对外的接口，统一做降级限流，权限控制，安全校验等工作。内部一般使用各种RPC服务，因此，基于微服务的不断扩展和升级，一般网关都是使用RPC 泛化机制来完成对内部服务的调用。 泛化机制，和普通的rpc调用有一些不同，它不需要引入各个依赖服务的jar包，调用方如果知道接口方法的具体信息：名称，版本，参数类型等，就可以完成r">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2018-01-03T17:18:00.000Z">
+<meta property="article:modified_time" content="2021-05-17T14:57:11.584Z">
+<meta property="article:author" content="柯小小西">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://example.com/2018/01/04/2018-01-03-dubbo-generic-serial-process/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>dubbo序列化机制处理-泛化&普通RPC | Hexo</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hexo</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2018/01/04/2018-01-03-dubbo-generic-serial-process/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ava.gif">
+      <meta itemprop="name" content="柯小小西">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hexo">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          dubbo序列化机制处理-泛化&普通RPC
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-01-04 01:18:00" itemprop="dateCreated datePublished" datetime="2018-01-04T01:18:00+08:00">2018-01-04</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-05-17 22:57:11" itemprop="dateModified" datetime="2021-05-17T22:57:11+08:00">2021-05-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/java/dubbo/" itemprop="url" rel="index"><span itemprop="name">dubbo</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/java/dubbo/hessian/" itemprop="url" rel="index"><span itemprop="name">hessian</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>19k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>17 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="1-背景"><a href="#1-背景" class="headerlink" title="1. 背景"></a>1. 背景</h2><p>当前，存在各种API网关，这些网关的定位之一就是管理域内各个服务需要对外的接口，统一做降级限流，权限控制，安全校验等工作。内部一般使用各种RPC服务，因此，基于微服务的不断扩展和升级，一般网关都是使用RPC 泛化机制来完成对内部服务的调用。</p>
+<p>泛化机制，和普通的rpc调用有一些不同，它不需要引入各个依赖服务的jar包，调用方如果知道接口方法的具体信息：名称，版本，参数类型等，就可以完成rpc调用。</p>
+<p>在开发过程中，使用泛化机制，发现一个”问题”，就是业务方调用我们内部的一个接口，接口中有一个参数是long类型，但是业务方使用string类型的参数(数字字符串，例如”12345678”)请求过来，但是并没有出现错误。这个问题，在于后面另一个业务方，也按照string类型请求(非纯数字，例如”E12345678”)，这个时候报错了。</p>
+<span id="more"></span>
+
+<h2 id="2-dubbo-泛化调用"><a href="#2-dubbo-泛化调用" class="headerlink" title="2. dubbo 泛化调用"></a>2. dubbo 泛化调用</h2><h3 id="2-1-dubbo-泛化调用示例"><a href="#2-1-dubbo-泛化调用示例" class="headerlink" title="2.1 dubbo 泛化调用示例"></a>2.1 dubbo 泛化调用示例</h3><p>先来看一个泛化调用的demo</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">// --------消费端泛化调用代码--------------</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserBizConsumer</span> </span>&#123;  </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        ApplicationConfig applicationConfig = <span class="keyword">new</span> ApplicationConfig(<span class="string">&quot;dubbo-provider&quot;</span>);</span><br><span class="line"></span><br><span class="line">        ReferenceConfig&lt;GenericService&gt; ref = <span class="keyword">new</span> ReferenceConfig&lt;&gt;();</span><br><span class="line"></span><br><span class="line">        RegistryConfig registryConfig = <span class="keyword">new</span> RegistryConfig();</span><br><span class="line">        registryConfig.setProtocol(<span class="string">&quot;zookeeper&quot;</span>);</span><br><span class="line">        registryConfig.setAddress(<span class="string">&quot;127.0.0.1:2181&quot;</span>);</span><br><span class="line"></span><br><span class="line">        ref.setTimeout(<span class="number">1000</span>);</span><br><span class="line">        ref.setProtocol(<span class="string">&quot;dubbo&quot;</span>);</span><br><span class="line">        ref.setConnections(<span class="number">2</span>);</span><br><span class="line">        ref.setInterface(<span class="string">&quot;io.github.ketao1989.dubbo.api.IUserBiz&quot;</span>);</span><br><span class="line">        ref.setApplication(applicationConfig);</span><br><span class="line">        ref.setRegistry(registryConfig);</span><br><span class="line">        ref.setGeneric(<span class="keyword">true</span>);</span><br><span class="line"></span><br><span class="line">        GenericService service = ref.get();</span><br><span class="line">        Object o = service.$invoke(<span class="string">&quot;queryName&quot;</span>,<span class="keyword">new</span> String[]&#123;<span class="string">&quot;long&quot;</span>&#125;,<span class="keyword">new</span> Object[]&#123;<span class="number">12</span>&#125;);</span><br><span class="line">        System.out.println(o);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// ------服务端代码--------</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserBizProvider</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line"></span><br><span class="line">        ClassPathXmlApplicationContext context = <span class="keyword">new</span> ClassPathXmlApplicationContext(<span class="string">&quot;dubbo/dubbo-provider.xml&quot;</span>);</span><br><span class="line">        context.start();</span><br><span class="line"></span><br><span class="line">        System.in.read();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">IUserBiz</span> </span>&#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 根据id获取用户名</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">queryName</span><span class="params">(<span class="keyword">long</span> id)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>上面是一个简单的测试rpc的代码。服务端对外提供的服务是一个普普通通rpc实现，参数是一个long类型。<br>消费端的代码也是按照接口约定，传输long类型的12请求服务。和普通rpc调用不同，其没有引入jar api来调用，而是通过代码写配置来完成调用服务，这样就不需要在服务端加入和升级api的时候，还需要网关来升级版本了。</p>
+</blockquote>
+<h3 id="2-2-dubbo-泛化调用机制"><a href="#2-2-dubbo-泛化调用机制" class="headerlink" title="2.2 dubbo 泛化调用机制"></a>2.2 dubbo 泛化调用机制</h3><p>虽然，从上面的demo来看，泛化机制最大的不同，在消费端需要代码写入大量的接口属性信息。但是，实际上，在底层实现上，并无大区别。看看普通的rpc调用配置：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">beans</span> <span class="attr">xmlns</span>=<span class="string">&quot;http://www.springframework.org/schema/beans&quot;</span></span></span><br><span class="line"><span class="tag">       <span class="attr">xmlns:xsi</span>=<span class="string">&quot;http://www.w3.org/2001/XMLSchema-instance&quot;</span></span></span><br><span class="line"><span class="tag">       <span class="attr">xmlns:dubbo</span>=<span class="string">&quot;http://code.alibabatech.com/schema/dubbo&quot;</span></span></span><br><span class="line"><span class="tag">       <span class="attr">xsi:schemaLocation</span>=<span class="string">&quot;http://www.springframework.org/schema/beans        http://www.springframework.org/schema/beans/spring-beans.xsd        http://code.alibabatech.com/schema/dubbo        http://code.alibabatech.com/schema/dubbo/dubbo.xsd&quot;</span>&gt;</span></span><br><span class="line"></span><br><span class="line">       <span class="comment">&lt;!-- 提供方应用信息，用于计算依赖关系 --&gt;</span></span><br><span class="line">       <span class="tag">&lt;<span class="name">dubbo:application</span> <span class="attr">name</span>=<span class="string">&quot;dubbo-provider&quot;</span>  /&gt;</span></span><br><span class="line"></span><br><span class="line">       <span class="comment">&lt;!-- 使用multicast广播注册中心暴露服务地址 --&gt;</span></span><br><span class="line">       <span class="tag">&lt;<span class="name">dubbo:registry</span> <span class="attr">address</span>=<span class="string">&quot;127.0.0.1:2181&quot;</span> <span class="attr">protocol</span>=<span class="string">&quot;zookeeper&quot;</span> <span class="attr">id</span>=<span class="string">&quot;provider-registry&quot;</span> /&gt;</span></span><br><span class="line"></span><br><span class="line">       <span class="comment">&lt;!-- 用dubbo协议在20880端口暴露服务 --&gt;</span></span><br><span class="line">       <span class="tag">&lt;<span class="name">dubbo:protocol</span> <span class="attr">name</span>=<span class="string">&quot;dubbo&quot;</span> <span class="attr">port</span>=<span class="string">&quot;20881&quot;</span> /&gt;</span></span><br><span class="line"></span><br><span class="line">       <span class="comment">&lt;!-- consumer--&gt;</span></span><br><span class="line">       <span class="tag">&lt;<span class="name">dubbo:reference</span> <span class="attr">interface</span>=<span class="string">&quot;io.github.ketao1989.dubbo.api.IUserBiz&quot;</span> <span class="attr">id</span>=<span class="string">&quot;userBiz&quot;</span>/&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">beans</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+
+<p>基于api调用的消费端，框架会对 <code>dubbo:reference</code> 进行动态代理，实际调用具体的方法的时候，会拦截，然后解析出方法，入参属性等数据，然后和泛化调用蕾西，将解析完成之后的数据，包装成<code>ReferenceConfig</code>来传递给服务端，收到结果，完成调用。</p>
+<p>既然，消费端在底层实现上并没有什么区别，那就说明，在服务端肯定有些不同的。</p>
+<p>在框架的服务端，存在对于泛化调用的逻辑分支：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> Result <span class="title">invoke</span><span class="params">(Invoker&lt;?&gt; invoker, Invocation inv)</span> <span class="keyword">throws</span> RpcException </span>&#123;</span><br><span class="line">       <span class="keyword">if</span> (inv.getMethodName().equals(Constants.$INVOKE) </span><br><span class="line">               &amp;&amp; inv.getArguments() != <span class="keyword">null</span></span><br><span class="line">               &amp;&amp; inv.getArguments().length == <span class="number">3</span></span><br><span class="line">               &amp;&amp; ! invoker.getUrl().getParameter(Constants.GENERIC_KEY, <span class="keyword">false</span>)) &#123;</span><br><span class="line">                   <span class="comment">// 通用的泛化调用</span></span><br><span class="line">                   <span class="comment">// 获取实际需要执行的方法，参数类型，参数等</span></span><br><span class="line">                   String name = ((String) inv.getArguments()[<span class="number">0</span>]).trim();</span><br><span class="line">                   String[] types = (String[]) inv.getArguments()[<span class="number">1</span>];</span><br><span class="line">                   Object[] args = (Object[]) inv.getArguments()[<span class="number">2</span>];</span><br><span class="line">                   Method method = ReflectUtils.findMethodByMethodSignature(invoker.getInterface(), name, types);</span><br><span class="line">                   Class&lt;?&gt;[] params = method.getParameterTypes();</span><br><span class="line">                   <span class="keyword">if</span> (args == <span class="keyword">null</span>) &#123;</span><br><span class="line">                       args = <span class="keyword">new</span> Object[params.length];</span><br><span class="line">                   &#125;</span><br><span class="line">                   String generic = inv.getAttachment(Constants.GENERIC_KEY);</span><br><span class="line">               </span><br><span class="line">                   args = PojoUtils.realize(args, params, method.getGenericParameterTypes());</span><br><span class="line">                   Result result = invoker.invoke(<span class="keyword">new</span> RpcInvocation(method, args, inv.getAttachments()));<span class="keyword">return</span> <span class="keyword">new</span> RpcResult(PojoUtils.generalize(result.getValue()));</span><br><span class="line">               &#125;</span><br><span class="line"></span><br><span class="line">       <span class="keyword">return</span> invoker.invoke(inv);</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>泛化调用和普通调用,如上代码，实现分支是不同的。基于泛化机制的调用，其首先会对入参进行解析，构造和普通调用一样的<code>RpcInvocation</code>对象，然后执行具体实现方法，包装结果返回。<br>判断泛化调用的前置条件是方法名为<code>$invoke</code>。</p>
+</blockquote>
+<p>和普通rpc调用不同的地方是，泛化调用会存在多一次序列化的操作，如代码:</p>
+<p><code>args = PojoUtils.realize(args, params, method.getGenericParameterTypes());</code></p>
+<p>这个地方就是一个关键。将泛化调用的参数按照规则进行解析，我们拿到了method，拿到了实际方法类型列表，以及具体参数。但是，对于具体参数，dubbo框架解析的时候，会进行一些兼容处理，如下代码块(只截取我们关系的代码段)：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line">   <span class="comment">/**</span></span><br><span class="line"><span class="comment">    * 兼容类型转换。null值是OK的。如果不需要转换，则返回原来的值。</span></span><br><span class="line"><span class="comment">    * 进行的兼容类型转换如下：（基本类对应的Wrapper类型不再列出。）</span></span><br><span class="line"><span class="comment">    */</span></span><br><span class="line">   <span class="meta">@SuppressWarnings(&#123; &quot;unchecked&quot;, &quot;rawtypes&quot; &#125;)</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Object <span class="title">compatibleTypeConvert</span><span class="params">(Object value, Class&lt;?&gt; type)</span> </span>&#123;</span><br><span class="line">       <span class="keyword">if</span>(value == <span class="keyword">null</span> || type == <span class="keyword">null</span> || type.isAssignableFrom(value.getClass())) &#123;</span><br><span class="line">       	<span class="keyword">return</span> value;</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="keyword">if</span>(value <span class="keyword">instanceof</span> String) &#123;</span><br><span class="line">           String string = (String) value;</span><br><span class="line">           <span class="keyword">if</span> (<span class="keyword">char</span>.class.equals(type) || Character.class.equals(type)) &#123;</span><br><span class="line">               <span class="keyword">if</span>(string.length() != <span class="number">1</span>) &#123;</span><br><span class="line">                   <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(String.format(<span class="string">&quot;CAN NOT convert String(%s) to char!&quot;</span> +</span><br><span class="line">                           <span class="string">&quot; when convert String to char, the String MUST only 1 char.&quot;</span>, string));</span><br><span class="line">               &#125;</span><br><span class="line">               <span class="keyword">return</span> string.charAt(<span class="number">0</span>);</span><br><span class="line">           &#125; <span class="keyword">else</span> <span class="keyword">if</span>(type.isEnum()) &#123;</span><br><span class="line">               <span class="keyword">return</span> Enum.valueOf((Class&lt;Enum&gt;)type, string);</span><br><span class="line">           &#125; <span class="keyword">else</span> <span class="keyword">if</span>(type == BigInteger.class) &#123;</span><br><span class="line">               <span class="keyword">return</span> <span class="keyword">new</span> BigInteger(string);</span><br><span class="line">           &#125; <span class="keyword">else</span> <span class="keyword">if</span>(type == BigDecimal.class) &#123;</span><br><span class="line">               <span class="keyword">return</span> <span class="keyword">new</span> BigDecimal(string);</span><br><span class="line">           &#125; <span class="keyword">else</span> <span class="keyword">if</span>(type == Short.class || type == <span class="keyword">short</span>.class) &#123;</span><br><span class="line">               <span class="keyword">return</span> <span class="keyword">new</span> Short(string);</span><br><span class="line">           &#125; <span class="keyword">else</span> <span class="keyword">if</span>(type == Integer.class || type == <span class="keyword">int</span>.class) &#123;</span><br><span class="line">               <span class="keyword">return</span> <span class="keyword">new</span> Integer(string);</span><br><span class="line">           &#125; <span class="keyword">else</span> <span class="keyword">if</span>(type == Long.class || type == <span class="keyword">long</span>.class) &#123;</span><br><span class="line">               <span class="keyword">return</span> <span class="keyword">new</span> Long(string);</span><br><span class="line">           &#125; <span class="keyword">else</span> <span class="keyword">if</span>(type == Double.class || type == <span class="keyword">double</span>.class) &#123;</span><br><span class="line">               <span class="keyword">return</span> <span class="keyword">new</span> Double(string);</span><br><span class="line">           &#125; <span class="keyword">else</span> <span class="keyword">if</span>(type == Float.class || type == <span class="keyword">float</span>.class) &#123;</span><br><span class="line">               <span class="keyword">return</span> <span class="keyword">new</span> Float(string);</span><br><span class="line">           &#125;  <span class="keyword">else</span> <span class="keyword">if</span>(type == Byte.class || type == <span class="keyword">byte</span>.class) &#123;</span><br><span class="line">               <span class="keyword">return</span> <span class="keyword">new</span> Byte(string);</span><br><span class="line">           &#125; <span class="keyword">else</span> <span class="keyword">if</span>(type == Boolean.class || type == <span class="keyword">boolean</span>.class) &#123;</span><br><span class="line">               <span class="keyword">return</span> <span class="keyword">new</span> Boolean(string);</span><br><span class="line">           &#125; <span class="keyword">else</span> <span class="keyword">if</span>(type == Date.class) &#123;</span><br><span class="line">               <span class="keyword">try</span> &#123;</span><br><span class="line">                   <span class="keyword">return</span> <span class="keyword">new</span> SimpleDateFormat(DATE_FORMAT).parse((String) value);</span><br><span class="line">               &#125; <span class="keyword">catch</span> (ParseException e) &#123;</span><br><span class="line">                   <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(<span class="string">&quot;Failed to parse date &quot;</span> + value + <span class="string">&quot; by format &quot;</span> + DATE_FORMAT + <span class="string">&quot;, cause: &quot;</span> + e.getMessage(), e);</span><br><span class="line">               &#125;</span><br><span class="line">           &#125; <span class="keyword">else</span> <span class="keyword">if</span> (type == Class.class) &#123;</span><br><span class="line">               <span class="keyword">try</span> &#123;</span><br><span class="line">                   <span class="keyword">return</span> ReflectUtils.name2class((String)value);</span><br><span class="line">               &#125; <span class="keyword">catch</span> (ClassNotFoundException e) &#123;</span><br><span class="line">                   <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(e.getMessage(), e);</span><br><span class="line">               &#125;</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br><span class="line">   &#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>上面的方法入参type，是从获取到的具体method中拿到的，value则是消费端传输过来的。因此，这个方法，就是在如果存在请求参数类型和具体执行method的参数不一致时，则进行兼容转换到正确的参数类型，完成调用。<br>所以，当我们通过泛化传来”12345678”的时候，可以自动转换为long类型，但是如果参数是”E12345678”,则自动转换就会失败，抛出异常。</p>
+</blockquote>
+<h3 id="2-3-dubbo泛化调用之参数类型1"><a href="#2-3-dubbo泛化调用之参数类型1" class="headerlink" title="2.3 dubbo泛化调用之参数类型1"></a>2.3 dubbo泛化调用之参数类型1</h3><p>2.2节，我们知道如果具体的参数值和实际参数类型不一致的时候，dubbo框架会尝试一次自动类型转换，来保证尽可能成功。但是，如果我们在demo中，修改如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Object o = service.$invoke(<span class="string">&quot;queryName&quot;</span>,<span class="keyword">new</span> String[]&#123;<span class="string">&quot;java.lang.String&quot;</span>&#125;,<span class="keyword">new</span> Object[]&#123;<span class="string">&quot;12&quot;</span>&#125;);</span><br></pre></td></tr></table></figure>
+<p>会怎样？<br>看demo执行结果如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">com.alibaba.dubbo.rpc.RpcException: io.github.ketao1989.dubbo.api.IUserBiz.queryName(java.lang.String)</span><br><span class="line">	at com.alibaba.dubbo.rpc.filter.GenericFilter.invoke(GenericFilter.java:107)</span><br><span class="line">	at com.alibaba.dubbo.rpc.protocol.ProtocolFilterWrapper$1.invoke(ProtocolFilterWrapper.java:91)</span><br><span class="line">	at com.alibaba.dubbo.rpc.filter.ClassLoaderFilter.invoke(ClassLoaderFilter.java:38)</span><br><span class="line">	at com.alibaba.dubbo.rpc.protocol.ProtocolFilterWrapper$1.invoke(ProtocolFilterWrapper.java:91)</span><br><span class="line">	at com.alibaba.dubbo.rpc.filter.EchoFilter.invoke(EchoFilter.java:38)</span><br><span class="line">	at com.alibaba.dubbo.rpc.protocol.ProtocolFilterWrapper$1.invoke(ProtocolFilterWrapper.java:91)</span><br><span class="line">	at com.alibaba.dubbo.rpc.protocol.dubbo.DubboProtocol$1.reply(DubboProtocol.java:108)</span><br><span class="line">	at com.alibaba.dubbo.remoting.exchange.support.header.HeaderExchangeHandler.handleRequest(HeaderExchangeHandler.java:84)</span><br><span class="line">	at com.alibaba.dubbo.remoting.exchange.support.header.HeaderExchangeHandler.received(HeaderExchangeHandler.java:170)</span><br><span class="line">	at com.alibaba.dubbo.remoting.transport.DecodeHandler.received(DecodeHandler.java:52)</span><br><span class="line">	at com.alibaba.dubbo.remoting.transport.dispatcher.ChannelEventRunnable.run(ChannelEventRunnable.java:82)</span><br><span class="line">	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)</span><br><span class="line">	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)</span><br><span class="line">	at java.lang.Thread.run(Thread.java:748)</span><br><span class="line">Caused by: java.lang.NoSuchMethodException: io.github.ketao1989.dubbo.api.IUserBiz.queryName(java.lang.String)</span><br><span class="line">	at java.lang.Class.getMethod(Class.java:1786)</span><br><span class="line">	at com.alibaba.dubbo.common.utils.ReflectUtils.findMethodByMethodSignature(ReflectUtils.java:816)</span><br><span class="line">	at com.alibaba.dubbo.rpc.filter.GenericFilter.invoke(GenericFilter.java:57)</span><br><span class="line">	... 13 more</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>抛出了异常，因此，如果消费端的类型都不对，是不可能执行成功的。</p>
+<p>看代码逻辑，请求执行会到服务端，然后在运行到如下代码时出错。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">Method method = ReflectUtils.findMethodByMethodSignature(invoker.getInterface(), name, types);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * 根据方法签名从类中找出方法。</span></span><br><span class="line"><span class="comment">	 * </span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> clazz 查找的类。</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> methodName 方法签名，形如method1(int, String)。也允许只给方法名不参数只有方法名，形如method2。</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@return</span> 返回查找到的方法。</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@throws</span> NoSuchMethodException</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@throws</span> ClassNotFoundException  </span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@throws</span> IllegalStateException 给定的方法签名找到多个方法（方法签名中没有指定参数，又有有重载的方法的情况）</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Method <span class="title">findMethodByMethodSignature</span><span class="params">(Class&lt;?&gt; clazz, String methodName, String[] parameterTypes)</span> <span class="keyword">throws</span> NoSuchMethodException, ClassNotFoundException </span>&#123;</span><br><span class="line">        Class&lt;?&gt;[] types = <span class="keyword">new</span> Class&lt;?&gt;[parameterTypes.length];<span class="comment">//java.lang.String</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; parameterTypes.length; i ++) &#123;</span><br><span class="line">            types[i] = ReflectUtils.name2class(parameterTypes[i]);</span><br><span class="line">        &#125;</span><br><span class="line">        method = clazz.getMethod(methodName, types);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// Class反射拿到method，就会出错</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Method <span class="title">getMethod</span><span class="params">(String name, Class&lt;?&gt;... parameterTypes)</span> <span class="keyword">throws</span> NoSuchMethodException, SecurityException </span>&#123;</span><br><span class="line">        checkMemberAccess(Member.PUBLIC, Reflection.getCallerClass(), <span class="keyword">true</span>);</span><br><span class="line">        Method method = getMethod0(name, parameterTypes, <span class="keyword">true</span>);</span><br><span class="line">        <span class="keyword">if</span> (method == <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> NoSuchMethodException(getName() + <span class="string">&quot;.&quot;</span> + name + argumentTypesToString(parameterTypes));</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> method;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>findMethodByMethodSignature方法会根据clazz类，methodName方法名和方法参数类型来反射拿到具体的方法，但是因为不存在对应给的method，所以抛异常失败。</p>
+</blockquote>
+<h3 id="2-4-dubbo泛化调用之参数类型2"><a href="#2-4-dubbo泛化调用之参数类型2" class="headerlink" title="2.4 dubbo泛化调用之参数类型2"></a>2.4 dubbo泛化调用之参数类型2</h3><p>在业务中，我们的dubbo调用方式，会存在复杂对象，不是原始类型。那么，如果我对象类型是正确的，但是对象内部的类型不对呢？</p>
+<p>先看一下demo：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserRequest</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">long</span> id;</span><br><span class="line">  <span class="keyword">private</span> String name;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">IUserBiz</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">addUser</span><span class="params">(UserRequest request)</span></span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserBizConsumer</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="comment">// ...... 省略一些重复代码</span></span><br><span class="line">        Map&lt;String,Object&gt; value = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">        value.put(<span class="string">&quot;id&quot;</span>,<span class="string">&quot;1234567&quot;</span>);</span><br><span class="line">        value.put(<span class="string">&quot;name&quot;</span>,<span class="string">&quot;kk123&quot;</span>);</span><br><span class="line">        Object o2 = service.$invoke(<span class="string">&quot;addUser&quot;</span>,<span class="keyword">new</span> String[]&#123;<span class="string">&quot;io.github.ketao1989.dubbo.api.UserRequest&quot;</span>&#125;,<span class="keyword">new</span> Object[]&#123;value&#125;);</span><br><span class="line">        System.out.println(o2);</span><br><span class="line">        </span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>如上代码，可以看到，id是long类型，但是参数里面，id是一个字符串，但是id是在mapl里面。这个case，在执行的时候，并不会报错，而是返回值，例如：<code>&#123;&quot;id&quot;:1234567,&quot;name&quot;:&quot;kk123&quot;&#125;</code></p>
+</blockquote>
+<p>因此，我们可以看到泛化调用，即使type是个对象，对象里面的属性类型存在问题，也不一定会出错。在最底层，和2.2节一样，会对方法类型和值类型不一致的情况，进行兼容处理。</p>
+<p>由于请求参数值得类型，不是Primitives类型，所以会进行特殊处理，例如我们这个demo里面是一个Map，所以走如下代码逻辑：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> Object <span class="title">realize0</span><span class="params">(Object pojo, Class&lt;?&gt; type, Type genericType, <span class="keyword">final</span> Map&lt;Object, Object&gt; history)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (pojo <span class="keyword">instanceof</span> Map&lt;?, ?&gt; &amp;&amp; type != <span class="keyword">null</span>) &#123;</span><br><span class="line"></span><br><span class="line">    Map&lt;Object, Object&gt; map;</span><br><span class="line">    <span class="comment">// 返回值类型不是方法签名类型的子集 并且 不是接口类型</span></span><br><span class="line">    <span class="keyword">if</span> (!type.isInterface() &amp;&amp; !type.isAssignableFrom(pojo.getClass())) &#123;</span><br><span class="line">      <span class="keyword">try</span> &#123;</span><br><span class="line">        map = (Map&lt;Object, Object&gt;) type.newInstance(); <span class="comment">// 由于类型不对，一般这里会抛异常</span></span><br><span class="line">      &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        <span class="comment">//ignore error</span></span><br><span class="line">        map = (Map&lt;Object, Object&gt;) pojo; <span class="comment">// 执行这里的逻辑，强转map</span></span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    Object dest = newInstance(type);<span class="comment">//反射构造函数，new个对象</span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">for</span> (Map.Entry&lt;Object, Object&gt; entry : map.entrySet()) &#123; <span class="comment">// 遍历每个map元素</span></span><br><span class="line">      Object key = entry.getKey();</span><br><span class="line">      <span class="keyword">if</span> (key <span class="keyword">instanceof</span> String) &#123; <span class="comment">// 支持map，获取属性名称</span></span><br><span class="line">        String name = (String) key;</span><br><span class="line">        Object value = entry.getValue();</span><br><span class="line">        <span class="keyword">if</span> (value != <span class="keyword">null</span>) &#123;</span><br><span class="line">          Method method = getSetterMethod(dest.getClass(), name, value.getClass()); <span class="comment">//根据字段名，获取setter方法</span></span><br><span class="line">          <span class="keyword">if</span> (method != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">if</span> (!method.isAccessible()) &#123;</span><br><span class="line">              method.setAccessible(<span class="keyword">true</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            Type ptype = method.getGenericParameterTypes()[<span class="number">0</span>];</span><br><span class="line">            <span class="comment">// 对请求值进行兼容改造处理，例如string转成需要的long，所以，转换成功就不会报错</span></span><br><span class="line">            value = realize0(value, method.getParameterTypes()[<span class="number">0</span>], ptype, history);</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">              method.invoke(dest, value);<span class="comment">// set方法来设置value到dest对象中</span></span><br><span class="line">            &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            &#125;&#125;&#125;&#125;</span><br><span class="line">      <span class="keyword">return</span> dest;</span><br><span class="line">    &#125;&#125;</span><br><span class="line">  <span class="keyword">return</span> pojo;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>因此，如果我们对复杂对象中的某一个属性类型，在构造map的时候没有设置对，但是在dubbo中，这两个类型之间可以进行兼容转换，则不会出错。当然，如果是”E123456”，由于无法转成long类型，所以还是会报错的。</p>
+<h2 id="3-dubbo-序列化"><a href="#3-dubbo-序列化" class="headerlink" title="3. dubbo 序列化"></a>3. dubbo 序列化</h2><h3 id="3-1-不兼容的hessian2序列化"><a href="#3-1-不兼容的hessian2序列化" class="headerlink" title="3.1 不兼容的hessian2序列化"></a>3.1 不兼容的hessian2序列化</h3><p>最后，简单聊聊dubbo的序列化。如果，我们没有特别的进行配置，则dubbo默认使用自定义的hessian2进行序列化操作。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CodecSupport</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">     <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> String  DEFAULT_REMOTING_SERIALIZATION     = <span class="string">&quot;hessian2&quot;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Serialization <span class="title">getSerialization</span><span class="params">(URL url)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> ExtensionLoader.getExtensionLoader(Serialization.class).getExtension(</span><br><span class="line">            url.getParameter(Constants.SERIALIZATION_KEY, DEFAULT_REMOTING_SERIALIZATION));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>关于hessian2的序列化，我们来一个demo看看：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> com.alibaba.dubbo.common.serialize.ObjectInput;</span><br><span class="line"><span class="keyword">import</span> com.alibaba.dubbo.common.serialize.ObjectOutput;</span><br><span class="line"><span class="keyword">import</span> com.alibaba.dubbo.common.serialize.support.hessian.Hessian2Serialization;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> IOException, ClassNotFoundException </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// UserRequestOth 和 UserRequest 一致，只是id是string</span></span><br><span class="line">        UserRequestOth request = <span class="keyword">new</span> UserRequestOth(<span class="string">&quot;11111&quot;</span>,<span class="string">&quot;rpc serial&quot;</span>);</span><br><span class="line">        </span><br><span class="line">        ByteArrayOutputStream bos = <span class="keyword">new</span> ByteArrayOutputStream(<span class="number">512</span>);</span><br><span class="line">        Hessian2Serialization hessian2Serialization = <span class="keyword">new</span> Hessian2Serialization();</span><br><span class="line"></span><br><span class="line">        ObjectOutput output = hessian2Serialization.serialize(<span class="keyword">null</span>, bos);</span><br><span class="line">        output.writeObject(request);</span><br><span class="line">        output.flushBuffer();</span><br><span class="line"></span><br><span class="line">        ByteArrayInputStream inputStream = <span class="keyword">new</span> ByteArrayInputStream(bos.toByteArray());</span><br><span class="line">        ObjectInput input = hessian2Serialization.deserialize(<span class="keyword">null</span>, inputStream);</span><br><span class="line">        UserRequest res  = input.readObject(UserRequest.class);</span><br><span class="line"></span><br><span class="line">        System.out.println(res);</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>运行的时候，会抛出异常，如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">Exception in thread &quot;main&quot; com.alibaba.com.caucho.hessian.io.HessianFieldException: io.github.ketao1989.dubbo.api.UserRequest.id: expected long at 0x5 java.lang.String (11111)</span><br><span class="line">	at com.alibaba.com.caucho.hessian.io.JavaDeserializer.logDeserializeError(JavaDeserializer.java:671)</span><br><span class="line">	at com.alibaba.com.caucho.hessian.io.JavaDeserializer$LongFieldDeserializer.deserialize(JavaDeserializer.java:515)</span><br><span class="line">	at com.alibaba.com.caucho.hessian.io.JavaDeserializer.readObject(JavaDeserializer.java:233)</span><br><span class="line">	at com.alibaba.com.caucho.hessian.io.JavaDeserializer.readObject(JavaDeserializer.java:157)</span><br><span class="line">	at com.alibaba.com.caucho.hessian.io.Hessian2Input.readObjectInstance(Hessian2Input.java:2067)</span><br><span class="line">	at com.alibaba.com.caucho.hessian.io.Hessian2Input.readObject(Hessian2Input.java:1592)</span><br><span class="line">	at com.alibaba.com.caucho.hessian.io.Hessian2Input.readObject(Hessian2Input.java:1576)</span><br><span class="line">	at com.alibaba.dubbo.common.serialize.support.hessian.Hessian2ObjectInput.readObject(Hessian2ObjectInput.java:94)</span><br><span class="line">	at io.github.ketao1989.serial.SerialTest.main(SerialTest.java:63)</span><br><span class="line">Caused by: com.alibaba.com.caucho.hessian.io.HessianProtocolException: expected long at 0x5 java.lang.String (11111)</span><br><span class="line">	at com.alibaba.com.caucho.hessian.io.Hessian2Input.error(Hessian2Input.java:2720)</span><br><span class="line">	at com.alibaba.com.caucho.hessian.io.Hessian2Input.expect(Hessian2Input.java:2691)</span><br><span class="line">	at com.alibaba.com.caucho.hessian.io.Hessian2Input.readLong(Hessian2Input.java:888)</span><br><span class="line">	at com.alibaba.com.caucho.hessian.io.JavaDeserializer$LongFieldDeserializer.deserialize(JavaDeserializer.java:511)</span><br><span class="line">	... 7 more</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>综上，如果我们client端的jar包和server端的jar包中，关于某个入参对象中的一个属性对象不一致的话，由于接收到请求后，首先就是使用自定义hessian2进行反序列，如果数据类型匹配兼容不了，dubbo调用会抛出异常返回失败。</p>
+</blockquote>
+<h3 id="3-2-简单兼容的dubbo处理"><a href="#3-2-简单兼容的dubbo处理" class="headerlink" title="3.2 简单兼容的dubbo处理"></a>3.2 简单兼容的dubbo处理</h3><p>如果，将上面示例代码中 <code>UserRequest</code>和<code>UserRequestOth</code>互换下，会发现dubbo调用，并不会发送失败。为什么呢？因为，long 到 Sting类型的转换是兼容的，也就是说，任何一个类型是long的数据，都可以被转换成String类型，而不出现数据不正确的情况。</p>
+<p>当然，我们可以看看dubbo自定义的hessian2代码中这块逻辑的处理。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"> <span class="function"><span class="keyword">public</span> Object <span class="title">readObject</span><span class="params">(AbstractHessianInput in,</span></span></span><br><span class="line"><span class="params"><span class="function">		   Object obj,</span></span></span><br><span class="line"><span class="params"><span class="function">		   String []fieldNames)</span></span></span><br><span class="line"><span class="function">   <span class="keyword">throws</span> IOException</span></span><br><span class="line"><span class="function"> </span>&#123;</span><br><span class="line">   <span class="keyword">try</span> &#123;</span><br><span class="line">     <span class="keyword">int</span> ref = in.addRef(obj);</span><br><span class="line"></span><br><span class="line">     <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; fieldNames.length; i++) &#123;</span><br><span class="line">       String name = fieldNames[i];</span><br><span class="line">       </span><br><span class="line">       FieldDeserializer deser = (FieldDeserializer) _fieldMap.get(name);</span><br><span class="line"></span><br><span class="line">       <span class="keyword">if</span> (deser != <span class="keyword">null</span>)</span><br><span class="line">  deser.deserialize(in, obj);</span><br><span class="line">       <span class="keyword">else</span></span><br><span class="line">         in.readObject();</span><br><span class="line">     &#125;</span><br><span class="line"></span><br><span class="line">     Object resolve = resolve(obj);</span><br><span class="line"></span><br><span class="line">     <span class="keyword">if</span> (obj != resolve)</span><br><span class="line">in.setRef(ref, resolve);</span><br><span class="line"></span><br><span class="line">     <span class="keyword">return</span> resolve;</span><br><span class="line">   &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">     <span class="keyword">throw</span> e;</span><br><span class="line">   &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">     <span class="keyword">throw</span> <span class="keyword">new</span> IOExceptionWrapper(obj.getClass().getName() + <span class="string">&quot;:&quot;</span> + e, e);</span><br><span class="line">   &#125;</span><br><span class="line"> &#125;</span><br><span class="line"> </span><br><span class="line"> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">StringFieldDeserializer</span> <span class="keyword">extends</span> <span class="title">FieldDeserializer</span> </span>&#123;</span><br><span class="line">   <span class="keyword">private</span> <span class="keyword">final</span> Field _field;</span><br><span class="line"></span><br><span class="line">   StringFieldDeserializer(Field field)</span><br><span class="line">   &#123;</span><br><span class="line">     _field = field;</span><br><span class="line">   &#125;</span><br><span class="line">   </span><br><span class="line">   <span class="function"><span class="keyword">void</span> <span class="title">deserialize</span><span class="params">(AbstractHessianInput in, Object obj)</span></span></span><br><span class="line"><span class="function">     <span class="keyword">throws</span> IOException</span></span><br><span class="line"><span class="function">   </span>&#123;</span><br><span class="line">     String value = <span class="keyword">null</span>;</span><br><span class="line">     </span><br><span class="line">     <span class="keyword">try</span> &#123;</span><br><span class="line">value = in.readString();</span><br><span class="line"></span><br><span class="line">_field.set(obj, value);</span><br><span class="line">     &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">       logDeserializeError(_field, obj, value, e);</span><br><span class="line">     &#125;</span><br><span class="line">   &#125;</span><br><span class="line"> &#125;</span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>代码是根据最后反序列化出的对象类型来进行deserialize的，因此，针对对象，默认使用<code>JavaDeserializer</code>类来操作。把long转换为String，因此，目标字段类型是String，所以，最终使用<code>StringFieldDeserializer</code>来操作id这个字段的反序列化。</p>
+</blockquote>
+<p>那，由于调用方传来的是long，我们使用readString是怎么执行下去的呢？</p>
+<p>dubbo 自定义重写了hessian2的 Hessian2Input，所以基本上，dubbo把hessian2的序列化代码重写了。下面看看Hessian2Input的readString是如何实现的（部分代码片段）：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> String <span class="title">readString</span><span class="params">()</span></span></span><br><span class="line"><span class="function">  <span class="keyword">throws</span> IOException</span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">int</span> tag = read();</span><br><span class="line"></span><br><span class="line">  <span class="keyword">switch</span> (tag) &#123;</span><br><span class="line">  <span class="keyword">case</span> <span class="string">&#x27;N&#x27;</span>:</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">  <span class="keyword">case</span> <span class="string">&#x27;T&#x27;</span>:</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;true&quot;</span>;</span><br><span class="line">  <span class="keyword">case</span> <span class="string">&#x27;F&#x27;</span>:</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;false&quot;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// direct long</span></span><br><span class="line">  <span class="keyword">case</span> <span class="number">0xd8</span>: <span class="keyword">case</span> <span class="number">0xd9</span>: <span class="keyword">case</span> <span class="number">0xda</span>: <span class="keyword">case</span> <span class="number">0xdb</span>:</span><br><span class="line">  <span class="keyword">case</span> <span class="number">0xdc</span>: <span class="keyword">case</span> <span class="number">0xdd</span>: <span class="keyword">case</span> <span class="number">0xde</span>: <span class="keyword">case</span> <span class="number">0xdf</span>:</span><br><span class="line">    </span><br><span class="line">  <span class="keyword">case</span> <span class="number">0xe0</span>: <span class="keyword">case</span> <span class="number">0xe1</span>: <span class="keyword">case</span> <span class="number">0xe2</span>: <span class="keyword">case</span> <span class="number">0xe3</span>:</span><br><span class="line">  <span class="keyword">case</span> <span class="number">0xe4</span>: <span class="keyword">case</span> <span class="number">0xe5</span>: <span class="keyword">case</span> <span class="number">0xe6</span>: <span class="keyword">case</span> <span class="number">0xe7</span>:</span><br><span class="line">  <span class="keyword">case</span> <span class="number">0xe8</span>: <span class="keyword">case</span> <span class="number">0xe9</span>: <span class="keyword">case</span> <span class="number">0xea</span>: <span class="keyword">case</span> <span class="number">0xeb</span>:</span><br><span class="line">  <span class="keyword">case</span> <span class="number">0xec</span>: <span class="keyword">case</span> <span class="number">0xed</span>: <span class="keyword">case</span> <span class="number">0xee</span>: <span class="keyword">case</span> <span class="number">0xef</span>:</span><br><span class="line">    <span class="keyword">return</span> String.valueOf(tag - BC_LONG_ZERO);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">case</span> <span class="string">&#x27;L&#x27;</span>:</span><br><span class="line">    <span class="keyword">return</span> String.valueOf(parseLong());</span><br><span class="line"></span><br><span class="line">  <span class="keyword">case</span> <span class="string">&#x27;S&#x27;</span>:</span><br><span class="line">  <span class="keyword">case</span> BC_STRING_CHUNK:</span><br><span class="line">    _isLastChunk = tag == <span class="string">&#x27;S&#x27;</span>;</span><br><span class="line">    _chunkLength = (read() &lt;&lt; <span class="number">8</span>) + read();</span><br><span class="line"></span><br><span class="line">    _sbuf.setLength(<span class="number">0</span>);</span><br><span class="line">    <span class="keyword">int</span> ch;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> ((ch = parseChar()) &gt;= <span class="number">0</span>)</span><br><span class="line">      _sbuf.append((<span class="keyword">char</span>) ch);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> _sbuf.toString();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 0-byte string</span></span><br><span class="line">  <span class="keyword">case</span> <span class="number">0x00</span>: <span class="keyword">case</span> <span class="number">0x01</span>: <span class="keyword">case</span> <span class="number">0x02</span>: <span class="keyword">case</span> <span class="number">0x03</span>:</span><br><span class="line">  <span class="keyword">case</span> <span class="number">0x04</span>: <span class="keyword">case</span> <span class="number">0x05</span>: <span class="keyword">case</span> <span class="number">0x06</span>: <span class="keyword">case</span> <span class="number">0x07</span>:</span><br><span class="line">  <span class="keyword">case</span> <span class="number">0x08</span>: <span class="keyword">case</span> <span class="number">0x09</span>: <span class="keyword">case</span> <span class="number">0x0a</span>: <span class="keyword">case</span> <span class="number">0x0b</span>:</span><br><span class="line">  <span class="keyword">case</span> <span class="number">0x0c</span>: <span class="keyword">case</span> <span class="number">0x0d</span>: <span class="keyword">case</span> <span class="number">0x0e</span>: <span class="keyword">case</span> <span class="number">0x0f</span>:</span><br><span class="line"></span><br><span class="line">  <span class="keyword">case</span> <span class="number">0x10</span>: <span class="keyword">case</span> <span class="number">0x11</span>: <span class="keyword">case</span> <span class="number">0x12</span>: <span class="keyword">case</span> <span class="number">0x13</span>:</span><br><span class="line">  <span class="keyword">case</span> <span class="number">0x14</span>: <span class="keyword">case</span> <span class="number">0x15</span>: <span class="keyword">case</span> <span class="number">0x16</span>: <span class="keyword">case</span> <span class="number">0x17</span>:</span><br><span class="line">  <span class="keyword">case</span> <span class="number">0x18</span>: <span class="keyword">case</span> <span class="number">0x19</span>: <span class="keyword">case</span> <span class="number">0x1a</span>: <span class="keyword">case</span> <span class="number">0x1b</span>:</span><br><span class="line">  <span class="keyword">case</span> <span class="number">0x1c</span>: <span class="keyword">case</span> <span class="number">0x1d</span>: <span class="keyword">case</span> <span class="number">0x1e</span>: <span class="keyword">case</span> <span class="number">0x1f</span>:</span><br><span class="line">    _isLastChunk = <span class="keyword">true</span>;</span><br><span class="line">    _chunkLength = tag - <span class="number">0x00</span>;</span><br><span class="line"></span><br><span class="line">    _sbuf.setLength(<span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> ((ch = parseChar()) &gt;= <span class="number">0</span>)</span><br><span class="line">      _sbuf.append((<span class="keyword">char</span>) ch);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> _sbuf.toString();</span><br><span class="line"></span><br><span class="line">  <span class="keyword">case</span> <span class="number">0x30</span>: <span class="keyword">case</span> <span class="number">0x31</span>: <span class="keyword">case</span> <span class="number">0x32</span>: <span class="keyword">case</span> <span class="number">0x33</span>:</span><br><span class="line">    _isLastChunk = <span class="keyword">true</span>;</span><br><span class="line">    _chunkLength = (tag - <span class="number">0x30</span>) * <span class="number">256</span> + read();</span><br><span class="line"></span><br><span class="line">    _sbuf.setLength(<span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> ((ch = parseChar()) &gt;= <span class="number">0</span>)</span><br><span class="line">      _sbuf.append((<span class="keyword">char</span>) ch);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> _sbuf.toString();</span><br><span class="line"></span><br><span class="line">  <span class="keyword">default</span>:</span><br><span class="line">    <span class="keyword">throw</span> expect(<span class="string">&quot;string&quot;</span>, tag);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>因此，我们发现，如果是long数字类型，则会使用String.valueOf来进行转换为string类型，因此我们的代码处理值为long类型，目标为string类型时，没有出现任何错误，并且结果也是正确的原因所在。</p>
+<h2 id="4-最后"><a href="#4-最后" class="headerlink" title="4. 最后"></a>4. 最后</h2><p>虽然，现在大部分接口服务都是通过泛化走网关对外提供的，而dubbo的泛化调用会对某些参数类型进行兼容处理。<br>但是，最为服务化的接口规范，我们显然是不允许修改api包中的已存在属性的类型（dubbo hessian2做了某些类型转换的兼容，并不是一个允许的好借口）。<br>一般来说，对于某些字段的类型可能不再支持当前业务发展时，采取的方式都是新增字段，来支持新功能，并且通过业务逻辑来兼容老的版本。</p>
+<p>之所以，这样子处理，主要是因为：</p>
+<ul>
+<li><p>调用方业务收到影响。如果存在业务方使用jar包调用，hessian2无法兼容，那将是灾难性的后果，调用的请求将全部失败，尤其是有的系统会将dubbo反序列化失败的日志，放在单独的目录文件下，导致观察业务日志时，并没有错误的地方。这个时候，除了业务方反馈，还有就是查看调用方请求量的监控来主动发现。</p>
+</li>
+<li><p>存在某些不兼容的场景。比如，将string—&gt;long调整，可能当前某些时候能正常运行。后期业务方，发现自己需要业务调整，新业务的参数值变成<code>New1234</code>，这个时候，就会发现调用失败了。</p>
+</li>
+<li><p>最后，但是也是最重要的，这就是api的规范，遵循规范，可以避免自己和别人掉进坑里。</p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2017/03/29/2017-03-29-java-server-in-action/" rel="prev" title="深入浅出Java服务端原理之基础篇">
+      <i class="fa fa-chevron-left"></i> 深入浅出Java服务端原理之基础篇
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/01/15/2018-01-15-design-principle-intro/" rel="next" title="设计原则讨论123">
+      设计原则讨论123 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E8%83%8C%E6%99%AF"><span class="nav-number">1.</span> <span class="nav-text">1. 背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-dubbo-%E6%B3%9B%E5%8C%96%E8%B0%83%E7%94%A8"><span class="nav-number">2.</span> <span class="nav-text">2. dubbo 泛化调用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-dubbo-%E6%B3%9B%E5%8C%96%E8%B0%83%E7%94%A8%E7%A4%BA%E4%BE%8B"><span class="nav-number">2.1.</span> <span class="nav-text">2.1 dubbo 泛化调用示例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-dubbo-%E6%B3%9B%E5%8C%96%E8%B0%83%E7%94%A8%E6%9C%BA%E5%88%B6"><span class="nav-number">2.2.</span> <span class="nav-text">2.2 dubbo 泛化调用机制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-dubbo%E6%B3%9B%E5%8C%96%E8%B0%83%E7%94%A8%E4%B9%8B%E5%8F%82%E6%95%B0%E7%B1%BB%E5%9E%8B1"><span class="nav-number">2.3.</span> <span class="nav-text">2.3 dubbo泛化调用之参数类型1</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-4-dubbo%E6%B3%9B%E5%8C%96%E8%B0%83%E7%94%A8%E4%B9%8B%E5%8F%82%E6%95%B0%E7%B1%BB%E5%9E%8B2"><span class="nav-number">2.4.</span> <span class="nav-text">2.4 dubbo泛化调用之参数类型2</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-dubbo-%E5%BA%8F%E5%88%97%E5%8C%96"><span class="nav-number">3.</span> <span class="nav-text">3. dubbo 序列化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-%E4%B8%8D%E5%85%BC%E5%AE%B9%E7%9A%84hessian2%E5%BA%8F%E5%88%97%E5%8C%96"><span class="nav-number">3.1.</span> <span class="nav-text">3.1 不兼容的hessian2序列化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-%E7%AE%80%E5%8D%95%E5%85%BC%E5%AE%B9%E7%9A%84dubbo%E5%A4%84%E7%90%86"><span class="nav-number">3.2.</span> <span class="nav-text">3.2 简单兼容的dubbo处理</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E6%9C%80%E5%90%8E"><span class="nav-number">4.</span> <span class="nav-text">4. 最后</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="柯小小西"
+      src="/images/ava.gif">
+  <p class="site-author-name" itemprop="name">柯小小西</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">47</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">柯小小西</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">476k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">7:13</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="一、前言很多开发同学，只关心功能开发和上线，上线后的运维工作，作为软件产品的生命周期中非常重要的一个环节，常常被忽视。即使一些同学可能有一些意识知道要关心产品上线后的情况，但是不知道如何去下手。 在这里，我们主要从开发的角度，聊聊如何做好软件上线后的监控，以及异常情况下的告警。 （这里，不会去关心业务层面上的一些运行数据，比如GMV，PV等等，虽然这些数据的异常变化，可能也跟系统稳定性也存在一些关">
+<meta property="og:type" content="article">
+<meta property="og:title" content="业务监控告警的一点思考">
+<meta property="og:url" content="http://example.com/2020/11/26/2020-11-26-biz-monitor-experience/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="一、前言很多开发同学，只关心功能开发和上线，上线后的运维工作，作为软件产品的生命周期中非常重要的一个环节，常常被忽视。即使一些同学可能有一些意识知道要关心产品上线后的情况，但是不知道如何去下手。 在这里，我们主要从开发的角度，聊聊如何做好软件上线后的监控，以及异常情况下的告警。 （这里，不会去关心业务层面上的一些运行数据，比如GMV，PV等等，虽然这些数据的异常变化，可能也跟系统稳定性也存在一些关">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-11-26T13:37:00.000Z">
+<meta property="article:modified_time" content="2021-05-17T15:09:25.385Z">
+<meta property="article:author" content="柯小小西">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://example.com/2020/11/26/2020-11-26-biz-monitor-experience/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>业务监控告警的一点思考 | Hexo</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hexo</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2020/11/26/2020-11-26-biz-monitor-experience/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ava.gif">
+      <meta itemprop="name" content="柯小小西">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hexo">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          业务监控告警的一点思考
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-11-26 21:37:00" itemprop="dateCreated datePublished" datetime="2020-11-26T21:37:00+08:00">2020-11-26</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-05-17 23:09:25" itemprop="dateModified" datetime="2021-05-17T23:09:25+08:00">2021-05-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/monitor/" itemprop="url" rel="index"><span itemprop="name">monitor</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/monitor/stability/" itemprop="url" rel="index"><span itemprop="name">stability</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>5.5k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>5 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="一、前言"><a href="#一、前言" class="headerlink" title="一、前言"></a>一、前言</h1><p>很多开发同学，只关心功能开发和上线，上线后的运维工作，作为软件产品的生命周期中非常重要的一个环节，常常被忽视。即使一些同学可能有一些意识知道要关心产品上线后的情况，但是不知道如何去下手。</p>
+<p>在这里，我们主要从开发的角度，聊聊如何做好软件上线后的监控，以及异常情况下的告警。</p>
+<p>（这里，不会去关心业务层面上的一些运行数据，比如GMV，PV等等，虽然这些数据的异常变化，可能也跟系统稳定性也存在一些关系）</p>
+<h2 id="1-1-为什么关心监控"><a href="#1-1-为什么关心监控" class="headerlink" title="1.1 为什么关心监控"></a>1.1 为什么关心监控</h2><p>真实世界中，我们不会构建一个100%稳定可靠的服务，一个是因为各种软件上的bug或者硬件设备的故障，再或者各种人为操作的配置问题或者网络问题等等；二是因为如果我们保证极端可靠性，解决前面的问题，其超高成本带来的收益非常低，低到所有公司，哪怕是Google也不会去接受。</p>
+<span id="more"></span>
+
+<p>因此，我们需要做的是，在产品整体成本可接受的情形下，尽量通过后期运维手段来降低服务不可用时间，从而提高服务的SLA，保证服务的高可靠性。</p>
+<p>而，降低服务不可用时间，就需要做到最快发现故障问题，最快解决故障问题。这些就需要监控来辅助开发解决。</p>
+<p>因此，在【Site Reliability Engineering: How Google Runs Production Systems】书中，介绍了一些监控场景，这里抽取一些进行说明：</p>
+<p>分析长期趋势。比如，根据当前数据库数据量的增长速度和存量情况，可以提前发现数据库容量问题等，提早改造来规避可能的故障。<br>跨时间范围的比较。比如老的接口新加了redis缓存之后，响应是不是比之前快了很多，可以上线前后的时间区间接口rt做一个对比拿到结论。<br>问题关联分析。比如，我们发现某个接口的rt增长了，分析原因，可以看看其他监控数据是不是也出现关联变化，比如可能是请求量暴增，或者下游依赖的接口出现响应变慢的问题。然后，再采取对应的方案去解决。<br>也就是，从监控上，我们可以获取到 系统各个维度的请求情况，处理情况。</p>
+<h2 id="1-2-为什么需要告警"><a href="#1-2-为什么需要告警" class="headerlink" title="1.2 为什么需要告警"></a>1.2 为什么需要告警</h2><p>有了监控大盘，我们就可以随时观察系统运行状况。但是，系统不会在我们看大盘的时候，才出现异常情况，因此，我们需要主动快速去发现系统可能的异常点，将可能的系统失败阻挡在产品故障之前，或者刚刚开始的时候。</p>
+<h1 id="二、监控"><a href="#二、监控" class="headerlink" title="二、监控"></a>二、监控</h1><h2 id="2-1-监控什么"><a href="#2-1-监控什么" class="headerlink" title="2.1 监控什么"></a>2.1 监控什么</h2><p>前面说，我们的服务不会存在百分百可靠，所以对服务而言就存在一定的不确定性，这个不确定性，就是风险。</p>
+<p>和业务一样，存在风险，我们就需要对风险进行管理。监控的对象或者说目标，就是风险。</p>
+<h3 id="2-2-1-业务风险"><a href="#2-2-1-业务风险" class="headerlink" title="2.2.1 业务风险"></a>2.2.1 业务风险</h3><p>所谓风险，也就是不确定性，与之对应的就是服务的可用性。一般，现有衡量业务可用性，最常用的是：系统正常运行时间/（系统正常运行时间+停机时间）</p>
+<p>虽然，我们在很多文章或者宣传册中，都用这个时间比来宣传系统的可用性，4个9，5个9啥的，但是，这种时间维度的可用性，在当前微服务化的时代，衡量服务可用性毫无意义。</p>
+<p>这里，我们使用另一种计算公式：请求成功数/(请求成功数 + 请求失败数) = 请求成功数/ 请求总数。例如，一个服务，一天请求总数10000次，失败1次，那就是99.99%。</p>
+<p>因此，我们在监控的时候，肯定是需要监控请求总数，成功数，对应失败数的。</p>
+<p>但是，不同服务，相同服务不同的业务源，对于服务风险的诉求是不一样，比如，实时用户登录查询用户信息的请求，和定时任务跑脚本时获取用户信息请求，对服务的容忍度显然是不一样的。</p>
+<p>因此，我们需要针对风险，分出个三六九等。</p>
+<h3 id="2-2-2-业务风险容忍度"><a href="#2-2-2-业务风险容忍度" class="headerlink" title="2.2.2 业务风险容忍度"></a>2.2.2 业务风险容忍度</h3><p>和风控中风险识别规则一样，不同场景下识别风险的规则阈值一般会存在不同。而，在风控中，我们会针对不同接入业务，按照业务属性，配置不同的阈值和规则，来识别、监控风险。</p>
+<p>业务系统监控，一样需要这么做。</p>
+<p>因此，我们就需要梳理，一个服务接口，是否需要针对不同接入场景，单独出来不同的监控大盘，进行更专业的风险监控。</p>
+<p>那么，接下来就是监控关注的第二个点：判断业务对外接口或者实现逻辑内部，哪些点存在风险，或者有助于我们发现相关风险，做好埋点，制好大盘。</p>
+<p>举几个例子：</p>
+<p>场景一、准入提供通用的决策接口，外部一些地方需要做风险判断时，都通过改接口接入。这个时候，肯定会存在一个现象：不同业务对失败的容忍度是不一样的，因此对不同业务做细粒度的埋点监控，是必要的，对应可能还会做服务细粒度的隔离，限流措施。</p>
+<p>场景二、特征中心会提供大量指标查询，从接口层面看如果总qps1w，失败10，千一的失败率，可能怀疑是网络抖动，偶尔超时等问题。但是从细粒度监控上，发现某个API/指标的特征查询qps 10，失败10，百分比的失败率，则需要立马去查原因了。</p>
+<h3 id="2-2-3-具化容忍度–风险带来的故障程度"><a href="#2-2-3-具化容忍度–风险带来的故障程度" class="headerlink" title="2.2.3 具化容忍度–风险带来的故障程度"></a>2.2.3 具化容忍度–风险带来的故障程度</h3><p>和上面风险容忍度类似，如果某个接口出现问题，会导致业务故障，那么必然需要进行监控。</p>
+<p>比如，提供给电商交易主链路使用的风险决策接口，如果RT超过约定的超时时间，这个时候即使我们都是成功返回，但是对于业务方而言，其实对业务是有损的，甚至会导致业务故障。</p>
+<p>因此，对于业务RT的监控，尤其是某些重要请求业务方细粒度的RT监控，是非常必要的。</p>
+<p>回到故障程度，故障程度其实是风险容忍度一个具化的点。我们可能不知道业务方的容忍程度，那么我们就看业务方会不会因为我们接口返回失败/超时，导致出现有损服务，甚至故障。</p>
+<h3 id="2-2-4-风险溯源"><a href="#2-2-4-风险溯源" class="headerlink" title="2.2.4 风险溯源"></a>2.2.4 风险溯源</h3><p>当我们从大盘上发现风险/系统问题的时候，我们最需要做的就是找出原因，也就是风险溯源。</p>
+<p>风险出现的原因，分为外部原因和内部原因。外部原因，就是基础中间件组件，外部依赖的接口等出现问题影响了我；内部原因，就是自己代码bug导致的失败问题影响了最终返回。</p>
+<p>针对外部原因，我们监控的东西其实很明显：依赖三方接口（包括基础中间件）的成功数，失败数，RT耗时等，其实就是我们在基础设施层中的所有实现接口，都需要进行监控。</p>
+<p>针对内部原因，通常，一些非预期异常数需要监控；此外，一般而言，对于RT敏感的服务，内部核心逻辑的耗时需要监控，甚至需要细粒度的场景耗时监控。</p>
+<h3 id="2-2-5-总结"><a href="#2-2-5-总结" class="headerlink" title="2.2.5 总结"></a>2.2.5 总结</h3><p>说了这么多，总结一下，我们到底需要监控哪些东西。</p>
+<p>就两个：次数，耗时。所有你根据上面一些原则，总结梳理出来的风险相关点，都需要去监控。</p>
+<h1 id="三、告警"><a href="#三、告警" class="headerlink" title="三、告警"></a>三、告警</h1><p>告警，其实就是风险触达，或者预期风险触达。</p>
+<h2 id="3-1-告警现状"><a href="#3-1-告警现状" class="headerlink" title="3.1 告警现状"></a>3.1 告警现状</h2><p>说触达可能有点专业术语，其实就是你收到的各种APP通知，营销短信通知，广告电话通知之类的。就问你，没完没了，你根本就不需要的通知，你烦不烦！</p>
+<p>现在，存在一种现象，就是系统要不没有告警，要不就是一堆告警。ERROR日志报警，企业微信各种同比环比告警，失败数、耗时等超阈值告警，等等。</p>
+<p>目前有的告警，大部分设置之初是合理的。但是，随着业务不断发展，系统不断优化，很多一直告警就需要进行调整或者删除了。</p>
+<p>但是，开发同学并没有同步去调整这些设置，导致无效告警越来越多，最后大家产生疲劳，对需要关注的告警也忽略了。</p>
+<h2 id="3-2-告警什么"><a href="#3-2-告警什么" class="headerlink" title="3.2 告警什么"></a>3.2 告警什么</h2><p>如何做风险触达？做什么风险数据的触达？</p>
+<h3 id="3-2-1-风险触达"><a href="#3-2-1-风险触达" class="headerlink" title="3.2.1 风险触达"></a>3.2.1 风险触达</h3><p>所谓风险触达，就是我发现系统存在故障，或者可能即将存在故障的时候，给相关同学进行告警通知。让开发同学立马去追踪系统问题，恢复服务，或者采取其他措施避免即将出现的服务不可用。</p>
+<p>风险触达，首先需要准确触达，然后就是智能触达。当然智能也分三六九等。所谓智能触达，就是一个故障，可能会导致大量告警设置都被触发，这个时候，可以根据关联或者历史学习，直接将原因告警进行推送。</p>
+<p>这里，我们基于目前的告警平台来配置告警，所以目前要做的是准确性。准确性包含两个方面，风险准确，对象准确。</p>
+<p>所谓风险准确，按照目前告警平台设置而已，就是阈值设置是合理的。触发监控阈值的告警，确实是存在异常情况，避免一堆非异常告警，耗费大家的精力；其次，该有的告警要有，不能系统出现异常或者故障了，没有相关的告警被触达给开发同学。</p>
+<p>所谓对象准确，就是我们告警通知的对象，要设置合理，不要随意设置一堆人。告警对象需要在告警通知时，及时响应告警，查找问题，回复告警原因。因此，该业务owner，备份owner，必须要指定清楚。非相关干系人，一般不需要设置，除非一些特殊情况，比如特征中心的接口，使用三方数据采集系统的指标监控告警，那么可以加上三方系统的owner。</p>
+<h3 id="3-2-2-风险准确触达"><a href="#3-2-2-风险准确触达" class="headerlink" title="3.2.2 风险准确触达"></a>3.2.2 风险准确触达</h3><p>要做到准确触达，其实挺难的，而且要不断优化不断调整。</p>
+<p>告警设置，首先有个问题，就是是针对现象设置告警，还是针对原因设置告警。如果我们对业务十分熟悉，只要出现原因级别的告警，就知道哪些对外业务会存在问题，但是，现阶段，我们优先对现象进行告警，然后在日常问题中对原因也设置告警，不过不建议不告警现象。</p>
+<p>比如，我们监控的对外接口RT耗时过大告警，然后数据库查询耗时过大告警，都出现了。这里，接口告警其实是现象告警，数据库sql慢告警就是“原因”告警。当然，再底层原因，可能是数据量大导致sql慢，也可能请求多导致sql慢，或者机器本身原因导致sql执行慢，需要具体看。(所以这里”原因”打了引号。)</p>
+<p>因此，简单而言，我们现在，对所有我们关心的监控大盘，进行告警设置。</p>
+<p>确认好了针对啥去设置告警，接下来需要考虑告警阈值如何设置。</p>
+<p>一般而言，我们对上线的服务，可以做一个大致的预估，给出一些阈值。比如，预估准入决策下，某个场景业务就最高也就10qps，那么我们就按照10qps来去做一些阈值设置。</p>
+<p>还有一种比较简单的情况，就是业务正常运行几天，通过运行的数据，来推测合理请求量，合理失败率，合理耗时等等，然后来设置告警阈值，在通过告警的一些反馈，不断修正阈值，最后接近正确的触达。</p>
+<h3 id="3-2-3-告警维度"><a href="#3-2-3-告警维度" class="headerlink" title="3.2.3 告警维度"></a>3.2.3 告警维度</h3><p>嗯，针对监控大盘，我们需要怎样设置异常告警。</p>
+<p>划重点！！！</p>
+<p>以下是多年经验的总结，抛砖引玉。</p>
+<h4 id="系统请求量类告警"><a href="#系统请求量类告警" class="headerlink" title="系统请求量类告警"></a>系统请求量类告警</h4><ul>
+<li>我们预估一个服务的处理能力是QPS 1w，那么当请求量超过1w的时候，就肯定需要告警，或者当请求接近1w的时候，就需要告警，给开发同学一个时间提前准备；</li>
+<li>假设，当我们预估正常的请求量都在10以上，那么我们就需要设置一个低于10的QPS告警，这类告警阈值需要考虑清楚，避免低峰期间无效告警。</li>
+</ul>
+<h4 id="系统耗时类告警"><a href="#系统耗时类告警" class="headerlink" title="系统耗时类告警"></a>系统耗时类告警</h4><ul>
+<li>我们预估一个服务的最大处理RT 50ms，那么当1分钟（天网监控粒度）超过50ms，就需要告警；</li>
+<li>假设，针对某些对外服务的业务，请求方超时设置30ms，则意味着我们需要对这些进行告警，当平均耗时超过30ms时，需要告警，这意味着上游业务都是失败的。</li>
+</ul>
+<h4 id="系统异常类告警"><a href="#系统异常类告警" class="headerlink" title="系统异常类告警"></a>系统异常类告警</h4><ul>
+<li>我们预估对外服务的接口，能够容忍的一个系统失败数10，那么当失败数超过10，就需要告警（这类告警很容易变成无效告警，所以需要根据业务发展进行调整）；</li>
+<li>同样，某个业务可能容忍的失败数比较大，直接用本系统的失败告警，但是有些业务可能请求数比较小，但是业务还很重要，这个时候需要针对这些业务细粒度设置告警阈值。</li>
+</ul>
+<h4 id="系统同比环比告警"><a href="#系统同比环比告警" class="headerlink" title="系统同比环比告警"></a>系统同比环比告警</h4><p>某些情况下，无法给直接阈值。一般而言，因为电商交易很多时候以周为周期，所以可以采用周同比，环比一般因为业务一直不断发展，可参照价值反而比较小。</p>
+<ul>
+<li>针对请求量和异常类次数告警，可以采用周同比的方式，去设置一些震荡比率，触发告警。比如异常次数周同比增幅20%，可能认为系统存在未知问题，需要定位。</li>
+</ul>
+<h3 id="3-2-4-总结"><a href="#3-2-4-总结" class="headerlink" title="3.2.4 总结"></a>3.2.4 总结</h3><p>依然做一个总结，我们要怎么做告警。</p>
+<p>因为监控是基于对业务的梳理，所以告警前期针对监控大盘（现象）进行合理阈值的设置即可；后期，逐步针对一些原因监控，设置阈值告警。目的，同时接收现象和原因告警，可以关联起来，从而收到告警的时候，能大致感知到系统异常原因。</p>
+<h3 id="3-2-5-最后"><a href="#3-2-5-最后" class="headerlink" title="3.2.5 最后"></a>3.2.5 最后</h3><p>告警，有新增就得有删除。</p>
+<p>如果一个告警出现之后，没有人去关注，或者不需要去关注，那么这个告警需要删除或者调整了；<br>如果一个告警出来之后，接收人不明所以，或者根本猜都猜不出来原因，那么这个报警是无价值的，需要其他原因告警项来新增进来，辅助决策；<br>如果一个告警十分频繁的触发，那么请立马修复问题，或者调整告警阈值。<br>告警内容，最大的价值，是不上线也能大概知道哪里除了问题，如果做不到，那么告警的优化还需要持续进行…….</p>
+<h1 id="四、日志"><a href="#四、日志" class="headerlink" title="四、日志"></a>四、日志</h1><p>日志，目的是为了协查问题。所以，日志需要规范化，正式化。</p>
+<h2 id="4-1-日志内容"><a href="#4-1-日志内容" class="headerlink" title="4.1 日志内容"></a>4.1 日志内容</h2><p>日志的目的，是为了发现异常，定位问题。所以，如果一个参数失败，但是不把参数打出来，你怎么知道为啥参数失败。</p>
+<p>日志打印，可以使用日志模板。根据自己的喜好，可以分多个日志文件，或者业务日志都放在一个文件里。日志需要上传到天网，便于分布式环境下，查问题。</p>
+<p>划重点！！！</p>
+<p>日志需要打印哪些内容。</p>
+<ul>
+<li>对外服务的请求入参，返回出参 ；</li>
+<li>对外服务的请求整体耗时，不管成功失败，都需要打印耗时。</li>
+<li>依赖的三方服务，请求发起的参数和时间，请求接收到的参数和耗时。</li>
+<li>所有业务失败，抛异常的地方，都需要打印日志，包括异常堆栈，功能描述，失败原因，可能查问题时需要的上下文数据。</li>
+<li>所有非预期异常或失败，打印ERROR级别日志，预期的失败异常，一般使用WARN级别日志级别即可。</li>
+<li>打印日志，必须要有traceid，便于调用链查询，需要关注的功能简述，使用中文，且放在日志内容前面，便于天网日志平台检索。例如，log.info(“[支付预下单]业务请求request:{}”,request) 或者 log.info(“[{}]业务请求request:{}”,this.getClass().getSimpleName(),request)</li>
+</ul>
+<h1 id="五、总结"><a href="#五、总结" class="headerlink" title="五、总结"></a>五、总结</h1><p>SRE 一般讲 四个黄金指标：延迟，流量，错误 ，饱和度。</p>
+<ul>
+<li>延迟：处理请求所需要的耗时，区分成功和失败都需要；</li>
+<li>流量：针对系统负载需求锁进行度量的指标，例如QPS，TPS等；</li>
+<li>错误：请求失败的速率；</li>
+<li>饱和度：服务容量有多满。受限资源指标度量，例如内存利用率，IO利用率等。</li>
+</ul>
+<p>以上，根据实践过程，随时调整和补充。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/04/27/2020-04-27-ddd-system-arch-code/" rel="prev" title="系统结构分层规范总结">
+      <i class="fa fa-chevron-left"></i> 系统结构分层规范总结
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">一、前言</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-1-%E4%B8%BA%E4%BB%80%E4%B9%88%E5%85%B3%E5%BF%83%E7%9B%91%E6%8E%A7"><span class="nav-number">1.1.</span> <span class="nav-text">1.1 为什么关心监控</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1-2-%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E5%91%8A%E8%AD%A6"><span class="nav-number">1.2.</span> <span class="nav-text">1.2 为什么需要告警</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E7%9B%91%E6%8E%A7"><span class="nav-number">2.</span> <span class="nav-text">二、监控</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#2-1-%E7%9B%91%E6%8E%A7%E4%BB%80%E4%B9%88"><span class="nav-number">2.1.</span> <span class="nav-text">2.1 监控什么</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-1-%E4%B8%9A%E5%8A%A1%E9%A3%8E%E9%99%A9"><span class="nav-number">2.1.1.</span> <span class="nav-text">2.2.1 业务风险</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-2-%E4%B8%9A%E5%8A%A1%E9%A3%8E%E9%99%A9%E5%AE%B9%E5%BF%8D%E5%BA%A6"><span class="nav-number">2.1.2.</span> <span class="nav-text">2.2.2 业务风险容忍度</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-3-%E5%85%B7%E5%8C%96%E5%AE%B9%E5%BF%8D%E5%BA%A6%E2%80%93%E9%A3%8E%E9%99%A9%E5%B8%A6%E6%9D%A5%E7%9A%84%E6%95%85%E9%9A%9C%E7%A8%8B%E5%BA%A6"><span class="nav-number">2.1.3.</span> <span class="nav-text">2.2.3 具化容忍度–风险带来的故障程度</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-4-%E9%A3%8E%E9%99%A9%E6%BA%AF%E6%BA%90"><span class="nav-number">2.1.4.</span> <span class="nav-text">2.2.4 风险溯源</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-5-%E6%80%BB%E7%BB%93"><span class="nav-number">2.1.5.</span> <span class="nav-text">2.2.5 总结</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E5%91%8A%E8%AD%A6"><span class="nav-number">3.</span> <span class="nav-text">三、告警</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#3-1-%E5%91%8A%E8%AD%A6%E7%8E%B0%E7%8A%B6"><span class="nav-number">3.1.</span> <span class="nav-text">3.1 告警现状</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-2-%E5%91%8A%E8%AD%A6%E4%BB%80%E4%B9%88"><span class="nav-number">3.2.</span> <span class="nav-text">3.2 告警什么</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-1-%E9%A3%8E%E9%99%A9%E8%A7%A6%E8%BE%BE"><span class="nav-number">3.2.1.</span> <span class="nav-text">3.2.1 风险触达</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-2-%E9%A3%8E%E9%99%A9%E5%87%86%E7%A1%AE%E8%A7%A6%E8%BE%BE"><span class="nav-number">3.2.2.</span> <span class="nav-text">3.2.2 风险准确触达</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-3-%E5%91%8A%E8%AD%A6%E7%BB%B4%E5%BA%A6"><span class="nav-number">3.2.3.</span> <span class="nav-text">3.2.3 告警维度</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%B3%BB%E7%BB%9F%E8%AF%B7%E6%B1%82%E9%87%8F%E7%B1%BB%E5%91%8A%E8%AD%A6"><span class="nav-number">3.2.3.1.</span> <span class="nav-text">系统请求量类告警</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%B3%BB%E7%BB%9F%E8%80%97%E6%97%B6%E7%B1%BB%E5%91%8A%E8%AD%A6"><span class="nav-number">3.2.3.2.</span> <span class="nav-text">系统耗时类告警</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%B3%BB%E7%BB%9F%E5%BC%82%E5%B8%B8%E7%B1%BB%E5%91%8A%E8%AD%A6"><span class="nav-number">3.2.3.3.</span> <span class="nav-text">系统异常类告警</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%B3%BB%E7%BB%9F%E5%90%8C%E6%AF%94%E7%8E%AF%E6%AF%94%E5%91%8A%E8%AD%A6"><span class="nav-number">3.2.3.4.</span> <span class="nav-text">系统同比环比告警</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-4-%E6%80%BB%E7%BB%93"><span class="nav-number">3.2.4.</span> <span class="nav-text">3.2.4 总结</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-5-%E6%9C%80%E5%90%8E"><span class="nav-number">3.2.5.</span> <span class="nav-text">3.2.5 最后</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E6%97%A5%E5%BF%97"><span class="nav-number">4.</span> <span class="nav-text">四、日志</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#4-1-%E6%97%A5%E5%BF%97%E5%86%85%E5%AE%B9"><span class="nav-number">4.1.</span> <span class="nav-text">4.1 日志内容</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E6%80%BB%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">五、总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="柯小小西"
+      src="/images/ava.gif">
+  <p class="site-author-name" itemprop="name">柯小小西</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">47</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">柯小小西</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">476k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">7:13</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="前言使用    JVM的人都或多或少的了解垃圾回收机制，当系统的服务出现性能问题时，都会去服务器上查看下系统GC的情况。此外，如果有新的服务上线，也需要去服务器上查看下新服务的整体GC水平，这就可以使用jstat命令来查看了，当然你也可以使用其他方式。 Jstat 查看系统 GC 命令介绍jstat的命令查看系统GC情况，很简单，只需要先通过jps或者ps -aux |grep tomcat来查看">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java 查看系统GC命令介绍">
+<meta property="og:url" content="http://example.com/2014/05/27/2014-05-27-Jstat-GC-Guide-Introduce/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="前言使用    JVM的人都或多或少的了解垃圾回收机制，当系统的服务出现性能问题时，都会去服务器上查看下系统GC的情况。此外，如果有新的服务上线，也需要去服务器上查看下新服务的整体GC水平，这就可以使用jstat命令来查看了，当然你也可以使用其他方式。 Jstat 查看系统 GC 命令介绍jstat的命令查看系统GC情况，很简单，只需要先通过jps或者ps -aux |grep tomcat来查看">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/2014/05/jstat-gc.jpg">
+<meta property="og:image" content="http://example.com/images/2014/05/jmap-gc.jpg">
+<meta property="article:published_time" content="2014-05-27T14:21:35.000Z">
+<meta property="article:modified_time" content="2021-05-17T14:57:11.570Z">
+<meta property="article:author" content="柯小小西">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/2014/05/jstat-gc.jpg">
+
+<link rel="canonical" href="http://example.com/2014/05/27/2014-05-27-Jstat-GC-Guide-Introduce/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Java 查看系统GC命令介绍 | Hexo</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hexo</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2014/05/27/2014-05-27-Jstat-GC-Guide-Introduce/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ava.gif">
+      <meta itemprop="name" content="柯小小西">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hexo">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Java 查看系统GC命令介绍
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2014-05-27 22:21:35" itemprop="dateCreated datePublished" datetime="2014-05-27T22:21:35+08:00">2014-05-27</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-05-17 22:57:11" itemprop="dateModified" datetime="2021-05-17T22:57:11+08:00">2021-05-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/GC/" itemprop="url" rel="index"><span itemprop="name">GC</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.6k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a><a id="Intro">前言</a></h2><p>使用    <code>JVM</code>的人都或多或少的了解<code>垃圾回收</code>机制，当系统的服务出现性能问题时，都会去服务器上查看下系统<code>GC</code>的情况。此外，如果有新的服务上线，也需要去服务器上查看下新服务的整体<code>GC</code>水平，这就可以使用<code>jstat</code>命令来查看了，当然你也可以使用其他方式。</p>
+<h2 id="Jstat-查看系统-GC-命令介绍"><a href="#Jstat-查看系统-GC-命令介绍" class="headerlink" title="Jstat 查看系统 GC 命令介绍"></a><a id="Jstat">Jstat 查看系统 GC 命令介绍</a></h2><p><code>jstat</code>的命令查看系统<code>GC</code>情况，很简单，只需要先通过<code>jps</code>或者<code>ps -aux |grep tomcat</code>来查看对应服务所在的进程数，然后使用下面命令查看。</p>
+<blockquote>
+<p>jstat 查看 gc 使用方法如下：  </p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">jstat -gcutil `线程值` `间隔时间数(ms)`</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>执行命令<code>sudo jstat -gcutil 11694 3600</code>，结果会显示内存各个区域大小的情况，如图：</p>
+</blockquote>
+<img src="/images/2014/05/jstat-gc.jpg" />
+
+<blockquote>
+<p>Note: 结果里面列出每个区间的内存大小，新生代gc的次数和时间，老年代gc的次数和时间。    </p>
+</blockquote>
+<pre><code>1. S0  — Heap上的 Survivor space 0 区已使用空间的百分比;
+2. S1  — Heap上的 Survivor space 1 区已使用空间的百分比;
+3. E   — Heap上的 Eden space 区已使用空间的百分比;
+4. O   — Heap上的 Old space 区已使用空间的百分比;
+5. P   — Perm space 区已使用空间的百分比;
+6. YGC — 从应用程序启动到采样时发生 Young GC 的次数;
+7. YGCT– 从应用程序启动到采样时 Young GC 所用的时间(单位秒);
+8. FGC — 从应用程序启动到采样时发生 Full GC 的次数;
+9. FGCT– 从应用程序启动到采样时 Full GC 所用的时间(单位秒);
+10. GCT — 从应用程序启动到采样时用于垃圾回收的总时间(单位秒).
+</code></pre>
+<span id="more"></span>
+
+<h2 id="Jmap-查看系统-GC-命令介绍"><a href="#Jmap-查看系统-GC-命令介绍" class="headerlink" title="Jmap 查看系统 GC 命令介绍"></a><a id="Jmap">Jmap 查看系统 GC 命令介绍</a></h2><p>当我们使用<code>jstat</code>命令查看<code>GC</code>时，发现<code>YoungGC</code>或者<code>FullGC</code>频率过高时，就需要分析服务的具体情况了。这个时候，可以使用<code>Jmap</code>来查看当前系统的实例使用内存大小，一般地，需要<code>dump</code>到本地进行分析，使用可视化工具可以使分析效率得到很大的提高。</p>
+<blockquote>
+<p><code>Jmap</code>的使用方法如下所示：  </p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jmap -dump:format=b,file=log.bin `进程id`    </span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>使用<code>sudo jmap -dump:format=b,file=log.bin  -F 11694</code>命令，写入文件内容如下:</p>
+</blockquote>
+<pre><code>JAVA PROFILE 1.0.1
+JAVA PROFILE 1.0.1
+Lcom/alibaba/dubbo/remoting/exchange/support/DefaultFuture$RemotingInvocationTimeoutScan;
+DefaultStatistics.java
+T8procedureNameRs
+StringUtils.10
+isCons
+(Ljava/lang/Integer;)Ljava/math/BigDecimal;
+HtheCloseBracketFor
+h([Ljava/lang/String;Lorg/codehaus/jackson/JsonGenerator;Lorg/codehaus/jackson/map/SerializerProvider;Lorg/codehaus/jackson/map/JsonSerializer;)V
+zC@roureq
+lastActiveFilter
+Ampersand
+......
+</code></pre>
+<blockquote>
+<p>Note：有很多可视化的工具来分析<code>dump</code>文件，为了简单，这里使用java自带的工具<code>jvisualvm</code>工具，在<code>文件</code>选项中<code>装入</code> dump 下来的 文件<code>log.bin</code>，就可以看到各个对象实例所占用的内存大小和实例数量了。如下图：</p>
+</blockquote>
+<img src="/images/2014/05/jmap-gc.jpg" />
+
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a><a id="Finally">小结</a></h2><p>java 中 还有一个命令比较有用，就是<code>jstack</code>，该命令可以查看服务器上的某个服务的堆栈信息。从而分析线程是否处于死锁状态，从而导致服务不可用或者服务性能受到影响。使用命令<code>jstack 线程id</code>就可以获取所有堆栈信息了，非常简单便捷。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2014/05/26/2014-05-26-Spring-MVC-Project-Introduction/" rel="prev" title="Spring MVC 项目构建入门指南">
+      <i class="fa fa-chevron-left"></i> Spring MVC 项目构建入门指南
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2014/05/28/2014-05-28-Online-Mysql-Deadlock-Analyse/" rel="next" title="线上Mysql死锁问题分析">
+      线上Mysql死锁问题分析 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Jstat-%E6%9F%A5%E7%9C%8B%E7%B3%BB%E7%BB%9F-GC-%E5%91%BD%E4%BB%A4%E4%BB%8B%E7%BB%8D"><span class="nav-number">2.</span> <span class="nav-text">Jstat 查看系统 GC 命令介绍</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Jmap-%E6%9F%A5%E7%9C%8B%E7%B3%BB%E7%BB%9F-GC-%E5%91%BD%E4%BB%A4%E4%BB%8B%E7%BB%8D"><span class="nav-number">3.</span> <span class="nav-text">Jmap 查看系统 GC 命令介绍</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">4.</span> <span class="nav-text">小结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="柯小小西"
+      src="/images/ava.gif">
+  <p class="site-author-name" itemprop="name">柯小小西</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">47</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">柯小小西</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">476k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">7:13</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

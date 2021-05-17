@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="前言关于Jackson工具类的相关学习和研究,先前已经写过一篇博文;但是,后来由于工作事情就草草结尾.此外,虽然对Jackson序列化和反序列化的实现机制进行了初步学习,但是现在看看,那时候的博客经验和技术水平决定了整篇博文结构并不是清晰明了,并且反序列化的整个简单的解析,对日常开发并没有直接帮助.对于Jackson这种模块化设计,轻巧灵活的扩展方法,多维度的性能效率优化,导致了最后博文的质量非常">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Jackson 自定义序列化Java对象实现">
+<meta property="og:url" content="http://example.com/2015/02/07/2015-02-07-Jackson-Serialize-Java-Object-Implementation/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="前言关于Jackson工具类的相关学习和研究,先前已经写过一篇博文;但是,后来由于工作事情就草草结尾.此外,虽然对Jackson序列化和反序列化的实现机制进行了初步学习,但是现在看看,那时候的博客经验和技术水平决定了整篇博文结构并不是清晰明了,并且反序列化的整个简单的解析,对日常开发并没有直接帮助.对于Jackson这种模块化设计,轻巧灵活的扩展方法,多维度的性能效率优化,导致了最后博文的质量非常">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2015-02-07T14:21:35.000Z">
+<meta property="article:modified_time" content="2021-05-17T14:57:11.580Z">
+<meta property="article:author" content="柯小小西">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://example.com/2015/02/07/2015-02-07-Jackson-Serialize-Java-Object-Implementation/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Jackson 自定义序列化Java对象实现 | Hexo</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hexo</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2015/02/07/2015-02-07-Jackson-Serialize-Java-Object-Implementation/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ava.gif">
+      <meta itemprop="name" content="柯小小西">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hexo">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Jackson 自定义序列化Java对象实现
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2015-02-07 22:21:35" itemprop="dateCreated datePublished" datetime="2015-02-07T22:21:35+08:00">2015-02-07</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-05-17 22:57:11" itemprop="dateModified" datetime="2021-05-17T22:57:11+08:00">2021-05-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/Json/" itemprop="url" rel="index"><span itemprop="name">Json</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>12k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>11 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a><a id="Intro">前言</a></h2><p>关于Jackson工具类的相关学习和研究,先前已经写过一篇博文;但是,后来由于工作事情就草草结尾.此外,虽然对Jackson序列化和反序列化的实现机制进行了初步学习,但是现在看看,那时候的博客经验和技术水平决定了整篇博文结构并不是清晰明了,并且反序列化的整个简单的解析,对日常开发并没有直接帮助.对于Jackson这种模块化设计,轻巧灵活的扩展方法,多维度的性能效率优化,导致了最后博文的质量非常不好.因此,接下来几篇博文,将会以日常开发使用的一些API为入口,来分别介绍其使用方式和内部实现,然后在此基础上,对此博文进行分拆.</p>
+<p>在开发中，前后端交互的项目，现在一般都是基于JSON文本格式给出API接口，因此对于java对象的序列化就是十分重要的了。基于Spring MVC的配置中，我们配置<code>org.springframework.http.converter.json.MappingJacksonHttpMessageConverter</code> bean时，就是需要配置<code>messageConverters</code>转换器。而针对json的转换器，就可以使用Jackson的<code>objectMapper</code>对象了。</p>
+<p>返回给前端的<code>Response Body</code>一般需要良好的可读性，不能因为后端处理方便，就直接破坏前端展示。比如，我们后端使用枚举处理一些情况，但是如果把枚举英文或者数字返回给前端页面，对用户来说是非常不友好的。因此，这里就是涉及到了java对象自定义序列化的问题了。Jackson工具为我们提供了非常多的常见默认的序列化方法，以及一些扩展的接口；参考系统的序列化方法，我们就可以实现自定义的了。</p>
+<h2 id="Jackson自定义序列化方法"><a href="#Jackson自定义序列化方法" class="headerlink" title="Jackson自定义序列化方法"></a><a id="CustomizeSerialize">Jackson自定义序列化方法</a></h2><p>在Jackson中，提供了多种方式去实现自定义的序列化方法。例如，<code>org.codehaus.jackson.map.JsonSerializableWithType</code>接口以及<code>org.codehaus.jackson.map.JsonSerializer</code>接口。</p>
+<span id="more"></span>
+
+<h3 id="JsonSerializableWithType-接口"><a href="#JsonSerializableWithType-接口" class="headerlink" title="JsonSerializableWithType 接口"></a>JsonSerializableWithType 接口</h3><p>JsonSerializableWithType 接口主要提供了两个方法。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Interface that is to replace &#123;<span class="doctag">@link</span> JsonSerializable&#125; to</span></span><br><span class="line"><span class="comment"> * allow for dynamic type information embedding.</span></span><br><span class="line"><span class="comment"> * </span></span><br><span class="line"><span class="comment"> * <span class="doctag">@since</span> 1.5</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> tatu</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@SuppressWarnings(&quot;deprecation&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">JsonSerializableWithType</span></span></span><br><span class="line"><span class="class">    <span class="keyword">extends</span> <span class="title">JsonSerializable</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">serializeWithType</span><span class="params">(JsonGenerator jgen, SerializerProvider provider,</span></span></span><br><span class="line"><span class="params"><span class="function">            TypeSerializer typeSer)</span></span></span><br><span class="line"><span class="function">        <span class="keyword">throws</span> IOException, JsonProcessingException</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Deprecated</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">JsonSerializable</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">serialize</span><span class="params">(JsonGenerator jgen, SerializerProvider provider)</span></span></span><br><span class="line"><span class="function">        <span class="keyword">throws</span> IOException, JsonProcessingException</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>在早期还没有<code>JsonSerializableWithType</code>接口的时候，官方推荐使用<code>JsonSerializable</code>接口。但是，从version 1.5之后，Jackson提供了JsonSerializableWithType来替换JsonSerializable，因为JsonSerializable接口不支持处理某些额外的类型信息。</p>
+<p>但是，由于实现JsonSerializableWithType接口的方法比较麻烦，所以，Jackson对外提供了其他可以自定义序列化的抽象类<code>SerializerBase</code>和<code>ScalarSerializerBase</code>。其中ScalarSerializerBase是对SerializerBase的再次封装，它只针对输出了JSON 字符串，boolean或者数字类型才有用。</p>
+<p>继承<code>SerializerBase</code>抽象类，主要实现<code>serialize(TypeB value, JsonGenerator jgen, SerializerProvider provider)</code>方法即可，实现起来非常简单。此外,Jackson还提供了另一种简单易用的自定义序列化方法，给开发者使用，这就是<code>JsonSerializer</code>接口。</p>
+<h3 id="JsonSerializer-接口"><a href="#JsonSerializer-接口" class="headerlink" title="JsonSerializer 接口"></a>JsonSerializer 接口</h3><p>JsonSerializer类就是一个抽象类，我们只需要简单实现其中的抽象方法就可以完成自定义的序列化工作。</p>
+<p>先来看看<code>JsonSerializer</code>抽象类的主要方法实现：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * ObjectMapper类定义的抽象API类来给JsonGenerator类完成序列化任意对象到JSON功能。</span></span><br><span class="line"><span class="comment"> *&lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 需要说明的是，官方推荐使用继承SerializerBase类完成自定义序列化工作，替代使用本类。</span></span><br><span class="line"><span class="comment"> * 主要是因为，SerializerBase类提供了更多的可选择的方法给开发者去定制会。</span></span><br><span class="line"><span class="comment"> * 当然，如果你只需要简单的序列化功能，则继承这个类足够了。</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">JsonSerializer</span>&lt;<span class="title">T</span>&gt;</span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="keyword">void</span> <span class="title">serialize</span><span class="params">(T value, JsonGenerator jgen, SerializerProvider provider)</span></span></span><br><span class="line"><span class="function">        <span class="keyword">throws</span> IOException, JsonProcessingException</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * Method that can be called to ask implementation to serialize</span></span><br><span class="line"><span class="comment">     * values of type this serializer handles, using specified type serializer</span></span><br><span class="line"><span class="comment">     * for embedding necessary type information.</span></span><br><span class="line"><span class="comment">     *&lt;p&gt;</span></span><br><span class="line"><span class="comment">     * Default implementation will ignore serialization of type information,</span></span><br><span class="line"><span class="comment">     * and just calls &#123;<span class="doctag">@link</span> #serialize&#125;: serializers that can embed</span></span><br><span class="line"><span class="comment">     * type information should override this to implement actual handling.</span></span><br><span class="line"><span class="comment">     * Most common such handling is done by something like:</span></span><br><span class="line"><span class="comment">     *&lt;pre&gt;</span></span><br><span class="line"><span class="comment">     *  // note: method to call depends on whether this type is serialized as JSON scalar, object or Array!</span></span><br><span class="line"><span class="comment">     *  typeSer.writeTypePrefixForScalar(value, jgen);</span></span><br><span class="line"><span class="comment">     *  serialize(value, jgen, provider);</span></span><br><span class="line"><span class="comment">     *  typeSer.writeTypeSuffixForScalar(value, jgen);</span></span><br><span class="line"><span class="comment">     *&lt;/pre&gt;</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">serializeWithType</span><span class="params">(T value, JsonGenerator jgen, SerializerProvider provider,</span></span></span><br><span class="line"><span class="params"><span class="function">            TypeSerializer typeSer)</span></span></span><br><span class="line"><span class="function">        <span class="keyword">throws</span> IOException, JsonProcessingException</span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        serialize(value, jgen, provider);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>同样，继承<code>JsonSerializer</code>类，实现serialize方法，就可以完成自定义序列化工作了。其实，和第一种方法相比，其本质上都是一样的，就是实现serialize序列化方法。</p>
+<h2 id="自定义序列化方法注册到Jackson"><a href="#自定义序列化方法注册到Jackson" class="headerlink" title="自定义序列化方法注册到Jackson"></a><a id="RegisterSerializer">自定义序列化方法注册到Jackson</a></h2><p>Jackson提供了多种方式注册自定义序列化类，虽然官方指出第一种继承JsonSerializableWithType的方式不需要注册，但是测试了下，发现貌似不起作用。</p>
+<p>虽然注册的方式很多，但是主要是三种，并且最后一种在1.8版本以后已经标记为过时状态：</p>
+<ul>
+<li><p>继承 <code>Module interface</code>接口，官方推荐使用模块接口来完成注册功能；</p>
+</li>
+<li><p>使用注解方式<code>@JsonSerialize</code>在方法或field上标记；</p>
+</li>
+<li><p>继承<code>CustomSerializerFactory</code>接口，通过addXxxMapping来自定义SerializerFactory。</p>
+</li>
+</ul>
+<h3 id="Module-interface接口"><a href="#Module-interface接口" class="headerlink" title="Module interface接口"></a>Module interface接口</h3><p>模块接口，是Jackson在1.7以后的版本中给出的。Module接口，是Jackson专门提供了自定义序列化方法类注册到ObjectMapper实例上的接口，比如我们新增了一个数据类型。</p>
+<p>在开发过程中，我们只需要直接使用<code>SimpleModule</code>类就可以完成注册了，一般没有必要去实现<code>Module</code>抽象类。</p>
+<blockquote>
+<p>Tips：其实Module也提供了反序列化来完成自定义类的注册工作，其他博文会再介绍。</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Simple &#123;<span class="doctag">@link</span> Module&#125; implementation that allows registration</span></span><br><span class="line"><span class="comment"> * of serializers and deserializers, and bean serializer</span></span><br><span class="line"><span class="comment"> * and deserializer modifiers.</span></span><br><span class="line"><span class="comment"> * </span></span><br><span class="line"><span class="comment"> * <span class="doctag">@since</span> 1.7</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SimpleModule</span> <span class="keyword">extends</span> <span class="title">Module</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">final</span> String _name;</span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">final</span> Version _version;</span><br><span class="line">    </span><br><span class="line"><span class="comment">// ........</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">SimpleModule</span><span class="params">(String name, Version version)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        _name = name;</span><br><span class="line">        _version = version;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// .......</span></span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">public</span> SimpleModule <span class="title">addSerializer</span><span class="params">(JsonSerializer&lt;?&gt; ser)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (_serializers == <span class="keyword">null</span>) &#123;</span><br><span class="line">            _serializers = <span class="keyword">new</span> SimpleSerializers();</span><br><span class="line">        &#125;</span><br><span class="line">        _serializers.addSerializer(ser);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="comment">// .......</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="JsonSerialize-注解"><a href="#JsonSerialize-注解" class="headerlink" title="@JsonSerialize 注解"></a>@JsonSerialize 注解</h3><p>通过注解的方式注册序列化方法，对使用体验来说非常友好。但是会存在两个问题：首先，提供的序列化类的功能比较简单，然后，就是提供的粒度比较小，然后你想在全局的某个类型上都是有自定义序列化，则需要对每个对象类型上都需要标记注解。</p>
+<p><code>@JsonSerialize</code> 注解的配置参数有很多种，但是我们只需要using这种来指明具体的自定义序列化类就可以了。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Annotation used for configuring serialization aspects, by attaching</span></span><br><span class="line"><span class="comment"> * to &quot;getter&quot; methods or fields, or to value classes.</span></span><br><span class="line"><span class="comment"> * When annotating value classes, configuration is used for instances</span></span><br><span class="line"><span class="comment"> * of the value class but can be overridden by more specific annotations</span></span><br><span class="line"><span class="comment"> * (ones that attach to methods or fields).</span></span><br><span class="line"><span class="comment"> *&lt;p&gt;</span></span><br><span class="line"><span class="comment"> * An example annotation would be:</span></span><br><span class="line"><span class="comment"> *&lt;pre&gt;</span></span><br><span class="line"><span class="comment"> *  &amp;#64;JsonSerialize(using=MySerializer.class,</span></span><br><span class="line"><span class="comment"> *    as=MySubClass.class,</span></span><br><span class="line"><span class="comment"> *    include=JsonSerialize.Inclusion.NON_NULL,</span></span><br><span class="line"><span class="comment"> *    typing=JsonSerialize.Typing.STATIC</span></span><br><span class="line"><span class="comment"> *  )</span></span><br><span class="line"><span class="comment"> *&lt;/pre&gt;</span></span><br><span class="line"><span class="comment"> * (which would be redundant, since some properties block others:</span></span><br><span class="line"><span class="comment"> * specifically, &#x27;using&#x27; has precedence over &#x27;as&#x27;, which has precedence</span></span><br><span class="line"><span class="comment"> * over &#x27;typing&#x27; setting)</span></span><br><span class="line"><span class="comment"> *&lt;p&gt;</span></span><br><span class="line"><span class="comment"> * <span class="doctag">NOTE:</span> since version 1.2, annotation has also been applicable</span></span><br><span class="line"><span class="comment"> * to (constructor) parameters</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@since</span> 1.1</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Target(&#123;ElementType.METHOD, ElementType.FIELD, ElementType.TYPE, ElementType.PARAMETER&#125;)</span></span><br><span class="line"><span class="meta">@Retention(RetentionPolicy.RUNTIME)</span></span><br><span class="line"><span class="meta">@JacksonAnnotation</span></span><br><span class="line"><span class="keyword">public</span> <span class="meta">@interface</span> JsonSerialize</span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">// // // Annotations for explicitly specifying deserializer</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * Serializer class to use for</span></span><br><span class="line"><span class="comment">     * serializing associated value. Depending on what is annotated,</span></span><br><span class="line"><span class="comment">     * value is either an instance of annotated class (used globablly</span></span><br><span class="line"><span class="comment">     * anywhere where class serializer is needed); or only used for</span></span><br><span class="line"><span class="comment">     * serializing property access via a getter method.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> Class&lt;? extends JsonSerializer&lt;?&gt;&gt; using() <span class="keyword">default</span> JsonSerializer.None.class;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// .......</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="CustomSerializerFactory接口"><a href="#CustomSerializerFactory接口" class="headerlink" title="CustomSerializerFactory接口"></a>CustomSerializerFactory接口</h3><p>最后一种注册自定义序列化类的方法就是通过使用自定义序列化factory工厂，也就是继承SerializerFactory类。</p>
+<p>首先，我们使用或者扩展已经存在的<code>CustomSerializerFactory</code>。然后调用实例对象实现的<code>addSpecificMapping</code>或者<code>addGenericMapping</code>方法增加mapping关系，把自定义的序列化方法add到序列化列表中。最后，我们可以把这个工厂set到ObjectMapper实例对象上。</p>
+<h2 id="Java对象序列化自定义示例"><a href="#Java对象序列化自定义示例" class="headerlink" title="Java对象序列化自定义示例"></a><a id="JacksonCustomizeSample">Java对象序列化自定义示例</a></h2><p>下面给出使用自定义序列化类来完成Java对象到JSON的转换工作。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">JsonUtils</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Logger logger = LoggerFactory.getLogger(JsonUtils.class);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">static</span> ObjectMapper objectMapper = <span class="keyword">new</span> ObjectMapper();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> &#123;</span><br><span class="line">        objectMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, <span class="keyword">true</span>);</span><br><span class="line">        objectMapper.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, <span class="keyword">true</span>);</span><br><span class="line">        objectMapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, <span class="keyword">true</span>);</span><br><span class="line">        objectMapper.configure(JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS, <span class="keyword">true</span>);</span><br><span class="line">        objectMapper.configure(JsonParser.Feature.INTERN_FIELD_NAMES, <span class="keyword">true</span>);</span><br><span class="line">        objectMapper.configure(JsonParser.Feature.CANONICALIZE_FIELD_NAMES, <span class="keyword">true</span>);</span><br><span class="line">        objectMapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, <span class="keyword">false</span>);</span><br><span class="line">        objectMapper.setSerializationInclusion(JsonSerialize.Inclusion.NON_NULL);<span class="comment">// JSON节点不包含属性值为NULL</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> String <span class="title">encode</span><span class="params">(Object obj)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line"></span><br><span class="line"><span class="comment">//            SimpleModule SerializeModule = new SimpleModule(&quot;SerializeModule&quot;, new Version(1, 0, 0, null));</span></span><br><span class="line"><span class="comment">//            SerializeModule.addSerializer(new CustomizeJsonSerializerBaser(TypeB.class)); // assuming serializer declares correct class to bind to</span></span><br><span class="line"><span class="comment">//            objectMapper.registerModule(SerializeModule);</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//            CustomSerializerFactory customSerializerFactory = new CustomSerializerFactory();</span></span><br><span class="line"><span class="comment">//            customSerializerFactory.addSpecificMapping(TypeB.class,new CustomizeJsonSerializerBaser(TypeB.class));</span></span><br><span class="line"><span class="comment">//            objectMapper.setSerializerFactory(customSerializerFactory);</span></span><br><span class="line"></span><br><span class="line">            <span class="keyword">return</span> objectMapper.writeValueAsString(obj);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (JsonGenerationException e) &#123;</span><br><span class="line">            logger.error(<span class="string">&quot;encode(Object)&quot;</span>, e); <span class="comment">//$NON-NLS-1$</span></span><br><span class="line">        &#125; <span class="keyword">catch</span> (JsonMappingException e) &#123;</span><br><span class="line">            logger.error(<span class="string">&quot;encode(Object)&quot;</span>, e); <span class="comment">//$NON-NLS-1$</span></span><br><span class="line">        &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">            logger.error(<span class="string">&quot;encode(Object)&quot;</span>, e); <span class="comment">//$NON-NLS-1$</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>Notes：JsonUtils类封装了Jackson序列化操作。代码中，提供了通过Module接口方式和创建<code>CustomSerializerFactory</code>对象来完成注册加载。</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CustomizeJsonSerializer</span> <span class="keyword">extends</span> <span class="title">JsonSerializer</span>&lt;<span class="title">List</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">serialize</span><span class="params">(List value, JsonGenerator jgen, SerializerProvider provider)</span> <span class="keyword">throws</span> IOException, JsonProcessingException </span>&#123;</span><br><span class="line">        jgen.writeStartArray();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> (Object va :value)&#123;</span><br><span class="line">            jgen.writeString(va.toString()+<span class="string">&quot;TestSerialize&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//jgen.writeString(Joiner.on(&quot;;&quot;).join(value));</span></span><br><span class="line">        jgen.writeEndArray();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CustomizeJsonSerializerBaser</span> <span class="keyword">extends</span> <span class="title">SerializerBase</span>&lt;<span class="title">TypeB</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 注解必须有默认构造韩式</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">CustomizeJsonSerializerBaser</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">super</span>(TypeB.class);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="title">CustomizeJsonSerializerBaser</span><span class="params">(Class&lt;TypeB&gt; t)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">super</span>(t);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="title">CustomizeJsonSerializerBaser</span><span class="params">(JavaType type)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">super</span>(type);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="title">CustomizeJsonSerializerBaser</span><span class="params">(Class&lt;?&gt; t, <span class="keyword">boolean</span> dummy)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">super</span>(t, dummy);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">serialize</span><span class="params">(TypeB value, JsonGenerator jgen, SerializerProvider provider)</span> <span class="keyword">throws</span> IOException, JsonGenerationException </span>&#123;</span><br><span class="line"></span><br><span class="line">        jgen.writeString(value.toString());</span><br><span class="line">       <span class="comment">// System.out.println(&quot;======================&quot;);</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>Notes：这里提供了两种不同的方式开发自定义序列化方法。目前，从1.8开始，官方推荐使用第二种方式实现自定义序列化类，但是如果只需要简单的序列化功能，使用第一种完全可以满足需求。</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ClassA</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    String name;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> age;</span><br><span class="line"></span><br><span class="line">    List&lt;String&gt; hobby;</span><br><span class="line"></span><br><span class="line">    TypeB b;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">getName</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> name;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setName</span><span class="params">(String name)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.name = name;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">getAge</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> age;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setAge</span><span class="params">(<span class="keyword">int</span> age)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.age = age;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@JsonSerialize(using = CustomizeJsonSerializerBaser.class)</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> TypeB <span class="title">getB</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> b;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setB</span><span class="params">(TypeB b)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.b = b;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@JsonSerialize(using = CustomizeJsonSerializer.class)</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> List&lt;String&gt; <span class="title">getHobby</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> hobby;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setHobby</span><span class="params">(List&lt;String&gt; hobby)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.hobby = hobby;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">toString</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;ClassA&#123;&quot;</span> +</span><br><span class="line">                <span class="string">&quot;name=&#x27;&quot;</span> + name + <span class="string">&#x27;\&#x27;&#x27;</span> +</span><br><span class="line">                <span class="string">&quot;, age=&quot;</span> + age +</span><br><span class="line">                <span class="string">&quot;, hobby=&quot;</span> + hobby +</span><br><span class="line">                <span class="string">&#x27;&#125;&#x27;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TypeB</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    String address;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> code;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">TypeB</span><span class="params">(String address, <span class="keyword">int</span> code)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.address = address;</span><br><span class="line">        <span class="keyword">this</span>.code = code;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">getAddress</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> address;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setAddress</span><span class="params">(String address)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.address = address;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">getCode</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> code;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setCode</span><span class="params">(<span class="keyword">int</span> code)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.code = code;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">toString</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;TypeB&#123;&quot;</span> +</span><br><span class="line">                <span class="string">&quot;address=&#x27;&quot;</span> + address + <span class="string">&#x27;\&#x27;&#x27;</span> +</span><br><span class="line">                <span class="string">&quot;, code=&quot;</span> + code +</span><br><span class="line">                <span class="string">&#x27;&#125;&#x27;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">JsonSerializeTest</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        ClassA a = <span class="keyword">new</span> ClassA();</span><br><span class="line"></span><br><span class="line">        a.setAge(<span class="number">10</span>);</span><br><span class="line">        a.setName(<span class="string">&quot;ketao1989&quot;</span>);</span><br><span class="line">        a.setHobby(Lists.newArrayList(<span class="string">&quot;dinner&quot;</span>,<span class="string">&quot;swimming&quot;</span>,<span class="string">&quot;music&quot;</span>,<span class="string">&quot;programming&quot;</span>));</span><br><span class="line">        a.setB(<span class="keyword">new</span> TypeB(<span class="string">&quot;jiangxi&quot;</span>,<span class="number">320000</span>));</span><br><span class="line"></span><br><span class="line">        String aJsonStr = JsonUtils.encode(a);</span><br><span class="line">        System.out.println(aJsonStr);</span><br><span class="line"></span><br><span class="line">        ClassA aa = <span class="keyword">new</span> ClassA();</span><br><span class="line"></span><br><span class="line">        aa.setAge(<span class="number">19</span>);</span><br><span class="line">        aa.setName(<span class="string">&quot;kexiaoxiaoxi&quot;</span>);</span><br><span class="line">        aa.setHobby(Lists.newArrayList(<span class="string">&quot;MacOs&quot;</span>, <span class="string">&quot;Linux&quot;</span>, <span class="string">&quot;Windows&quot;</span>, <span class="string">&quot;Unknown&quot;</span>));</span><br><span class="line">        aa.setB(<span class="keyword">new</span> TypeB(<span class="string">&quot;beijing&quot;</span>, <span class="number">100000</span>));</span><br><span class="line"></span><br><span class="line">        String aaJsonStr = JsonUtils.encode(aa);</span><br><span class="line">        System.out.println(aaJsonStr);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        String bb = JsonUtils.encode(<span class="keyword">new</span> TypeB(<span class="string">&quot;beijing&quot;</span>,<span class="number">100000</span>));</span><br><span class="line">        System.out.println(bb);</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>Notes：测试相关类。目前都是通过注解的方式，可以把相关的注释取消，测试其他实现方式完成自定义序列化功能。</p>
+</blockquote>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a><a id="End">总结</a></h2><ul>
+<li><p>官方序列化简要介绍：<a target="_blank" rel="noopener" href="http://wiki.fasterxml.com/JacksonHowToCustomSerializers">http://wiki.fasterxml.com/JacksonHowToCustomSerializers</a></p>
+</li>
+<li><p>测试代码svn地址:<a target="_blank" rel="noopener" href="http://code.taobao.org/svn/dubbocli/trunk">http://code.taobao.org/svn/dubbocli/trunk</a></p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2015/01/27/2015-01-27-Git-Reset-Operate/" rel="prev" title="Git工具回滚线上错误提交">
+      <i class="fa fa-chevron-left"></i> Git工具回滚线上错误提交
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2015/02/10/2015-02-10-Jackson-Deserialize-Java-Object-Implementation/" rel="next" title="Jackson 自定义反序列化Java对象实现">
+      Jackson 自定义反序列化Java对象实现 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Jackson%E8%87%AA%E5%AE%9A%E4%B9%89%E5%BA%8F%E5%88%97%E5%8C%96%E6%96%B9%E6%B3%95"><span class="nav-number">2.</span> <span class="nav-text">Jackson自定义序列化方法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#JsonSerializableWithType-%E6%8E%A5%E5%8F%A3"><span class="nav-number">2.1.</span> <span class="nav-text">JsonSerializableWithType 接口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#JsonSerializer-%E6%8E%A5%E5%8F%A3"><span class="nav-number">2.2.</span> <span class="nav-text">JsonSerializer 接口</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E5%BA%8F%E5%88%97%E5%8C%96%E6%96%B9%E6%B3%95%E6%B3%A8%E5%86%8C%E5%88%B0Jackson"><span class="nav-number">3.</span> <span class="nav-text">自定义序列化方法注册到Jackson</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Module-interface%E6%8E%A5%E5%8F%A3"><span class="nav-number">3.1.</span> <span class="nav-text">Module interface接口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#JsonSerialize-%E6%B3%A8%E8%A7%A3"><span class="nav-number">3.2.</span> <span class="nav-text">@JsonSerialize 注解</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CustomSerializerFactory%E6%8E%A5%E5%8F%A3"><span class="nav-number">3.3.</span> <span class="nav-text">CustomSerializerFactory接口</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Java%E5%AF%B9%E8%B1%A1%E5%BA%8F%E5%88%97%E5%8C%96%E8%87%AA%E5%AE%9A%E4%B9%89%E7%A4%BA%E4%BE%8B"><span class="nav-number">4.</span> <span class="nav-text">Java对象序列化自定义示例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="柯小小西"
+      src="/images/ava.gif">
+  <p class="site-author-name" itemprop="name">柯小小西</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">47</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">柯小小西</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">476k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">7:13</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

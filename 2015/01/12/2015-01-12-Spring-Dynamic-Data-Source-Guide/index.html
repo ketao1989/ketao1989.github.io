@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="前言前段时间业务上有一个需求,这个需求需要查询数据库,由于单表数据比较大，导致出现超过5s的慢查询。随后，为了快速修复慢查询对整个系统带来的影响，将查询的数据源通过简单粗暴的修改配置切换到从库上。此后，增加了memcached来缓存一些case下的查询数据，但是对从库配置实现方式，并没有去调整。 最近，有其他业务的数据查询也需要切换到从库上，因此对上述简单的配置实现进行了思考。 动态数据源，其实就">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spring 中实现动态数据源">
+<meta property="og:url" content="http://example.com/2015/01/12/2015-01-12-Spring-Dynamic-Data-Source-Guide/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="前言前段时间业务上有一个需求,这个需求需要查询数据库,由于单表数据比较大，导致出现超过5s的慢查询。随后，为了快速修复慢查询对整个系统带来的影响，将查询的数据源通过简单粗暴的修改配置切换到从库上。此后，增加了memcached来缓存一些case下的查询数据，但是对从库配置实现方式，并没有去调整。 最近，有其他业务的数据查询也需要切换到从库上，因此对上述简单的配置实现进行了思考。 动态数据源，其实就">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/2015/01/ards.png">
+<meta property="article:published_time" content="2015-01-12T14:21:35.000Z">
+<meta property="article:modified_time" content="2021-05-17T14:57:11.579Z">
+<meta property="article:author" content="柯小小西">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/2015/01/ards.png">
+
+<link rel="canonical" href="http://example.com/2015/01/12/2015-01-12-Spring-Dynamic-Data-Source-Guide/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Spring 中实现动态数据源 | Hexo</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hexo</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2015/01/12/2015-01-12-Spring-Dynamic-Data-Source-Guide/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ava.gif">
+      <meta itemprop="name" content="柯小小西">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hexo">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Spring 中实现动态数据源
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2015-01-12 22:21:35" itemprop="dateCreated datePublished" datetime="2015-01-12T22:21:35+08:00">2015-01-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-05-17 22:57:11" itemprop="dateModified" datetime="2021-05-17T22:57:11+08:00">2021-05-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/Spring/" itemprop="url" rel="index"><span itemprop="name">Spring</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>9.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>8 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a><a id="Intro">前言</a></h2><p>前段时间业务上有一个需求,这个需求需要查询数据库,由于单表数据比较大，导致出现超过5s的慢查询。随后，为了快速修复慢查询对整个系统带来的影响，将查询的数据源通过简单粗暴的修改配置切换到从库上。此后，增加了memcached来缓存一些case下的查询数据，但是对从库配置实现方式，并没有去调整。</p>
+<p>最近，有其他业务的数据查询也需要切换到从库上，因此对上述简单的配置实现进行了思考。</p>
+<p>动态数据源，其实就是根据我们的代码实现和配置来选择不同的数据源进行sql操作。一般地，我们会把读操作移到从库中，从而减轻主库的压力，也就是所谓的读写分离。</p>
+<p>当然，对于一些使用数据库中间件来完成读写分离，而不需要业务层来做。这种方式，在大互联网公司中大量使用，比如360基于mysql-proxy的Atlas，阿里的DRDS(基于淘宝之前开源的TDDL）以及网易的分布式数据库中间件DDB等等。</p>
+<p>对于一些未使用部署数据库中间件的公司，简单的方法就是在代码里面使用AOP方式通过对每个DAO层sql请求进行配置，来完成自定义的动态数据源。</p>
+<h2 id="Spring动态数据源接口"><a href="#Spring动态数据源接口" class="headerlink" title="Spring动态数据源接口"></a><a id="AbstractRoutingDataSource">Spring动态数据源接口</a></h2><p>Spring提供了一个抽象类<code>AbstractRoutingDataSource</code>，该类可以让开发人员快速实现数据源路由完成根据不同请求使用不同数据源的需求。</p>
+<p><code>AbstractRoutingDataSource</code>抽象类，继承关系如下图：</p>
+<img src="/images/2015/01/ards.png" />
+
+<blockquote>
+<p>Notes: 抽象类最终继承<code>javax.sql.DataSource</code>类，该数据源类提供的一些接口就是我们最终需要实现的。</p>
+</blockquote>
+<p>DataSource接口主要提供了两个方法给开发者实现，因此实现动态数据源，我们只需要把这两个方法的实现，在调用数据库查询的时候，告知执行上下文，运行环境拿到对应的数据库连接，就可以连接到对应的数据库进行查询更新等操作。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">DataSource</span>  <span class="keyword">extends</span> <span class="title">CommonDataSource</span>,<span class="title">Wrapper</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="function">Connection <span class="title">getConnection</span><span class="params">()</span> <span class="keyword">throws</span> SQLException</span>;</span><br><span class="line"></span><br><span class="line">  <span class="function">Connection <span class="title">getConnection</span><span class="params">(String username, String password)</span></span></span><br><span class="line"><span class="function">    <span class="keyword">throws</span> SQLException</span>;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<span id="more"></span>
+
+<p>解析来，需要分析Spring提供给我们的抽象数据源路由类。既然<code>AbstractRoutingDataSource</code>简化了大家实现动态数据源功能的开发工作，那么该类必然会实现DataSource的两个接口方法。其需要决定，在什么情况下，使用哪个数据源的Connection连接。</p>
+<blockquote>
+<p><code>AbstractRoutingDataSource</code>怎样来获取数据源连接呢？</p>
+</blockquote>
+<p>使用Map数据结构存放所有配置中使用的数据源，value是数据源DataSource对象，key则是根据我们自己的爱好来取名的，比如：master，slave等。这样，我们可以根据具体Dao方法配置的数据源key来获取对应的DataSource对象，从而告知运行环境该sql查询使用哪一个connection连接。</p>
+<p>下面给出<code>AbstractRoutingDataSource</code>的部分实现：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 抽象的javax.sql.DataSource实现，可以完成基于一个查找key来路由 #getConnection()到某些特性目标DataSourcesd的一个。</span></span><br><span class="line"><span class="comment"> * 一般通过绑定线程事务上下文来决定。</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">AbstractRoutingDataSource</span> <span class="keyword">extends</span> <span class="title">AbstractDataSource</span> <span class="keyword">implements</span> <span class="title">InitializingBean</span> </span>&#123;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> Map&lt;Object, Object&gt; targetDataSources;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Object defaultTargetDataSource;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">boolean</span> lenientFallback = <span class="keyword">true</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> DataSourceLookup dataSourceLookup = <span class="keyword">new</span> JndiDataSourceLookup();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Map&lt;Object, DataSource&gt; resolvedDataSources;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> DataSource resolvedDefaultDataSource;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 设置目标DataSources的map映射，其中查找key作为 map的key。</span></span><br><span class="line"><span class="comment">     * 这个映射的value可以是对象的DataSource实例，或者是一个数据源 name的字符串（可以被DataSourceLookup解析）。</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * key可以是任意的类型，只要实现了普通的查找处理。</span></span><br><span class="line"><span class="comment">     * 具体的key表示形式，将会被resolveSpecifiedLookupKey和determineCurrentLookupKey处理</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setTargetDataSources</span><span class="params">(Map&lt;Object, Object&gt; targetDataSources)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.targetDataSources = targetDataSources;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 设置默认目标数据源。如果我们在map中找不到对应的key时，则会使用这里设置的默认数据源</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setDefaultTargetDataSource</span><span class="params">(Object defaultTargetDataSource)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.defaultTargetDataSource = defaultTargetDataSource;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 指定默认的DataSource，当通过指定的查找key不能找到对应的DataSource。</span></span><br><span class="line"><span class="comment">     * 如果为false，则直接返回失败，如果为true，则使用默认的数据源。默认为true</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setLenientFallback</span><span class="params">(<span class="keyword">boolean</span> lenientFallback)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.lenientFallback = lenientFallback;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 设置DataSourceLookup的实现类，该实现类可以把字符串配置的数据源，解析成我们需要的DataSource类.默认使用JndiDataSourceLookup。</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * JndiDataSourceLookup方法使用ref bean方式获取配置文件中配置的dataSource数据源，也就是我们一般使用xml中配置datasource的方式就是jndi。</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setDataSourceLookup</span><span class="params">(DataSourceLookup dataSourceLookup)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.dataSourceLookup = (dataSourceLookup != <span class="keyword">null</span> ? dataSourceLookup : <span class="keyword">new</span> JndiDataSourceLookup());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">afterPropertiesSet</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">this</span>.targetDataSources == <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">&quot;Property &#x27;targetDataSources&#x27; is required&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">this</span>.resolvedDataSources = <span class="keyword">new</span> HashMap&lt;Object, DataSource&gt;(<span class="keyword">this</span>.targetDataSources.size());</span><br><span class="line">        <span class="keyword">for</span> (Map.Entry entry : <span class="keyword">this</span>.targetDataSources.entrySet()) &#123;</span><br><span class="line">            Object lookupKey = resolveSpecifiedLookupKey(entry.getKey());</span><br><span class="line">            DataSource dataSource = resolveSpecifiedDataSource(entry.getValue());</span><br><span class="line">            <span class="keyword">this</span>.resolvedDataSources.put(lookupKey, dataSource);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">this</span>.defaultTargetDataSource != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">this</span>.resolvedDefaultDataSource = resolveSpecifiedDataSource(<span class="keyword">this</span>.defaultTargetDataSource);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 根据lookupKey获取map中存放的key值，一般无特性情况，两者是一样的</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> Object <span class="title">resolveSpecifiedLookupKey</span><span class="params">(Object lookupKey)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> lookupKey;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 转换从获取map中存放的dataSource</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> DataSource <span class="title">resolveSpecifiedDataSource</span><span class="params">(Object dataSource)</span> <span class="keyword">throws</span> IllegalArgumentException </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (dataSource <span class="keyword">instanceof</span> DataSource) &#123;</span><br><span class="line">            <span class="keyword">return</span> (DataSource) dataSource;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (dataSource <span class="keyword">instanceof</span> String) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">this</span>.dataSourceLookup.getDataSource((String) dataSource);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(</span><br><span class="line">                    <span class="string">&quot;Illegal data source value - only [javax.sql.DataSource] and String supported: &quot;</span> + dataSource);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 这里就是抽象类给我们实现的接口方法，根据我们的配置上下文，抽象类决定实现哪个连接</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Connection <span class="title">getConnection</span><span class="params">()</span> <span class="keyword">throws</span> SQLException </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> determineTargetDataSource().getConnection();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Connection <span class="title">getConnection</span><span class="params">(String username, String password)</span> <span class="keyword">throws</span> SQLException </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> determineTargetDataSource().getConnection(username, password);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> DataSource <span class="title">determineTargetDataSource</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        Assert.notNull(<span class="keyword">this</span>.resolvedDataSources, <span class="string">&quot;DataSource router not initialized&quot;</span>);</span><br><span class="line">        Object lookupKey = determineCurrentLookupKey();</span><br><span class="line">        DataSource dataSource = <span class="keyword">this</span>.resolvedDataSources.get(lookupKey);</span><br><span class="line">        <span class="keyword">if</span> (dataSource == <span class="keyword">null</span> &amp;&amp; (<span class="keyword">this</span>.lenientFallback || lookupKey == <span class="keyword">null</span>)) &#123;</span><br><span class="line">            dataSource = <span class="keyword">this</span>.resolvedDefaultDataSource;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (dataSource == <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(<span class="string">&quot;Cannot determine target DataSource for lookup key [&quot;</span> + lookupKey + <span class="string">&quot;]&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> dataSource;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//这里是我们使用这个抽象类需要实现的方法，主要就是告诉该抽象类，当前需要使用的数据源的key是什么，这样抽象类就可以知道使用哪个数据库连接</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">abstract</span> Object <span class="title">determineCurrentLookupKey</span><span class="params">()</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="基于Spring动态数据源实现"><a href="#基于Spring动态数据源实现" class="headerlink" title="基于Spring动态数据源实现"></a><a id="Implementation">基于Spring动态数据源实现</a></h2><h3 id="3-1-实现抽象路由数据源类"><a href="#3-1-实现抽象路由数据源类" class="headerlink" title="3.1 实现抽象路由数据源类"></a>3.1 实现抽象路由数据源类</h3><p>上一节介绍了抽象类<code>AbstractRoutingDataSource</code>，继承这个抽象类，我们实现动态数据源，只需要告诉抽象类，当前使用哪个key去获取数据源（determineCurrentLookupKey）。</p>
+<p>在项目中，我们一般会指定哪些数据库操作需要使用哪个数据源，这个设置会存放在上下文中。也就是，我们可以使用ThreadLocal来存放当前数据操作使用的key。</p>
+<p>因此，可以实现两个类，一个类实现<code>AbstractRoutingDataSource</code>抽象接口；一个来获取当前上下文中对应的key值。代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DynamicDataSource</span> <span class="keyword">extends</span> <span class="title">AbstractRoutingDataSource</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> Object <span class="title">determineCurrentLookupKey</span><span class="params">()</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> DynamicDataSourceHolder.getDataSource();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DynamicDataSourceHolder</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> ThreadLocal&lt;String&gt; dsHolder = <span class="keyword">new</span> ThreadLocal&lt;String&gt;();</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> String <span class="title">getDataSource</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> dsHolder.get();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">putDataSource</span><span class="params">(String value)</span> </span>&#123;</span><br><span class="line">        dsHolder.set(value);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">clear</span><span class="params">()</span></span>&#123;</span><br><span class="line">        dsHolder.remove();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>通过上面两个类，我们就可以从上下文中获取当前操作需要使用的key值，然后通过实现的抽象路由数据源类来找到配置的DataSource，这样spring上下文就知道具体使用哪个connection连接来操作数据库sql了。</p>
+<blockquote>
+<p>Tips: 这里需要注意ThreadLocal类中实现了clear方法，主要是在一个线程中会存在多个sql操作，可能设计不同的数据源，如果不清除当前sql的数据源，可能接下来的sql操作也会使用前一个操作设置的数据源连接，导致错误。</p>
+</blockquote>
+<h3 id="3-2-实现AOP简化配置"><a href="#3-2-实现AOP简化配置" class="headerlink" title="3.2 实现AOP简化配置"></a>3.2 实现AOP简化配置</h3><p>上一小节完成了怎样从上下文中获取设置的key，从而使用哪个数据源连接。但是，如何告知哪些操作使用哪个数据源key。</p>
+<p>我们可以在每个需要使用动态数据源的地方，在具体业务代码的开始，把key值put到线程上下文中；然后在业务代码结束的地方，把上下文的设置清除掉。这样可以完成我们的需求，但是，对业务代码的侵入程度有点大哦。</p>
+<p>上述这种场景，非常适合使用AOP技术完成。关于AOP介绍，可以参考：<a target="_blank" rel="noopener" href="http://oss.org.cn/ossdocs/framework/spring/zh-cn/aop.html">http://oss.org.cn/ossdocs/framework/spring/zh-cn/aop.html</a></p>
+<p>采用AOP技术，我们需要在配置文件（或注解方式）中设置切点pointCut，然后我们需要实现切点前调用的方法（threadLocal中存入数据源key），和切点后调用的方法（清除threadLocal数据）。</p>
+<p>为了使用方便，我们使用注解的方式配置数据源key。注解的实现代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Retention(RetentionPolicy.RUNTIME)</span></span><br><span class="line"><span class="meta">@Target(ElementType.METHOD)</span></span><br><span class="line"><span class="keyword">public</span> <span class="meta">@interface</span> DBSource &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 指定数据源使用哪个配置</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function">String <span class="title">value</span><span class="params">()</span></span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>接下来，看看怎样实现AOP的before和after通知方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DataSourceAspect</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Logger logger = LoggerFactory.getLogger(DataSourceAspect.class);</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">before</span><span class="params">(JoinPoint point)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        Object target = point.getTarget();</span><br><span class="line">        String method = point.getSignature().getName();</span><br><span class="line"></span><br><span class="line">        Class&lt;?&gt;[] classz = target.getClass().getInterfaces();</span><br><span class="line"></span><br><span class="line">        Class&lt;?&gt;[] parameterTypes = ((MethodSignature) point.getSignature()).getMethod().getParameterTypes();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Method m = classz[<span class="number">0</span>].getMethod(method, parameterTypes);</span><br><span class="line">            <span class="keyword">if</span> (m != <span class="keyword">null</span> &amp;&amp; m.isAnnotationPresent(DBSource.class)) &#123;</span><br><span class="line">                DBSource data = m.getAnnotation(DBSource.class);</span><br><span class="line">                DynamicDataSourceHolder.putDataSource(data.value());</span><br><span class="line">                logger.info(<span class="string">&quot;-------数据源：&#123;&#125;------&quot;</span>,data.value());</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            logger.error(<span class="string">&quot;=======================AOP注册拦截失败了！&quot;</span>,e);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">after</span><span class="params">(JoinPoint point)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">        Object target = point.getTarget();</span><br><span class="line">        String method = point.getSignature().getName();</span><br><span class="line"></span><br><span class="line">        Class&lt;?&gt;[] classz = target.getClass().getInterfaces();</span><br><span class="line"></span><br><span class="line">        Class&lt;?&gt;[] parameterTypes = ((MethodSignature) point.getSignature()).getMethod().getParameterTypes();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Method m = classz[<span class="number">0</span>].getMethod(method, parameterTypes);</span><br><span class="line">            <span class="keyword">if</span> (m != <span class="keyword">null</span> &amp;&amp; m.isAnnotationPresent(DBSource.class)) &#123;</span><br><span class="line">                DynamicDataSourceHolder.clear();</span><br><span class="line">                logger.info(<span class="string">&quot;-------清除ThreadLocal------&quot;</span>);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            logger.error(<span class="string">&quot;=======================AOP注册拦截失败了！&quot;</span>,e);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>这样，我们接下来，只需要在xml文件中配置相关切点和通知方法，即完成了整个动态数据源功能。</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">&lt;!-- 配置数据库注解aop --&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">aop:aspectj-autoproxy</span>/&gt;</span></span><br><span class="line">   <span class="comment">&lt;!-- 配置数据库注解aop --&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">&quot;dataSourceAspect&quot;</span> <span class="attr">class</span>=<span class="string">&quot;io.github.ketao1989.simple.service.dataSource.DataSourceAspect&quot;</span>/&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">aop:config</span>&gt;</span></span><br><span class="line">       <span class="tag">&lt;<span class="name">aop:aspect</span> <span class="attr">id</span>=<span class="string">&quot;dsa&quot;</span> <span class="attr">ref</span>=<span class="string">&quot;dataSourceAspect&quot;</span>&gt;</span></span><br><span class="line">           <span class="tag">&lt;<span class="name">aop:pointcut</span> <span class="attr">id</span>=<span class="string">&quot;pc&quot;</span> <span class="attr">expression</span>=<span class="string">&quot;execution(* io.github.ketao1989.dao.*.*(..))&quot;</span>/&gt;</span></span><br><span class="line">           <span class="tag">&lt;<span class="name">aop:before</span> <span class="attr">pointcut-ref</span>=<span class="string">&quot;pc&quot;</span> <span class="attr">method</span>=<span class="string">&quot;before&quot;</span>/&gt;</span></span><br><span class="line">           <span class="tag">&lt;<span class="name">aop:after</span> <span class="attr">pointcut-ref</span>=<span class="string">&quot;pc&quot;</span> <span class="attr">method</span>=<span class="string">&quot;after&quot;</span>/&gt;</span></span><br><span class="line">       <span class="tag">&lt;/<span class="name">aop:aspect</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;/<span class="name">aop:config</span>&gt;</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h2 id="后记"><a href="#后记" class="headerlink" title="后记"></a><a id="End">后记</a></h2><p>本文的代码和spring源码注释可以在github上查看：</p>
+<p>Spring源码注释：<a target="_blank" rel="noopener" href="https://github.com/ketao1989/cnSpring">https://github.com/ketao1989/cnSpring</a></p>
+<p>spring 动态数据源项目：<a target="_blank" rel="noopener" href="https://github.com/ketao1989/simpleSpringProject">https://github.com/ketao1989/simpleSpringProject</a></p>
+<p>最后，本文借鉴参考了博客园中的一篇博客：<a target="_blank" rel="noopener" href="http://www.cnblogs.com/xiyangyang/p/3580625.html">spring实现数据库读写分离</a>。感谢！</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2014/12/28/2014-12-28-Redis-Cookbook-Inverted-Index-Text-Search/" rel="prev" title="Redis Cookbook 之 基于Redis 实现倒序索引全文搜索">
+      <i class="fa fa-chevron-left"></i> Redis Cookbook 之 基于Redis 实现倒序索引全文搜索
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2015/01/27/2015-01-27-Git-Reset-Operate/" rel="next" title="Git工具回滚线上错误提交">
+      Git工具回滚线上错误提交 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Spring%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E6%8E%A5%E5%8F%A3"><span class="nav-number">2.</span> <span class="nav-text">Spring动态数据源接口</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8ESpring%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%AE%9E%E7%8E%B0"><span class="nav-number">3.</span> <span class="nav-text">基于Spring动态数据源实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-%E5%AE%9E%E7%8E%B0%E6%8A%BD%E8%B1%A1%E8%B7%AF%E7%94%B1%E6%95%B0%E6%8D%AE%E6%BA%90%E7%B1%BB"><span class="nav-number">3.1.</span> <span class="nav-text">3.1 实现抽象路由数据源类</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-%E5%AE%9E%E7%8E%B0AOP%E7%AE%80%E5%8C%96%E9%85%8D%E7%BD%AE"><span class="nav-number">3.2.</span> <span class="nav-text">3.2 实现AOP简化配置</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%8E%E8%AE%B0"><span class="nav-number">4.</span> <span class="nav-text">后记</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="柯小小西"
+      src="/images/ava.gif">
+  <p class="site-author-name" itemprop="name">柯小小西</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">47</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">柯小小西</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">476k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">7:13</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

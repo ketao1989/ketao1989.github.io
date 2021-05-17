@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="前言如今,在 Java 开发中，日志的打印输出是必不可少的，Slf4j + LogBack 的组合是最通用的方式。 关于 Slf4j 的介绍,请参考本博客http:&#x2F;&#x2F;ketao1989.github.io&#x2F;posts&#x2F;Java-slf4j-Introduce.html 有了日志之后，我们就可以追踪各种线上问题。但是，在分布式系统中，各种无关日志穿行其中，导致我们可能无法直接定位整个操作流程。因此">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Slf4j MDC 使用和 基于 Logback 的实现分析">
+<meta property="og:url" content="http://example.com/2015/04/29/2015-04-29-LogBack-Implemention-And-Slf4j-Mdc/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="前言如今,在 Java 开发中，日志的打印输出是必不可少的，Slf4j + LogBack 的组合是最通用的方式。 关于 Slf4j 的介绍,请参考本博客http:&#x2F;&#x2F;ketao1989.github.io&#x2F;posts&#x2F;Java-slf4j-Introduce.html 有了日志之后，我们就可以追踪各种线上问题。但是，在分布式系统中，各种无关日志穿行其中，导致我们可能无法直接定位整个操作流程。因此">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2015-04-29T14:21:35.000Z">
+<meta property="article:modified_time" content="2021-05-17T14:57:11.581Z">
+<meta property="article:author" content="柯小小西">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://example.com/2015/04/29/2015-04-29-LogBack-Implemention-And-Slf4j-Mdc/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Slf4j MDC 使用和 基于 Logback 的实现分析 | Hexo</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hexo</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2015/04/29/2015-04-29-LogBack-Implemention-And-Slf4j-Mdc/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ava.gif">
+      <meta itemprop="name" content="柯小小西">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hexo">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Slf4j MDC 使用和 基于 Logback 的实现分析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2015-04-29 22:21:35" itemprop="dateCreated datePublished" datetime="2015-04-29T22:21:35+08:00">2015-04-29</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-05-17 22:57:11" itemprop="dateModified" datetime="2021-05-17T22:57:11+08:00">2021-05-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Log/" itemprop="url" rel="index"><span itemprop="name">Log</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Log/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>27k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>24 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a><a id="Intro">前言</a></h2><p>如今,在 Java 开发中，日志的打印输出是必不可少的，<code>Slf4j + LogBack</code> 的组合是最通用的方式。</p>
+<p>关于 <code>Slf4j</code> 的介绍,请参考本博客<a target="_blank" rel="noopener" href="http://ketao1989.github.io/posts/Java-slf4j-Introduce.html">http://ketao1989.github.io/posts/Java-slf4j-Introduce.html</a></p>
+<p>有了日志之后，我们就可以追踪各种线上问题。但是，在分布式系统中，各种无关日志穿行其中，导致我们可能无法直接定位整个操作流程。因此，我们可能需要对一个用户的操作流程进行归类标记，比如使用<code>线程+时间戳</code>，或者用户身份标识等；如此，我们可以从大量日志信息中grep出某个用户的操作流程，或者某个时间的流转记录。</p>
+<p>因此，这就有了 <code>Slf4j MDC</code> 方法。</p>
+<h2 id="Slf4j-MDC-介绍"><a href="#Slf4j-MDC-介绍" class="headerlink" title="Slf4j MDC 介绍"></a><a id="MdcIntroduce">Slf4j MDC 介绍</a></h2><p>MDC ( Mapped Diagnostic Contexts )，顾名思义，其目的是为了便于我们诊断线上问题而出现的方法工具类。虽然，Slf4j 是用来适配其他的日志具体实现包的，但是针对 MDC功能，目前只有logback 以及 log4j 支持，或者说由于该功能的重要性，slf4j 专门为logback系列包装接口提供外部调用(玩笑～：）)。</p>
+<blockquote>
+<p>logback 和 log4j 的作者为同一人，所以这里统称logback系列。</p>
+</blockquote>
+<p>先来看看 MDC 对外提高的接口：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MDC</span> </span>&#123;</span><br><span class="line">  <span class="comment">//Put a context value as identified by key</span></span><br><span class="line">  <span class="comment">//into the current thread&#x27;s context map.</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">put</span><span class="params">(String key, String val)</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//Get the context identified by the key parameter.</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> String <span class="title">get</span><span class="params">(String key)</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//Remove the context identified by the key parameter.</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">remove</span><span class="params">(String key)</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//Clear all entries in the MDC.</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">clear</span><span class="params">()</span></span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>接口定义非常简单，此外，其使用也非常简单。</p>
+</blockquote>
+<span id="more"></span>
+
+<p>如上代码所示，一般，我们在代码中，只需要将指定的值put到线程上下文的Map中，然后，在对应的地方使用 get方法获取对应的值。此外，对于一些线程池使用的应用场景，可能我们在最后使用结束时，需要调用clear方法来清洗将要丢弃的数据。</p>
+<p>然后，看看一个MDC使用的简单示例。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LogTest</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Logger logger = LoggerFactory.getLogger(LogTest.class);</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        MDC.put(<span class="string">&quot;THREAD_ID&quot;</span>, String.valueOf(Thread.currentThread().getId()));</span><br><span class="line"></span><br><span class="line">        logger.info(<span class="string">&quot;纯字符串信息的info级别日志&quot;</span>);</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>然后看看logback的输出模板配置：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="meta">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;log.base&quot;</span> <span class="attr">value</span>=<span class="string">&quot;$&#123;catalina.base&#125;/logs&quot;</span> /&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">contextListener</span> <span class="attr">class</span>=<span class="string">&quot;ch.qos.logback.classic.jul.LevelChangePropagator&quot;</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">resetJUL</span>&gt;</span>true<span class="tag">&lt;/<span class="name">resetJUL</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">contextListener</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">appender</span> <span class="attr">name</span>=<span class="string">&quot;console&quot;</span> <span class="attr">class</span>=<span class="string">&quot;ch.qos.logback.core.ConsoleAppender&quot;</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">encoder</span> <span class="attr">charset</span>=<span class="string">&quot;UTF-8&quot;</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">pattern</span>&gt;</span>[%d&#123;yyyy-MM-dd HH:mm:ss&#125; %highlight(%-5p) %logger.%M\(%F:%L\)] %X&#123;THREAD_ID&#125; %msg%n<span class="tag">&lt;/<span class="name">pattern</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">encoder</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">appender</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">root</span> <span class="attr">level</span>=<span class="string">&quot;INFO&quot;</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">appender-ref</span> <span class="attr">ref</span>=<span class="string">&quot;console&quot;</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">root</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>于是，就有了输出：</p>
+<pre><code>[2015-04-30 15:34:35 INFO  io.github.ketao1989.log4j.LogTest.main(LogTest.java:29)] 1 纯字符串信息的info级别日志
+</code></pre>
+<blockquote>
+<p>当我们在web应用中，对服务的所有请求前进行filter拦截，然后加上自定义的唯一标识到MDC中，就可以在所有日志输出中，清楚看到某用户的操作流程。关于web MDC，会单独一遍博客介绍。</p>
+<p>此外，关于logback 是如何将模板中的变量替换成具体的值，会在下一节分析。</p>
+<p>在日志模板logback.xml 中，使用 <code>%X&#123; &#125;</code>来占位，替换到对应的 MDC 中 key 的值。</p>
+</blockquote>
+<h2 id="前置知识介绍"><a href="#前置知识介绍" class="headerlink" title="前置知识介绍"></a><a id="PrepareKnowledge">前置知识介绍</a></h2><h3 id="InheritableThreadLocal-介绍"><a href="#InheritableThreadLocal-介绍" class="headerlink" title="InheritableThreadLocal 介绍"></a>InheritableThreadLocal 介绍</h3><p>在代码开发中，经常使用 <code>ThreadLocal</code>来保证在同一个线程中共享变量。在 <code>ThreadLocal</code> 中，每个线程都拥有了自己独立的一个变量，线程间不存在共享竞争发生，并且它们也能最大限度的由CPU调度，并发执行。显然这是一种以空间来换取线程安全性的策略。</p>
+<p>但是，<code>ThreadLocal</code>有一个问题，就是它只保证在同一个线程间共享变量，也就是说如果这个线程起了一个新线程，那么新线程是不会得到父线程的变量信息的。因此，为了保证子线程可以拥有父线程的某些变量视图，JDK提供了一个数据结构，<code>InheritableThreadLocal</code>。</p>
+<p>javadoc 文档对 InheritableThreadLocal 说明：</p>
+<blockquote>
+<p> 该类扩展了 ThreadLocal，为子线程提供从父线程那里继承的值：在创建子线程时，子线程会接收所有可继承的线程局部变量的初始值，以获得父线程所具有的值。通常，子线程的值与父线程的值是一致的；但是，通过重写这个类中的 childValue 方法，子线程的值可以作为父线程值的一个任意函数。</p>
+</blockquote>
+<blockquote>
+<p>当必须将变量（如用户 ID 和 事务 ID）中维护的每线程属性（per-thread-attribute）自动传送给创建的所有子线程时，应尽可能地采用可继承的线程局部变量，而不是采用普通的线程局部变量。</p>
+</blockquote>
+<p>代码对比可以看出两者区别：</p>
+<blockquote>
+<p>ThreadLocal:</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ThreadLocal</span>&lt;<span class="title">T</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * Method childValue is visibly defined in subclass</span></span><br><span class="line"><span class="comment">     * InheritableThreadLocal, but is internally defined here for the</span></span><br><span class="line"><span class="comment">     * sake of providing createInheritedMap factory method without</span></span><br><span class="line"><span class="comment">     * needing to subclass the map class in InheritableThreadLocal.</span></span><br><span class="line"><span class="comment">     * This technique is preferable to the alternative of embedding</span></span><br><span class="line"><span class="comment">     * instanceof tests in methods.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function">T <span class="title">childValue</span><span class="params">(T parentValue)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> UnsupportedOperationException();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>InheritableThreadLocal:</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">InheritableThreadLocal</span>&lt;<span class="title">T</span>&gt; <span class="keyword">extends</span> <span class="title">ThreadLocal</span>&lt;<span class="title">T</span>&gt; </span>&#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * Computes the child&#x27;s initial value for this inheritable thread-local</span></span><br><span class="line"><span class="comment">     * variable as a function of the parent&#x27;s value at the time the child</span></span><br><span class="line"><span class="comment">     * thread is created.  This method is called from within the parent</span></span><br><span class="line"><span class="comment">     * thread before the child is started.</span></span><br><span class="line"><span class="comment">     * &lt;p&gt;</span></span><br><span class="line"><span class="comment">     * This method merely returns its input argument, and should be overridden</span></span><br><span class="line"><span class="comment">     * if a different behavior is desired.</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> parentValue the parent thread&#x27;s value</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span> the child thread&#x27;s initial value</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> T <span class="title">childValue</span><span class="params">(T parentValue)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> parentValue;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * Get the map associated with a ThreadLocal.</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> t the current thread</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function">ThreadLocalMap <span class="title">getMap</span><span class="params">(Thread t)</span> </span>&#123;</span><br><span class="line">       <span class="keyword">return</span> t.inheritableThreadLocals;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * Create the map associated with a ThreadLocal.</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> t the current thread</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> firstValue value for the initial entry of the table.</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> map the map to store.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">createMap</span><span class="params">(Thread t, T firstValue)</span> </span>&#123;</span><br><span class="line">        t.inheritableThreadLocals = <span class="keyword">new</span> ThreadLocalMap(<span class="keyword">this</span>, firstValue);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 这个是开发时一般使用的类，直接copy父线程的变量</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CopyOnInheritThreadLocal</span> <span class="keyword">extends</span></span></span><br><span class="line"><span class="class">    <span class="title">InheritableThreadLocal</span>&lt;<span class="title">HashMap</span>&lt;<span class="title">String</span>, <span class="title">String</span>&gt;&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Child threads should get a copy of the parent&#x27;s hashmap.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">protected</span> HashMap&lt;String, String&gt; <span class="title">childValue</span><span class="params">(</span></span></span><br><span class="line"><span class="params"><span class="function">      HashMap&lt;String, String&gt; parentValue)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (parentValue == <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">new</span> HashMap&lt;String, String&gt;(parentValue);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>为了支持InheritableThreadLocal的父子线程传递变量，JDK在Thread中，定义了<code>ThreadLocal.ThreadLocalMap inheritableThreadLocals</code> 属性。该属性变量在线程初始化的时候，如果父线程的该变量不为null，则会把其值复制到ThreadLocal。</p>
+</blockquote>
+<blockquote>
+<p>从上面的代码实现，还可以看到，如果我们使用原生的 <code>InheritableThreadLocal</code>类则在子线程中修改变量，可能会影响到父线程的变量值，及其他子线程的值。因此，一般我们推荐没有特殊情况，最好使用<code>CopyOnInheritThreadLocal</code>类，该实现是新建一个map来保持值，而不是直接使用父线程的引用。</p>
+</blockquote>
+<h2 id="Log-MDC-实现分析"><a href="#Log-MDC-实现分析" class="headerlink" title="Log MDC 实现分析"></a><a id="Slf4jMdc">Log MDC 实现分析</a></h2><h3 id="Slf4j-MDC-实现分析"><a href="#Slf4j-MDC-实现分析" class="headerlink" title="Slf4j MDC 实现分析"></a>Slf4j MDC 实现分析</h3><p>Slf4j 的实现原则就是调用底层具体实现类，比如logback,logging等包；而不会去实现具体的输出打印等操作。因此，除了前文中介绍的门面(Facade)模式外，提供这种功能的还有适配器(Adapter)模式和装饰(Decorator)模式。</p>
+<p>MDC 使用的就是<code>Decorator</code>模式，虽然，其类命名为M <code>MDCAdapter</code>。</p>
+<p>Slf4j MDC 内部实现很简单。实现一个单例对应实例，获取具体的MDC实现类，然后其对外接口，就是对参数进行校验，然后调用 MDCAdapter 的方法实现。</p>
+<p>实现源码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MDC</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">static</span> MDCAdapter mdcAdapter;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">private</span> <span class="title">MDC</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">static</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      mdcAdapter = StaticMDCBinder.SINGLETON.getMDCA();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (NoClassDefFoundError ncde) &#123;</span><br><span class="line">      <span class="comment">//......</span></span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">put</span><span class="params">(String key, String val)</span></span></span><br><span class="line"><span class="function">      <span class="keyword">throws</span> IllegalArgumentException </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (key == <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">&quot;key parameter cannot be null&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (mdcAdapter == <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(<span class="string">&quot;MDCAdapter cannot be null. See also &quot;</span></span><br><span class="line">          + NULL_MDCA_URL);</span><br><span class="line">    &#125;</span><br><span class="line">    mdcAdapter.put(key, val);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> String <span class="title">get</span><span class="params">(String key)</span> <span class="keyword">throws</span> IllegalArgumentException </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (key == <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">&quot;key parameter cannot be null&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (mdcAdapter == <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(<span class="string">&quot;MDCAdapter cannot be null. See also &quot;</span></span><br><span class="line">          + NULL_MDCA_URL);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> mdcAdapter.get(key);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;  &#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>对于Slf4j的MDC 部分非常简单，MDC的核心实现是在logback方法中的。</p>
+<p>在 logback 中，提供了 <code>LogbackMDCAdapter</code>类，其实现了<code>MDCAdapter</code>接口。基于性能的考虑，logback 对于InheritableThreadLocal的使用做了一些优化工作。</p>
+</blockquote>
+<h3 id="Logback-MDC-实现分析"><a href="#Logback-MDC-实现分析" class="headerlink" title="Logback MDC 实现分析"></a>Logback MDC 实现分析</h3><p>Logback 中基于 MDC 实现了<code>LogbackMDCAdapter</code> 类，其 get 方法实现很简单，但是 put 方法会做一些优化操作。</p>
+<p>关于 put 方法，主要有：</p>
+<ul>
+<li><p>使用原始的<code>InheritableThreadLocal&lt;Map&lt;String, String&gt;&gt;</code>类，而不是使用子线程复制类 <code>CopyOnInheritThreadLocal</code>。这样，运行时可以大量避免不必要的copy操作，节省CPU消耗，毕竟在大量log操作中，子线程会很少去修改父线程中的<code>key-value</code>值。</p>
+</li>
+<li><p>由于上一条的优化，所以代码实现上实现了一个<code>写时复制版本的 InheritableThreadLocal</code>。实现会根据上一次操作来确定是否需要copy一份新的引用map，而不是去修改老的父线程的map引用。</p>
+</li>
+<li><p>此外，和 log4j 不同，其map中的val可以为null。</p>
+</li>
+</ul>
+<p>下面给出，get 和 put 的代码实现：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">LogbackMDCAdapter</span> <span class="keyword">implements</span> <span class="title">MDCAdapter</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">final</span> InheritableThreadLocal&lt;Map&lt;String, String&gt;&gt; copyOnInheritThreadLocal = <span class="keyword">new</span> InheritableThreadLocal&lt;Map&lt;String, String&gt;();</span><br><span class="line"></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> WRITE_OPERATION = <span class="number">1</span>;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> READ_OPERATION = <span class="number">2</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// keeps track of the last operation performed</span></span><br><span class="line">  <span class="keyword">final</span> ThreadLocal&lt;Integer&gt; lastOperation = <span class="keyword">new</span> ThreadLocal&lt;Integer&gt;();</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">private</span> Integer <span class="title">getAndSetLastOperation</span><span class="params">(<span class="keyword">int</span> op)</span> </span>&#123;</span><br><span class="line">    Integer lastOp = lastOperation.get();</span><br><span class="line">    lastOperation.set(op);</span><br><span class="line">    <span class="keyword">return</span> lastOp;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">private</span> <span class="keyword">boolean</span> <span class="title">wasLastOpReadOrNull</span><span class="params">(Integer lastOp)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> lastOp == <span class="keyword">null</span> || lastOp.intValue() == READ_OPERATION;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">private</span> Map&lt;String, String&gt; <span class="title">duplicateAndInsertNewMap</span><span class="params">(Map&lt;String, String&gt; oldMap)</span> </span>&#123;</span><br><span class="line">    Map&lt;String, String&gt; newMap = Collections.synchronizedMap(<span class="keyword">new</span> HashMap&lt;String, String&gt;());</span><br><span class="line">    <span class="keyword">if</span> (oldMap != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="comment">// we don&#x27;t want the parent thread modifying oldMap while we are</span></span><br><span class="line">        <span class="comment">// iterating over it</span></span><br><span class="line">        <span class="keyword">synchronized</span> (oldMap) &#123;</span><br><span class="line">          newMap.putAll(oldMap);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    copyOnInheritThreadLocal.set(newMap);</span><br><span class="line">    <span class="keyword">return</span> newMap;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">put</span><span class="params">(String key, String val)</span> <span class="keyword">throws</span> IllegalArgumentException </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (key == <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">&quot;key cannot be null&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    Map&lt;String, String&gt; oldMap = copyOnInheritThreadLocal.get();</span><br><span class="line">    Integer lastOp = getAndSetLastOperation(WRITE_OPERATION);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (wasLastOpReadOrNull(lastOp) || oldMap == <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="comment">// 当上一次操作是read时，这次write，则需要new</span></span><br><span class="line">      Map&lt;String, String&gt; newMap = duplicateAndInsertNewMap(oldMap);</span><br><span class="line">      newMap.put(key, val);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="comment">// 写的话，已经new了就不需要再new</span></span><br><span class="line">      oldMap.put(key, val);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Get the context identified by the &lt;code&gt;key&lt;/code&gt; parameter.</span></span><br><span class="line"><span class="comment">   * &lt;p/&gt;</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> String <span class="title">get</span><span class="params">(String key)</span> </span>&#123;</span><br><span class="line">    Map&lt;String, String&gt; map = getPropertyMap();</span><br><span class="line">    <span class="keyword">if</span> ((map != <span class="keyword">null</span>) &amp;&amp; (key != <span class="keyword">null</span>)) &#123;</span><br><span class="line">      <span class="keyword">return</span> map.get(key);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>需要注意，在上面的代码中，write操作即put会去修改 <code>lastOperation</code> ，而get操作则不会。这样就保证了，只会在第一次写时复制。</p>
+</blockquote>
+<h3 id="MDC-clear-操作"><a href="#MDC-clear-操作" class="headerlink" title="MDC clear 操作"></a>MDC clear 操作</h3><blockquote>
+<p>Notes：对于涉及到ThreadLocal相关使用的接口，都需要去考虑在使用完上下文对象时，清除掉对应的数据，以避免内存泄露问题。</p>
+</blockquote>
+<pre><code>因此，下面来分析下在MDC中如何清除掉不在需要的对象。
+</code></pre>
+<p>在MDC中提供了<code>clear</code>方法，该方法完成对象的清除工作，使用logback时，则调用的是<code>LogbackMDCAdapter#clear()</code>方法，继而调用<code>copyOnInheritThreadLocal.remove()</code>。</p>
+<p>在ThreadLocal中，实现<code>remove()</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">remove</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    ThreadLocalMap m = getMap(Thread.currentThread());</span><br><span class="line">    <span class="keyword">if</span> (m != <span class="keyword">null</span>)</span><br><span class="line">        m.remove(<span class="keyword">this</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>这里，就是调用<code>ThreadLocal#remove</code>方法完成对象清理工作。</p>
+<p>所有线程的ThreadLocal都是以<code>ThreadLocalMap</code>来维护的，也就是，我们获取threadLocal对象时，实际上是根据当前线程去该Map中获取之前的设置。在清除的时候，从这个Map中获取对应的对象，然后移除map.</p>
+</blockquote>
+<h2 id="Logback-日志输出实现"><a href="#Logback-日志输出实现" class="headerlink" title="Logback 日志输出实现"></a><a id="LogbackPrint">Logback 日志输出实现</a></h2><p>MDC 的功能实现很简单，就是在线程上下文中，维护一个 <code>Map&lt;String,String&gt;</code> 属性来支持日志输出的时候，当我们在配置文件<code>logback.xml</code> 中配置了<code>%X&#123;key&#125;</code>，则后台日志打印出对应的 key 的值。</p>
+<p>同样，<code>logback.xml</code>配置文件支持了多种格式的日志输出，比如<code>%highlight</code>、<code>%d</code>等等，这些标志，在<code>PatternLayout.java</code>中维护。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">PatternLayout</span> <span class="keyword">extends</span> <span class="title">PatternLayoutBase</span>&lt;<span class="title">ILoggingEvent</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> Map&lt;String, String&gt; defaultConverterMap = <span class="keyword">new</span> HashMap&lt;String, String&gt;();</span><br><span class="line">  <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> String HEADER_PREFIX = <span class="string">&quot;#logback.classic pattern: &quot;</span>;</span><br><span class="line">  </span><br><span class="line">  <span class="keyword">static</span> &#123;</span><br><span class="line">    defaultConverterMap.putAll(Parser.DEFAULT_COMPOSITE_CONVERTER_MAP);</span><br><span class="line">    <span class="comment">// 按照&#123;&#125;配置输出时间</span></span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;d&quot;</span>, DateConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;date&quot;</span>, DateConverter.class.getName());</span><br><span class="line">    <span class="comment">// 输出应用启动到日志时间触发时候的毫秒数</span></span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;r&quot;</span>, RelativeTimeConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;relative&quot;</span>, RelativeTimeConverter.class.getName());</span><br><span class="line">    <span class="comment">// 输出日志级别的信息</span></span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;level&quot;</span>, LevelConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;le&quot;</span>, LevelConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;p&quot;</span>, LevelConverter.class.getName());</span><br><span class="line">    <span class="comment">// 输出产生日志事件的线程名</span></span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;t&quot;</span>, ThreadConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;thread&quot;</span>, ThreadConverter.class.getName());</span><br><span class="line">    <span class="comment">// 输出产生log事件的原点的日志名=我们创建logger的时候设置的</span></span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;lo&quot;</span>, LoggerConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;logger&quot;</span>, LoggerConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;c&quot;</span>, LoggerConverter.class.getName());</span><br><span class="line">    <span class="comment">// 输出 提供日志事件的对应的应用信息</span></span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;m&quot;</span>, MessageConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;msg&quot;</span>, MessageConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;message&quot;</span>, MessageConverter.class.getName());</span><br><span class="line">    <span class="comment">// 输出调用方发布日志事件的完整类名</span></span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;C&quot;</span>, ClassOfCallerConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;class&quot;</span>, ClassOfCallerConverter.class.getName());</span><br><span class="line">    <span class="comment">// 输出发布日志请求的方法名</span></span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;M&quot;</span>, MethodOfCallerConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;method&quot;</span>, MethodOfCallerConverter.class.getName());</span><br><span class="line">    <span class="comment">// 输出log请求的行数</span></span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;L&quot;</span>, LineOfCallerConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;line&quot;</span>, LineOfCallerConverter.class.getName());</span><br><span class="line">    <span class="comment">// 输出发布日志请求的java源码的文件名</span></span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;F&quot;</span>, FileOfCallerConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;file&quot;</span>, FileOfCallerConverter.class.getName());</span><br><span class="line">    <span class="comment">// 输出和发布日志事件关联的线程的MDC</span></span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;X&quot;</span>, MDCConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;mdc&quot;</span>, MDCConverter.class.getName());</span><br><span class="line">    <span class="comment">// 输出和日志事件关联的异常的堆栈信息</span></span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;ex&quot;</span>, ThrowableProxyConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;exception&quot;</span>, ThrowableProxyConverter.class</span><br><span class="line">        .getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;rEx&quot;</span>, RootCauseFirstThrowableProxyConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;rootException&quot;</span>, RootCauseFirstThrowableProxyConverter.class</span><br><span class="line">        .getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;throwable&quot;</span>, ThrowableProxyConverter.class</span><br><span class="line">        .getName());</span><br><span class="line">    <span class="comment">// 和上面一样，此外增加类的包信息</span></span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;xEx&quot;</span>, ExtendedThrowableProxyConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;xException&quot;</span>, ExtendedThrowableProxyConverter.class</span><br><span class="line">        .getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;xThrowable&quot;</span>, ExtendedThrowableProxyConverter.class</span><br><span class="line">        .getName());</span><br><span class="line">    <span class="comment">// 当我们想不输出异常信息时，使用这个。其假装处理异常，其实无任何输出</span></span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;nopex&quot;</span>, NopThrowableInformationConverter.class</span><br><span class="line">        .getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;nopexception&quot;</span>,</span><br><span class="line">        NopThrowableInformationConverter.class.getName());</span><br><span class="line">    <span class="comment">// 输出在类附加到日志上的上下文名字. </span></span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;cn&quot;</span>, ContextNameConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;contextName&quot;</span>, ContextNameConverter.class.getName());</span><br><span class="line">    <span class="comment">// 输出产生日志事件的调用者的位置信息</span></span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;caller&quot;</span>, CallerDataConverter.class.getName());</span><br><span class="line">    <span class="comment">// 输出和日志请求关联的marker</span></span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;marker&quot;</span>, MarkerConverter.class.getName());</span><br><span class="line">    <span class="comment">// 输出属性对应的值，一般为System.properties中的属性</span></span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;property&quot;</span>, PropertyConverter.class.getName());</span><br><span class="line">    <span class="comment">// 输出依赖系统的行分隔符</span></span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;n&quot;</span>, LineSeparatorConverter.class.getName());</span><br><span class="line">    <span class="comment">// 相关的颜色格式设置</span></span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;black&quot;</span>, BlackCompositeConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;red&quot;</span>, RedCompositeConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;green&quot;</span>, GreenCompositeConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;yellow&quot;</span>, YellowCompositeConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;blue&quot;</span>, BlueCompositeConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;magenta&quot;</span>, MagentaCompositeConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;cyan&quot;</span>, CyanCompositeConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;white&quot;</span>, WhiteCompositeConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;gray&quot;</span>, GrayCompositeConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;boldRed&quot;</span>, BoldRedCompositeConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;boldGreen&quot;</span>, BoldGreenCompositeConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;boldYellow&quot;</span>, BoldYellowCompositeConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;boldBlue&quot;</span>, BoldBlueCompositeConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;boldMagenta&quot;</span>, BoldMagentaCompositeConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;boldCyan&quot;</span>, BoldCyanCompositeConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;boldWhite&quot;</span>, BoldWhiteCompositeConverter.class.getName());</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;highlight&quot;</span>, HighlightingCompositeConverter.class.getName());</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>Notes：日志模板配置，使用 <code>%</code>为前缀让解析器识别特殊输出模式，然后以<code>&#123;&#125;</code>后缀结尾，内部指定相应的参数设置。</p>
+</blockquote>
+<h3 id="初始化"><a href="#初始化" class="headerlink" title="初始化"></a>初始化</h3><p>所谓初始化，就是我们构建<code>logger</code>的时候。在<code>LoggerFactory.getLogger()</code>，调用的是 slf4j 的方法，而底层使用的是<code>logback</code>的实现。因此，初始化的重点就是找到底层具体的实现接口，然后构建具体类。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Logger <span class="title">getLogger</span><span class="params">(String name)</span> </span>&#123;</span><br><span class="line">    ILoggerFactory iLoggerFactory = getILoggerFactory();</span><br><span class="line">    <span class="keyword">return</span> iLoggerFactory.getLogger(name);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> ILoggerFactory <span class="title">getILoggerFactory</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (INITIALIZATION_STATE == UNINITIALIZED) &#123;</span><br><span class="line">      INITIALIZATION_STATE = ONGOING_INITIALIZATION;</span><br><span class="line">      performInitialization();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">switch</span> (INITIALIZATION_STATE) &#123;</span><br><span class="line">      <span class="keyword">case</span> SUCCESSFUL_INITIALIZATION:</span><br><span class="line">        <span class="keyword">return</span> StaticLoggerBinder.getSingleton().getLoggerFactory();</span><br><span class="line">      <span class="comment">// ......</span></span><br><span class="line">      <span class="keyword">case</span> ONGOING_INITIALIZATION:</span><br><span class="line">        <span class="comment">// support re-entrant behavior.</span></span><br><span class="line">        <span class="comment">// See also http://bugzilla.slf4j.org/show_bug.cgi?id=106</span></span><br><span class="line">        <span class="keyword">return</span> TEMP_FACTORY;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// .....</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">bind</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      Set staticLoggerBinderPathSet = findPossibleStaticLoggerBinderPathSet();</span><br><span class="line">      <span class="comment">// the next line does the binding</span></span><br><span class="line">      <span class="comment">// 这里并没有使用上面的返回set进行反射构建类，这里实际上才是各种初始化的地方</span></span><br><span class="line">      StaticLoggerBinder.getSingleton();</span><br><span class="line">      INITIALIZATION_STATE = SUCCESSFUL_INITIALIZATION;</span><br><span class="line">      <span class="comment">// ......</span></span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">      <span class="comment">// ......</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">private</span> <span class="keyword">static</span> Set <span class="title">findPossibleStaticLoggerBinderPathSet</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">// use Set instead of list in order to deal with  bug #138</span></span><br><span class="line">    <span class="comment">// LinkedHashSet appropriate here because it preserves insertion order during iteration</span></span><br><span class="line">    Set staticLoggerBinderPathSet = <span class="keyword">new</span> LinkedHashSet();</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      ClassLoader loggerFactoryClassLoader = LoggerFactory.class</span><br><span class="line">              .getClassLoader();</span><br><span class="line">      Enumeration paths;</span><br><span class="line">      <span class="keyword">if</span> (loggerFactoryClassLoader == <span class="keyword">null</span>) &#123;</span><br><span class="line">        paths = ClassLoader.getSystemResources(STATIC_LOGGER_BINDER_PATH);</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        paths = loggerFactoryClassLoader</span><br><span class="line">                .getResources(STATIC_LOGGER_BINDER_PATH);</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">while</span> (paths.hasMoreElements()) &#123;</span><br><span class="line">        URL path = (URL) paths.nextElement();</span><br><span class="line">        staticLoggerBinderPathSet.add(path);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException ioe) &#123;</span><br><span class="line">      Util.report(<span class="string">&quot;Error getting resources from path&quot;</span>, ioe);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> staticLoggerBinderPathSet;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>上面的部分代码，可以很明显看出，slf4j 会去调用classloader获取当前加载的类中，实现了指定的接口<code>org/slf4j/impl/StaticLoggerBinder.class</code>的类，如果多余1个，则会抛出异常。</p>
+<p>以上，依然可以从代码中看出这个只是检测是否存在符合接口的实现类，而没有像正常情况那样，通过反射构建类，返回给调用方。如何实现呢？</p>
+<p>直接在自己的包中实现一个和 <code>slf4j</code>要求路径一样的类，实现对应的接口，然后就可以调用了。不明白，看代码吧。:)</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">package</span> org.slf4j.impl;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> ch.qos.logback.core.status.StatusUtil;</span><br><span class="line"><span class="keyword">import</span> org.slf4j.ILoggerFactory;</span><br><span class="line"><span class="keyword">import</span> org.slf4j.LoggerFactory;</span><br><span class="line"><span class="keyword">import</span> org.slf4j.helpers.Util;</span><br><span class="line"><span class="keyword">import</span> org.slf4j.spi.LoggerFactoryBinder;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> ch.qos.logback.classic.LoggerContext;</span><br><span class="line"><span class="keyword">import</span> ch.qos.logback.classic.util.ContextInitializer;</span><br><span class="line"><span class="keyword">import</span> ch.qos.logback.classic.util.ContextSelectorStaticBinder;</span><br><span class="line"><span class="keyword">import</span> ch.qos.logback.core.CoreConstants;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">StaticLoggerBinder</span> <span class="keyword">implements</span> <span class="title">LoggerFactoryBinder</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">static</span> StaticLoggerBinder SINGLETON = <span class="keyword">new</span> StaticLoggerBinder();</span><br><span class="line"></span><br><span class="line">  <span class="keyword">static</span> &#123;</span><br><span class="line">    SINGLETON.init();</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 这里就是创建logback的LoggerContext实例， 包含了log所需的环境配置</span></span><br><span class="line">  <span class="keyword">private</span> LoggerContext defaultLoggerContext = <span class="keyword">new</span> LoggerContext();</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> ContextSelectorStaticBinder contextSelectorBinder = ContextSelectorStaticBinder</span><br><span class="line">      .getSingleton();</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">private</span> <span class="title">StaticLoggerBinder</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    defaultLoggerContext.setName(CoreConstants.DEFAULT_CONTEXT_NAME);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> StaticLoggerBinder <span class="title">getSingleton</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> SINGLETON;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">init</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 这里会初始化配置文件和对应的模板，logback.xml解析</span></span><br><span class="line">        <span class="keyword">new</span> ContextInitializer(defaultLoggerContext).autoConfig();</span><br><span class="line">      &#125; </span><br><span class="line">      <span class="comment">// ......</span></span><br><span class="line">  &#125;</span><br><span class="line">  &#125;&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>从 package 和 import 的信息，可以看出，logback 中实现了一个 <code>org.slf4j.impl.StaticLoggerBinder</code> 类，而这个类，在slf4j 的 API 包中直接使用，所以使用slf4j时，必须还要引入其他具体的第三方包来实现相应的接口方法。</p>
+<p>此外，接下来的核心逻辑就是解析logback下各种配置文件信息，以及初始化配置。</p>
+</blockquote>
+<h3 id="输出日志模板解析"><a href="#输出日志模板解析" class="headerlink" title="输出日志模板解析"></a>输出日志模板解析</h3><p>如上所见，其实关于logback.xml的解析工作，也是在初始化的时候完成的。但是，由于其重要性，所以这里重点介绍下。</p>
+<p>在 logback 中，解析xml的工作，都是交给 Action 和其继承类来完成。在 Action 类中提供了三个方法<code>begin</code>、<code>body</code>和<code>end</code>三个方法，这三个抽象方法中：</p>
+<ul>
+<li>begin 方法负责处理ElementSelector元素的解析；</li>
+<li>body 方法，一般为空，处理文本的；</li>
+<li>end 方法则是处理模板解析的，所以我们的logback.xml的模板解析实在end方法中。具体是在 <code>NestedComplexPropertyIA</code>类中来解析。其继承Action类，并且其会调用具体的模板解析工具类：<code>PatternLayoutEncoder</code>类和<code>PatternLayout</code>类。</li>
+</ul>
+<p><code>PatternLayoutEncoder</code>会创建一个<code>PatternLayout</code>对象，然后获取到logback.xml中配置的模板字符串，即<code>[%d&#123;yyyy-MM-dd HH:mm:ss&#125; %highlight(%-5p) %logger.%M\(%F:%L\)] %X&#123;THREAD_ID&#125; %msg%n</code>，如配置的节点名一样，其在代码中同样赋值给pattern变量。</p>
+<p>接下来，PatternLayoutEncoder 会调用相关方法对pattern进行解析，然后构建一个节点链表，保存这个链表会在日志输出的时使用到。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br></pre></td><td class="code"><pre><span class="line">  <span class="function"><span class="keyword">public</span> <span class="title">Parser</span><span class="params">(String pattern, IEscapeUtil escapeUtil)</span> <span class="keyword">throws</span> ScanException </span>&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      TokenStream ts = <span class="keyword">new</span> TokenStream(pattern, escapeUtil);</span><br><span class="line">      <span class="keyword">this</span>.tokenList = ts.tokenize();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IllegalArgumentException npe) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> ScanException(<span class="string">&quot;Failed to initialize Parser&quot;</span>, npe);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="class"><span class="keyword">enum</span> <span class="title">TokenizerState</span> </span>&#123; LITERAL_STATE,  FORMAT_MODIFIER_STATE, KEYWORD_STATE, OPTION_STATE,  RIGHT_PARENTHESIS_STATE&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  <span class="function">List <span class="title">tokenize</span><span class="params">()</span> <span class="keyword">throws</span> ScanException </span>&#123;</span><br><span class="line">    List&lt;Token&gt; tokenList = <span class="keyword">new</span> ArrayList&lt;Token&gt;();</span><br><span class="line">    StringBuffer buf = <span class="keyword">new</span> StringBuffer();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (pointer &lt; patternLength) &#123;</span><br><span class="line">      <span class="keyword">char</span> c = pattern.charAt(pointer);</span><br><span class="line">      pointer++;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">switch</span> (state) &#123;</span><br><span class="line">        <span class="keyword">case</span> LITERAL_STATE:</span><br><span class="line">          handleLiteralState(c, tokenList, buf);</span><br><span class="line">          <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> FORMAT_MODIFIER_STATE:</span><br><span class="line">          handleFormatModifierState(c, tokenList, buf);</span><br><span class="line">          <span class="keyword">break</span>;</span><br><span class="line">        <span class="comment">// ......</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// EOS</span></span><br><span class="line">    <span class="keyword">switch</span> (state) &#123;</span><br><span class="line">      <span class="keyword">case</span> LITERAL_STATE:</span><br><span class="line">        addValuedToken(Token.LITERAL, buf, tokenList);</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">     <span class="comment">// ......</span></span><br><span class="line"></span><br><span class="line">      <span class="keyword">case</span> FORMAT_MODIFIER_STATE:</span><br><span class="line">      <span class="keyword">case</span> OPTION_STATE:</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> ScanException(<span class="string">&quot;Unexpected end of pattern string&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> tokenList;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 构建head链表</span></span><br><span class="line">  <span class="function">Converter&lt;E&gt; <span class="title">compile</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    head = tail = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">for</span> (Node n = top; n != <span class="keyword">null</span>; n = n.next) &#123;</span><br><span class="line">      <span class="keyword">switch</span> (n.type) &#123;</span><br><span class="line">        <span class="keyword">case</span> Node.LITERAL:</span><br><span class="line">          addToList(<span class="keyword">new</span> LiteralConverter&lt;E&gt;((String) n.getValue()));</span><br><span class="line">          <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> Node.COMPOSITE_KEYWORD:</span><br><span class="line">          CompositeNode cn = (CompositeNode) n;</span><br><span class="line">          CompositeConverter&lt;E&gt; compositeConverter = createCompositeConverter(cn);</span><br><span class="line">          <span class="keyword">if</span>(compositeConverter == <span class="keyword">null</span>) &#123;</span><br><span class="line">            addError(<span class="string">&quot;Failed to create converter for [%&quot;</span>+cn.getValue()+<span class="string">&quot;] keyword&quot;</span>);</span><br><span class="line">            addToList(<span class="keyword">new</span> LiteralConverter&lt;E&gt;(<span class="string">&quot;%PARSER_ERROR[&quot;</span>+cn.getValue()+<span class="string">&quot;]&quot;</span>));</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">          &#125;</span><br><span class="line">          compositeConverter.setFormattingInfo(cn.getFormatInfo());</span><br><span class="line">          compositeConverter.setOptionList(cn.getOptions());</span><br><span class="line">          Compiler&lt;E&gt; childCompiler = <span class="keyword">new</span> Compiler&lt;E&gt;(cn.getChildNode(),</span><br><span class="line">                  converterMap);</span><br><span class="line">          childCompiler.setContext(context);</span><br><span class="line">          Converter&lt;E&gt; childConverter = childCompiler.compile();</span><br><span class="line">          compositeConverter.setChildConverter(childConverter);</span><br><span class="line">          addToList(compositeConverter);</span><br><span class="line">          <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> Node.SIMPLE_KEYWORD:</span><br><span class="line">          SimpleKeywordNode kn = (SimpleKeywordNode) n;</span><br><span class="line">          DynamicConverter&lt;E&gt; dynaConverter = createConverter(kn);</span><br><span class="line">          <span class="keyword">if</span> (dynaConverter != <span class="keyword">null</span>) &#123;</span><br><span class="line">            dynaConverter.setFormattingInfo(kn.getFormatInfo());</span><br><span class="line">            dynaConverter.setOptionList(kn.getOptions());</span><br><span class="line">            addToList(dynaConverter);</span><br><span class="line">          &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">// if the appropriate dynaconverter cannot be found, then replace</span></span><br><span class="line">            <span class="comment">// it with a dummy LiteralConverter indicating an error.</span></span><br><span class="line">            Converter&lt;E&gt; errConveter = <span class="keyword">new</span> LiteralConverter&lt;E&gt;(<span class="string">&quot;%PARSER_ERROR[&quot;</span></span><br><span class="line">                    + kn.getValue() + <span class="string">&quot;]&quot;</span>);</span><br><span class="line">            addStatus(<span class="keyword">new</span> ErrorStatus(<span class="string">&quot;[&quot;</span> + kn.getValue()</span><br><span class="line">                    + <span class="string">&quot;] is not a valid conversion word&quot;</span>, <span class="keyword">this</span>));</span><br><span class="line">            addToList(errConveter);</span><br><span class="line">          &#125;</span><br><span class="line"></span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> head;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>代码很简单，就是依次遍历pattern字符串，然后把符合要求的字符串放进tokenList中，这个list就维护了我们最终需要输出的模板的格式化模式了。</p>
+<p>在每个case里面，都会对字符串进行特定的处理，匹配具体的字符。</p>
+<p>在随后的处理中，会将这个tokenList进行转换，成为我们需要的Node类型的拥有head 和 tail 的链表。</p>
+</blockquote>
+<h3 id="日志输出分析"><a href="#日志输出分析" class="headerlink" title="日志输出分析"></a>日志输出分析</h3><p>构建了各种需要的环境参数，打印日志就很简单了。在需要输出日志的时候，根据初始化得到的Node链表head来解析，遇到%X的时候，从MDC中获取对应的key值，然后append到日志字符串中，然后输出。</p>
+<blockquote>
+<p>在配置文件中，我们使用Appender模式，在日志输出类中，显然会调用append类似的方法了。:)</p>
+<p>其调用流程</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">OutputStreamAppender</span>&lt;<span class="title">E</span>&gt; <span class="keyword">extends</span> <span class="title">UnsynchronizedAppenderBase</span>&lt;<span class="title">E</span>&gt; </span>&#123;</span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">append</span><span class="params">(E eventObject)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!isStarted()) &#123;</span><br><span class="line">      <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    subAppend(eventObject);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 这里就是日志输出实际的操作，一般如果有需要，可以重写这个方法。</span></span><br><span class="line">  <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">subAppend</span><span class="params">(E event)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!isStarted()) &#123;</span><br><span class="line">      <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="comment">// this step avoids LBCLASSIC-139</span></span><br><span class="line">      <span class="keyword">if</span> (event <span class="keyword">instanceof</span> DeferredProcessingAware) &#123;</span><br><span class="line">        <span class="comment">// 这里虽然是为输出准备，在检查的同时，把把必要的信息解析出来放到变量中</span></span><br><span class="line">        ((DeferredProcessingAware) event).prepareForDeferredProcessing();</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="comment">// the synchronization prevents the OutputStream from being closed while we</span></span><br><span class="line">      <span class="comment">// are writing. It also prevents multiple threads from entering the same</span></span><br><span class="line">      <span class="comment">// converter. Converters assume that they are in a synchronized block.</span></span><br><span class="line">      <span class="keyword">synchronized</span> (lock) &#123;</span><br><span class="line">        <span class="comment">// 避免多线程的问题，这里加了锁。而写日志的核心也是在这里</span></span><br><span class="line">        writeOut(event);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException ioe) &#123;</span><br><span class="line">      <span class="comment">// as soon as an exception occurs, move to non-started state</span></span><br><span class="line">      <span class="comment">// and add a single ErrorStatus to the SM.</span></span><br><span class="line">      <span class="keyword">this</span>.started = <span class="keyword">false</span>;</span><br><span class="line">      addStatus(<span class="keyword">new</span> ErrorStatus(<span class="string">&quot;IO failure in appender&quot;</span>, <span class="keyword">this</span>, ioe));</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 这里将会调用前面我们提到过的模板类，有该类对解析出来的模板按照当前环境进行输出</span></span><br><span class="line">  <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">writeOut</span><span class="params">(E event)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.encoder.doEncode(event);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>Notes：在<code>prepareForDeferredProcessing</code>中，查询了一些常用值，比如当前线程名，比如mdc设置赋值到Map中。而这些信息，当准备结束没有出现问题时，则会给后面的输出日志时公用。</p>
+<p>这种方式，其实在我们的代码中，也可以参考。一般我们可能对当前上下文的入参检查会去查询数据库等耗费CPU或者IO的操作，然后check ok的时候，又会在正常的业务中再次做相同的重复工作，导致不必要的性能损失。</p>
+</blockquote>
+<p>接下来看看，针对模板进行按需获取属性值，然后输出日志的逻辑：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">// 这里的逻辑就是按照模板获取值然后转换成字节流输出到后台</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">doEncode</span><span class="params">(E event)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">  String txt = layout.doLayout(event);</span><br><span class="line">  outputStream.write(convertToBytes(txt));</span><br><span class="line">  <span class="keyword">if</span> (immediateFlush)</span><br><span class="line">    outputStream.flush();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> String <span class="title">doLayout</span><span class="params">(ILoggingEvent event)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (!isStarted()) &#123;</span><br><span class="line">    <span class="keyword">return</span> CoreConstants.EMPTY_STRING;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> writeLoopOnConverters(event);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 初始化的时候，就介绍过最后会构建一个head链表，</span></span><br><span class="line"><span class="comment">// 这里输出就是按照解析后的链表进行分析输出的。然后根据c类型不同，获取字符串方法也不同</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> String <span class="title">writeLoopOnConverters</span><span class="params">(E event)</span> </span>&#123;</span><br><span class="line">  StringBuilder buf = <span class="keyword">new</span> StringBuilder(<span class="number">128</span>);</span><br><span class="line">  Converter&lt;E&gt; c = head;</span><br><span class="line">  <span class="keyword">while</span> (c != <span class="keyword">null</span>) &#123;</span><br><span class="line">    c.write(buf, event);</span><br><span class="line">    c = c.getNext();</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> buf.toString();</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>在<code>writeLoopOnConverters</code>方法中，获取对应字符串是不同的，其根据不同的Converter，输出也不同。而Converter的判断，时就是根据我们配置的map映射来的，在初始化一节的时候，介绍的<code>PatternLayout</code>就包含各种映射关系。至于具体的convert方法，看看mdc的实现：</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MDCConverter</span> <span class="keyword">extends</span> <span class="title">ClassicConverter</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">private</span> String key;</span><br><span class="line">  <span class="keyword">private</span> String defaultValue = <span class="string">&quot;&quot;</span>;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">start</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    String[] keyInfo = extractDefaultReplacement(getFirstOption());</span><br><span class="line">    key = keyInfo[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">if</span> (keyInfo[<span class="number">1</span>] != <span class="keyword">null</span>) &#123;</span><br><span class="line">      defaultValue = keyInfo[<span class="number">1</span>];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">super</span>.start();</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">stop</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    key = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">super</span>.stop();</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> String <span class="title">convert</span><span class="params">(ILoggingEvent event)</span> </span>&#123;</span><br><span class="line">    Map&lt;String, String&gt; mdcPropertyMap = event.getMDCPropertyMap();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (mdcPropertyMap == <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="keyword">return</span> defaultValue;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (key == <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="keyword">return</span> outputMDCForAllKeys(mdcPropertyMap);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line"></span><br><span class="line">      String value = event.getMDCPropertyMap().get(key);<span class="comment">//获取key的值</span></span><br><span class="line">      <span class="keyword">if</span> (value != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> value;</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> defaultValue;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * if no key is specified, return all the values present in the MDC, in the format &quot;k1=v1, k2=v2, ...&quot;</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">private</span> String <span class="title">outputMDCForAllKeys</span><span class="params">(Map&lt;String, String&gt; mdcPropertyMap)</span> </span>&#123;</span><br><span class="line">    StringBuilder buf = <span class="keyword">new</span> StringBuilder();</span><br><span class="line">    <span class="keyword">boolean</span> first = <span class="keyword">true</span>;</span><br><span class="line">    <span class="keyword">for</span> (Map.Entry&lt;String, String&gt; entry : mdcPropertyMap.entrySet()) &#123;</span><br><span class="line">      <span class="keyword">if</span> (first) &#123;</span><br><span class="line">        first = <span class="keyword">false</span>;</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        buf.append(<span class="string">&quot;, &quot;</span>);</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="comment">//format: key0=value0, key1=value1</span></span><br><span class="line">      buf.append(entry.getKey()).append(<span class="string">&#x27;=&#x27;</span>).append(entry.getValue());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> buf.toString();</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>我们在MDC实现的时候看到的get方法，在这里就使用了。我们将key:value键值对存放到MDC之后，在logback.xml中配置%X{key}，没有直接调用get方法，logback会根据<code>X</code>判断是MDC类型，然后根据<code>key</code>拿到MDC中对应的value，然后返回给buf中，最后append到后台日志上。</p>
+</blockquote>
+<h2 id="后记"><a href="#后记" class="headerlink" title="后记"></a><a id="End">后记</a></h2><p>其实，本身的 MDC 使用很简单，实现原理也很简单。但是，这里为了分析从将 key:value put 进MDC，然后怎么获取，怎么打印到后台的逻辑，对整个从 SLF4J 到 logback 的运行流程进场了大体解析。而对不影响理解的一些枝节，进行了删减。因此，如果需要完全弄清楚整个逻辑，还需要进行详细分析源码。</p>
+<p>在目前的代码中，我们在web.xml 中配置了 filter 来将一些用户个人访问特征存入了MDC中，这样可以获取一个用户的操作流程，根据某一个访问特征去grep的话。</p>
+<p>下一次，将分享下这种实现细节背后的一些技术。虽然实现很简单，但是想深入分析下filter机制和web = tomcat + spring mvc 的请求处理流程，这些技术细节，是如何使一个MDC信息可以保存一个用户依次的访问流水记录。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2015/02/26/2015-02-26-Python-Tutoril-Python-Object-Oriented-Programming/" rel="prev" title="Python 教程学习之 Python 面向对象编程">
+      <i class="fa fa-chevron-left"></i> Python 教程学习之 Python 面向对象编程
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2015/08/30/2015-08-30-nginx-proxy-configure-and-sduty/" rel="next" title="Nginx 反向代理配置和工作原理">
+      Nginx 反向代理配置和工作原理 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Slf4j-MDC-%E4%BB%8B%E7%BB%8D"><span class="nav-number">2.</span> <span class="nav-text">Slf4j MDC 介绍</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E7%BD%AE%E7%9F%A5%E8%AF%86%E4%BB%8B%E7%BB%8D"><span class="nav-number">3.</span> <span class="nav-text">前置知识介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#InheritableThreadLocal-%E4%BB%8B%E7%BB%8D"><span class="nav-number">3.1.</span> <span class="nav-text">InheritableThreadLocal 介绍</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Log-MDC-%E5%AE%9E%E7%8E%B0%E5%88%86%E6%9E%90"><span class="nav-number">4.</span> <span class="nav-text">Log MDC 实现分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Slf4j-MDC-%E5%AE%9E%E7%8E%B0%E5%88%86%E6%9E%90"><span class="nav-number">4.1.</span> <span class="nav-text">Slf4j MDC 实现分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Logback-MDC-%E5%AE%9E%E7%8E%B0%E5%88%86%E6%9E%90"><span class="nav-number">4.2.</span> <span class="nav-text">Logback MDC 实现分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#MDC-clear-%E6%93%8D%E4%BD%9C"><span class="nav-number">4.3.</span> <span class="nav-text">MDC clear 操作</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Logback-%E6%97%A5%E5%BF%97%E8%BE%93%E5%87%BA%E5%AE%9E%E7%8E%B0"><span class="nav-number">5.</span> <span class="nav-text">Logback 日志输出实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="nav-number">5.1.</span> <span class="nav-text">初始化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BE%93%E5%87%BA%E6%97%A5%E5%BF%97%E6%A8%A1%E6%9D%BF%E8%A7%A3%E6%9E%90"><span class="nav-number">5.2.</span> <span class="nav-text">输出日志模板解析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%97%A5%E5%BF%97%E8%BE%93%E5%87%BA%E5%88%86%E6%9E%90"><span class="nav-number">5.3.</span> <span class="nav-text">日志输出分析</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%8E%E8%AE%B0"><span class="nav-number">6.</span> <span class="nav-text">后记</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="柯小小西"
+      src="/images/ava.gif">
+  <p class="site-author-name" itemprop="name">柯小小西</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">47</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">柯小小西</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">476k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">7:13</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

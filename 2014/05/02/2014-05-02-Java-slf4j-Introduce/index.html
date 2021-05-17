@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="前言slf4j:简洁的java日志统一接口(Simple Logging Facade for Java),顾名思义,就是一个使用Facade设计模式实现的面向java Logging框架的接口开源包.其和java数据库连接工具包JDBC很像, 在JDBC框架中, 各个不同数据库连接器分别针对不同数据库系统来实现对应的连接操作, 而普通程序员只需要使用统一的JDBC接口而不需要关注具体底层使用的数">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java日志框架slf4j API介绍及异常接口实现分析">
+<meta property="og:url" content="http://example.com/2014/05/02/2014-05-02-Java-slf4j-Introduce/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="前言slf4j:简洁的java日志统一接口(Simple Logging Facade for Java),顾名思义,就是一个使用Facade设计模式实现的面向java Logging框架的接口开源包.其和java数据库连接工具包JDBC很像, 在JDBC框架中, 各个不同数据库连接器分别针对不同数据库系统来实现对应的连接操作, 而普通程序员只需要使用统一的JDBC接口而不需要关注具体底层使用的数">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/2014/05/facade.png">
+<meta property="article:published_time" content="2014-05-02T14:21:35.000Z">
+<meta property="article:modified_time" content="2021-05-17T14:57:11.569Z">
+<meta property="article:author" content="柯小小西">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/2014/05/facade.png">
+
+<link rel="canonical" href="http://example.com/2014/05/02/2014-05-02-Java-slf4j-Introduce/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Java日志框架slf4j API介绍及异常接口实现分析 | Hexo</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hexo</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2014/05/02/2014-05-02-Java-slf4j-Introduce/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ava.gif">
+      <meta itemprop="name" content="柯小小西">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hexo">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Java日志框架slf4j API介绍及异常接口实现分析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2014-05-02 22:21:35" itemprop="dateCreated datePublished" datetime="2014-05-02T22:21:35+08:00">2014-05-02</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-05-17 22:57:11" itemprop="dateModified" datetime="2021-05-17T22:57:11+08:00">2021-05-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/Log/" itemprop="url" rel="index"><span itemprop="name">Log</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>16k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>15 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a><a id="Intro">前言</a></h2><p>slf4j:简洁的java日志统一接口(Simple Logging Facade for Java),顾名思义,就是一个使用Facade设计模式实现的面向java Logging框架的接口开源包.<br>其和java数据库连接工具包JDBC很像, 在JDBC框架中, 各个不同数据库连接器分别针对不同数据库系统来实现对应的连接操作, 而普通程序员只需要使用统一的JDBC接口而不需要关注具体底层使用的数据库类型, 或者针对不同的数据库系统写各种兼容代码.</p>
+<blockquote>
+<p>Note: slf4j其实类似于适配器,但是这里不称呼适配器,是因为当底层log日志系统不支持slf4j扩展时,比如log4j,就需要在两者中间增加一个适配器层来完成slf4j调用相关日志系统的操作接口动作.例如,slf4j为log4j提高的slf4j-log412.jar类库,但是logback支持slf4J扩展,所以其不需适配层转换.</p>
+</blockquote>
+<p>同样，slf4j 不参与具体的日志代码实现，它只是在代码编译的时候根据程序的配置来绑定具体的日志系统。这样，使用slf4j类库就可以让你的代码独立于任意一个特定的日志API。因此，如果编写一个对外开发的API活着一个同样的类库，那么为了不限制使用你类库的代码必须使用指定的日志系统，你应该使用slf4j。</p>
+<p>相对于其他日志框架，slf4j日志类库的优点和推荐使用的缘由，可以参见 ImportNew 的译文【 <a href="#http://www.importnew.com/7450.html">为什么要使用SLF4J而不是Log4J</a> 】</p>
+<h2 id="Facade设计模式简介"><a href="#Facade设计模式简介" class="headerlink" title="Facade设计模式简介"></a><a id="Facade">Facade设计模式简介</a></h2><p>Facade模式，或者叫做外观模式，顾名思义就是封装各个底层子系统的提供的同一类功能接口，统一成一个更易操作使用的上层接口进而对外提供交互。有了这个上层封装的接口，接口调用方只需要调用这个接口，而不需要关于各个子系统的具体逻辑实现。</p>
+<p>Facade设计模式的官方定义是：Facade模式定义了一个更高层的接口，使子系统更加容易使用。</p>
+<span id="more"></span>
+
+<p>关于Facade模式的实例，日常生活中很多这样子的例子。比如，5、1回家，可以有好几种方式：飞机、火车、长途汽车。在实际生活中，你回家的路线应该是：</p>
+<pre><code>    1. 坐车去机场（火车站/长途汽车站）；
+    2. 坐飞机（火车/长途汽车）到家乡；
+    3. 从家乡飞机场（火车站/长途汽车站）到家里。 
+</code></pre>
+<p>一般来说，上面的流程是毫无问题的。但是，如果做成一个系统，你需要对外暴露3个步骤中得3个不同的接口，外界需要根据不同的交通方式选择不同的调用接口，这无疑加大了接口调研的复杂度，以及系统的复杂度。如下图所示：</p>
+<img src="/images/2014/05/facade.png" />
+
+<p>使用Facade模式，封装各个子系统的实现，对外提供3个接口：</p>
+<pre><code>    1. 坐车其站点；
+    2. 做主交通工具到家乡；
+    3. 从家乡的站点回家里。
+</code></pre>
+<p>因此，接口使用方不需要知道子系统具体是什么样的业务逻辑，其主要要在配置中，或者一开始指定交通工具，就可以让facade系统来完成下面的一系列操作。这样，除了让我们的系统对外暴露接口少了，最重要的是可以让第三方以最低的成本使用我们的接口。</p>
+<h2 id="slf4j绑定日志"><a href="#slf4j绑定日志" class="headerlink" title="slf4j绑定日志"></a><a id="Bind">slf4j绑定日志</a></h2><h3 id="3-1-slf4j-设计模式说明"><a href="#3-1-slf4j-设计模式说明" class="headerlink" title="3.1 slf4j 设计模式说明"></a>3.1 slf4j 设计模式说明</h3><p>为了说明slf4j采用的Facade模式，也就是如果只引入slf4j-api包，日志系统将无法正常使用。例如在pom.xml文件这只有：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.slf4j<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>slf4j-api<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.7.5<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span>       </span><br></pre></td></tr></table></figure>
+
+<p>而<a id="BindCode">测试代码</a>为：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.slf4j.Logger;</span><br><span class="line"><span class="keyword">import</span> org.slf4j.LoggerFactory;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span>: ketao Date: 14-5-3 Time: 上午1:03</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@version</span>: \$Id$</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LogTest</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Logger logger = LoggerFactory.getLogger(LogTest.class);</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span></span>&#123;</span><br><span class="line">        logger.info(<span class="string">&quot;Hello world&quot;</span>);</span><br><span class="line">        logger.error(<span class="string">&quot;ERROR&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;       </span><br></pre></td></tr></table></figure>
+
+<p>执行上面的代码会出现提示：</p>
+<pre><code>SLF4J: Failed to load class &quot;org.slf4j.impl.StaticLoggerBinder&quot;.
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+</code></pre>
+<p>而如果我们引入logback日志系统，并且配置logback.xml日志配置文件：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>ch.qos.logback<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>logback-classic<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.0.13<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span>        </span><br></pre></td></tr></table></figure>
+
+<p>接下来执行上面的测试代码，则会打印日志信息：</p>
+<pre><code>[2014-05-03 01:27:11 [34mINFO [0;39m com.qunar.dubbo.LogTest.main(LogTest.java:17)] Hello world
+[2014-05-03 01:27:11 [1;31mERROR[0;39m com.qunar.dubbo.LogTest.main(LogTest.java:18)] ERROR
+</code></pre>
+<h3 id="3-2-slf4j-日志绑定流程"><a href="#3-2-slf4j-日志绑定流程" class="headerlink" title="3.2 slf4j 日志绑定流程"></a>3.2 slf4j 日志绑定流程</h3><p>如<a href="#BindCode">3.1</a>中的代码所示，首先调用<code>LoggerFactory.getLogger</code>的方法，这个方法会在编译的时候，绑定系统设置的真正的日志框架，如下代码所示：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Return a logger named according to the name parameter using the statically</span></span><br><span class="line"><span class="comment">   * bound &#123;<span class="doctag">@link</span> ILoggerFactory&#125; instance.</span></span><br><span class="line"><span class="comment">   *</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@param</span> name The name of the logger.</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@return</span> logger</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Logger <span class="title">getLogger</span><span class="params">(String name)</span> </span>&#123;</span><br><span class="line">    ILoggerFactory iLoggerFactory = getILoggerFactory(); <span class="comment">// 这里先获取ILoggerFactory对象</span></span><br><span class="line">    <span class="keyword">return</span> iLoggerFactory.getLogger(name); <span class="comment">// 根据获取的ILoggerFactory对象，调用其对应的日志对象</span></span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">   <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Return the &#123;<span class="doctag">@link</span> ILoggerFactory&#125; instance in use.</span></span><br><span class="line"><span class="comment">   * &lt;p/&gt;</span></span><br><span class="line"><span class="comment">   * &lt;p/&gt;</span></span><br><span class="line"><span class="comment">   * ILoggerFactory instance is bound with this class at compile time.</span></span><br><span class="line"><span class="comment">   *</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@return</span> the ILoggerFactory instance in use</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> ILoggerFactory <span class="title">getILoggerFactory</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (INITIALIZATION_STATE == UNINITIALIZED) &#123;</span><br><span class="line">      INITIALIZATION_STATE = ONGOING_INITIALIZATION;</span><br><span class="line">      performInitialization();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">switch</span> (INITIALIZATION_STATE) &#123;</span><br><span class="line">      <span class="keyword">case</span> SUCCESSFUL_INITIALIZATION:</span><br><span class="line">        <span class="keyword">return</span> StaticLoggerBinder.getSingleton().getLoggerFactory();<span class="comment">// 这里就可以获取底层日志系统的单例对象了</span></span><br><span class="line">      <span class="keyword">case</span> NOP_FALLBACK_INITIALIZATION:</span><br><span class="line">        <span class="keyword">return</span> NOP_FALLBACK_FACTORY;</span><br><span class="line">      <span class="keyword">case</span> FAILED_INITIALIZATION:</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(UNSUCCESSFUL_INIT_MSG);</span><br><span class="line">      <span class="keyword">case</span> ONGOING_INITIALIZATION:</span><br><span class="line">        <span class="comment">// support re-entrant behavior.</span></span><br><span class="line">        <span class="comment">// See also http://bugzilla.slf4j.org/show_bug.cgi?id=106</span></span><br><span class="line">        <span class="keyword">return</span> TEMP_FACTORY;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(<span class="string">&quot;Unreachable code&quot;</span>);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>而绑定是在<code>getILoggerFactory()</code>中调用的，在该方法的实现里，会调用<code>performInitialization()</code>，该方法调用<code>bind()</code>方法（部分代码）：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">bind</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      Set staticLoggerBinderPathSet = findPossibleStaticLoggerBinderPathSet();<span class="comment">// 寻找程序配置的日志系统集，具体见下面代码</span></span><br><span class="line">      reportMultipleBindingAmbiguity(staticLoggerBinderPathSet);<span class="comment">// 验证多于1个日志系统时，输出警告信息</span></span><br><span class="line">      <span class="comment">// the next line does the binding</span></span><br><span class="line">      StaticLoggerBinder.getSingleton();<span class="comment">// 测试是否可以获取该静态绑定类单例，可以，则置为成功状态，如下行；否则，会打出3.1中的NOP异常信息。</span></span><br><span class="line">      INITIALIZATION_STATE = SUCCESSFUL_INITIALIZATION;</span><br><span class="line">      reportActualBinding(staticLoggerBinderPathSet);<span class="comment">// 绑定，打印绑定具体日志系统的日志</span></span><br><span class="line">      emitSubstituteLoggerWarning();<span class="comment">// 提交给临时日志factory 打印的日志，不是重点</span></span><br><span class="line">    &#125; <span class="keyword">catch</span> (NoClassDefFoundError ncde) &#123;</span><br><span class="line">      String msg = ncde.getMessage();</span><br><span class="line">      <span class="keyword">if</span> (messageContainsOrgSlf4jImplStaticLoggerBinder(msg)) &#123;</span><br><span class="line">        INITIALIZATION_STATE = NOP_FALLBACK_INITIALIZATION;</span><br><span class="line">        Util.report(<span class="string">&quot;Failed to load class \&quot;org.slf4j.impl.StaticLoggerBinder\&quot;.&quot;</span>);</span><br><span class="line">        Util.report(<span class="string">&quot;Defaulting to no-operation (NOP) logger implementation&quot;</span>);</span><br><span class="line">        Util.report(<span class="string">&quot;See &quot;</span> + NO_STATICLOGGERBINDER_URL</span><br><span class="line">                + <span class="string">&quot; for further details.&quot;</span>);</span><br><span class="line">      &#125; </span><br><span class="line">    &#125;</span><br><span class="line">  &#125;        </span><br></pre></td></tr></table></figure>
+
+<p>下面看看，slf4j是如何获取系统中指定的真正底层日志系统：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// We need to use the name of the StaticLoggerBinder class, but we can&#x27;t reference</span></span><br><span class="line">  <span class="comment">// the class itself.</span></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">static</span> String STATIC_LOGGER_BINDER_PATH = <span class="string">&quot;org/slf4j/impl/StaticLoggerBinder.class&quot;</span>;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">private</span> <span class="keyword">static</span> Set <span class="title">findPossibleStaticLoggerBinderPathSet</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">// use Set instead of list in order to deal with  bug #138</span></span><br><span class="line">    <span class="comment">// LinkedHashSet appropriate here because it preserves insertion order during iteration</span></span><br><span class="line">    Set staticLoggerBinderPathSet = <span class="keyword">new</span> LinkedHashSet();</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      ClassLoader loggerFactoryClassLoader = LoggerFactory.class</span><br><span class="line">              .getClassLoader();</span><br><span class="line">      Enumeration paths;</span><br><span class="line">      <span class="keyword">if</span> (loggerFactoryClassLoader == <span class="keyword">null</span>) &#123;</span><br><span class="line">        paths = ClassLoader.getSystemResources(STATIC_LOGGER_BINDER_PATH);</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        paths = loggerFactoryClassLoader</span><br><span class="line">                .getResources(STATIC_LOGGER_BINDER_PATH);</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">while</span> (paths.hasMoreElements()) &#123;</span><br><span class="line">        URL path = (URL) paths.nextElement();</span><br><span class="line">        staticLoggerBinderPathSet.add(path);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException ioe) &#123;</span><br><span class="line">      Util.report(<span class="string">&quot;Error getting resources from path&quot;</span>, ioe);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> staticLoggerBinderPathSet;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+
+<p>slf4j在适配器层或者在兼容slf4j扩展的log-api 中会有一个<code>org/slf4j/impl/StaticLoggerBinder.class</code>类，这样就获取了系统中真正的日志系统。然后获取该日志的单例，打印相关的日志信息就可以了。比如，打印slf4j的<code>log.info</code>则调用logback中<code>Logger.info()</code>方法来打印日志信息。</p>
+<h2 id="slf4j-API使用"><a href="#slf4j-API使用" class="headerlink" title="slf4j API使用"></a><a id="API">slf4j API使用</a></h2><p>slf4j的打印日志基本一致，主要分为：<code>trace</code>,<code>debug</code>,<code>info</code>,<code>warn</code>,<code>error</code>,比log4j少了<code>fatal</code>级别日志。由于每个级别对于的API方法级别一致，因此，这里选用info来介绍不同输入参数的API使用。</p>
+<blockquote>
+<p>Tip: SLF4J 认为 ERROR 与 FATAL 并没有实质上的差别，所以拿掉了 FATAL 等级，只剩下其他五种。</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">  * 纯字符串形式的日志</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"> <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">info</span><span class="params">(String msg)</span></span>;</span><br><span class="line"></span><br><span class="line"> <span class="comment">/**</span></span><br><span class="line"><span class="comment">  * 指定一个参数和位置格式的info级别的日志输出形式。这个形式避免了多个object对象的创建。</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"> <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">info</span><span class="params">(String format, Object arg)</span></span>;</span><br><span class="line"></span><br><span class="line"> <span class="comment">/**</span></span><br><span class="line"><span class="comment">  * 指定2个参数和对于位置格式的info级别的日志输出。</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"> <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">info</span><span class="params">(String format, Object arg1, Object arg2)</span></span>;</span><br><span class="line"></span><br><span class="line"> <span class="comment">/**</span></span><br><span class="line"><span class="comment">  * 根据指定的参数和日志格式来输出info级别的日志信息。</span></span><br><span class="line"><span class="comment">  * 但是，需要指出这种形式虽然避免的字符串拼接的成本，但是它会私底下创建一个`Object[]`对象在调用info方法之前，即使info级别的日志不打印。</span></span><br><span class="line"><span class="comment">  * 因此，如果不是必须3个及以上参数的话，推荐使用两个参数和一个参数的info日志。</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"> <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">info</span><span class="params">(String format, Object... arguments)</span></span>;</span><br><span class="line"></span><br><span class="line"> <span class="comment">/**</span></span><br><span class="line"><span class="comment">  * 打印抛出异常信息的info 级别日志</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"> <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">info</span><span class="params">(String msg, Throwable t)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>此外，需要介绍的是在slf4j中还提供了含有Marker对象的日记输出API接口。Marker是常常被用来丰富log状态的对象。遵守slf4j的日志系统实现，决定了信息怎样在使用的Marker之间传达。实际上，很多遵守规范的日志系统会忽视掉marker数据,所以，我们不介绍Marker相关API接口。</p>
+<p>下面给出各个接口的使用示例代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.io.IOException;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.slf4j.Logger;</span><br><span class="line"><span class="keyword">import</span> org.slf4j.LoggerFactory;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span>: ketao Date: 14-5-3 Time: 上午1:03</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@version</span>: \$Id$</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LogTest</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Logger logger = LoggerFactory.getLogger(LogTest.class);</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        logger.info(<span class="string">&quot;纯字符串信息的info级别日志&quot;</span>);</span><br><span class="line">        logger.info(<span class="string">&quot;一个参数:&#123;&#125;的info级别日志&quot;</span>, <span class="string">&quot;agr1&quot;</span>);</span><br><span class="line">        logger.info(<span class="string">&quot;二个参数:agrs1:&#123;&#125;;agrs2:&#123;&#125;的info级别日志&quot;</span>, <span class="string">&quot;args1&quot;</span>, <span class="string">&quot;args2&quot;</span>);</span><br><span class="line">        <span class="comment">// 下面两种方式都可以，一般使用上面一种就可以了</span></span><br><span class="line">        logger.info(<span class="string">&quot;三个参数:agrs1:&#123;&#125;;agrs2:&#123;&#125;;args3:&#123;&#125; 的info级别日志&quot;</span>, <span class="string">&quot;args1&quot;</span>, <span class="string">&quot;args2&quot;</span>, <span class="string">&quot;args3&quot;</span>);</span><br><span class="line">        logger.info(<span class="string">&quot;三个参数:agrs1:&#123;&#125;;agrs2:&#123;&#125;;args3:&#123;&#125; 的info级别日志&quot;</span>, <span class="keyword">new</span> Object[] &#123; <span class="string">&quot;args1&quot;</span>, <span class="string">&quot;args2&quot;</span>, <span class="string">&quot;args3&quot;</span> &#125;);</span><br><span class="line"></span><br><span class="line">        logger.info(<span class="string">&quot;======================异常相关====================================&quot;</span>);</span><br><span class="line">        <span class="comment">// 测试异常相关日志</span></span><br><span class="line">        logger.info(<span class="string">&quot;抛出异常,e:&quot;</span>, <span class="keyword">new</span> IOException(<span class="string">&quot;测试抛出IO异常信息&quot;</span>));</span><br><span class="line"></span><br><span class="line">        logger.info(<span class="string">&quot;二个参数:agrs1:&#123;&#125;;agrs2:&#123;&#125;的info级别日志&quot;</span>, <span class="string">&quot;args1&quot;</span>, <span class="keyword">new</span> IOException(<span class="string">&quot;测试抛出IO异常信息&quot;</span>));</span><br><span class="line">        logger.info(<span class="string">&quot;二个参数:agrs1:&#123;&#125;;agrs2:&#123;&#125;的info级别日志&quot;</span>, <span class="string">&quot;args1&quot;</span>, <span class="string">&quot;args2&quot;</span>, <span class="keyword">new</span> IOException(<span class="string">&quot;测试抛出IO异常信息&quot;</span>));</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 下面两种方式都可以，一般使用上面一种就可以了</span></span><br><span class="line">        logger.info(<span class="string">&quot;三个参数:agrs1:&#123;&#125;;agrs2:&#123;&#125;;args3:&#123;&#125; 的info级别日志&quot;</span>, <span class="string">&quot;args1&quot;</span>, <span class="string">&quot;args2&quot;</span>, <span class="keyword">new</span> IOException(<span class="string">&quot;测试抛出IO异常信息&quot;</span>));</span><br><span class="line">        logger.info(<span class="string">&quot;三个参数:agrs1:&#123;&#125;;agrs2:&#123;&#125;;args3:&#123;&#125; 的info级别日志&quot;</span>, <span class="string">&quot;args1&quot;</span>, <span class="string">&quot;args2&quot;</span>, <span class="string">&quot;agrs3&quot;</span>, <span class="keyword">new</span> IOException(</span><br><span class="line">                <span class="string">&quot;测试抛出IO异常信息&quot;</span>));</span><br><span class="line"></span><br><span class="line">        logger.info(<span class="string">&quot;三个参数:agrs1:&#123;&#125;;agrs2:&#123;&#125;;args3:&#123;&#125; 的info级别日志&quot;</span>, <span class="keyword">new</span> Object[] &#123; <span class="string">&quot;args1&quot;</span>, <span class="string">&quot;args2&quot;</span>, <span class="string">&quot;args3&quot;</span>,</span><br><span class="line">                <span class="keyword">new</span> IOException(<span class="string">&quot;测试抛出IO异常信息&quot;</span>) &#125;);</span><br><span class="line">        logger.info(<span class="string">&quot;三个参数:agrs1:&#123;&#125;;agrs2:&#123;&#125;;args3:&#123;&#125; 的info级别日志&quot;</span>, <span class="keyword">new</span> Object[] &#123; <span class="string">&quot;args1&quot;</span>, <span class="string">&quot;args2&quot;</span>,</span><br><span class="line">                <span class="keyword">new</span> IOException(<span class="string">&quot;测试抛出IO异常信息&quot;</span>) &#125;);</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>对应输出日志信息：</p>
+<pre><code>[2014-05-03 03:47:14 [34mINFO [0;39m com.qunar.dubbo.LogTest.main(LogTest.java:20)] 纯字符串信息的info级别日志
+[2014-05-03 03:47:14 [34mINFO [0;39m com.qunar.dubbo.LogTest.main(LogTest.java:21)] 一个参数:agr1的info级别日志
+[2014-05-03 03:47:14 [34mINFO [0;39m com.qunar.dubbo.LogTest.main(LogTest.java:22)] 二个参数:agrs1:args1;agrs2:args2的info级别日志
+[2014-05-03 03:47:14 [34mINFO [0;39m com.qunar.dubbo.LogTest.main(LogTest.java:24)] 三个参数:agrs1:args1;agrs2:args2;args3:args3 的info级别日志
+[2014-05-03 03:47:14 [34mINFO [0;39m com.qunar.dubbo.LogTest.main(LogTest.java:25)] 三个参数:agrs1:args1;agrs2:args2;args3:args3 的info级别日志
+[2014-05-03 03:47:14 [34mINFO [0;39m com.qunar.dubbo.LogTest.main(LogTest.java:27)] ======================异常相关====================================
+[2014-05-03 03:47:14 [34mINFO [0;39m com.qunar.dubbo.LogTest.main(LogTest.java:29)] 抛出异常,e:
+java.io.IOException: 测试抛出IO异常信息
+    at com.qunar.dubbo.LogTest.main(LogTest.java:29) [classes/:na]
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[na:1.7.0_45]
+    at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57) ~[na:1.7.0_45]
+    at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[na:1.7.0_45]
+    at java.lang.reflect.Method.invoke(Method.java:606) ~[na:1.7.0_45]
+    at com.intellij.rt.execution.application.AppMain.main(AppMain.java:120) [idea_rt.jar:na]
+[2014-05-03 03:47:14 [34mINFO [0;39m com.qunar.dubbo.LogTest.main(LogTest.java:31)] 二个参数:agrs1:args1;agrs2:java.io.IOException: 测试抛出IO异常信息的info级别日志
+[2014-05-03 03:47:14 [34mINFO [0;39m com.qunar.dubbo.LogTest.main(LogTest.java:32)] 二个参数:agrs1:args1;agrs2:args2的info级别日志
+java.io.IOException: 测试抛出IO异常信息
+    at com.qunar.dubbo.LogTest.main(LogTest.java:32) [classes/:na]
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[na:1.7.0_45]
+    at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57) ~[na:1.7.0_45]
+    at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[na:1.7.0_45]
+    at java.lang.reflect.Method.invoke(Method.java:606) ~[na:1.7.0_45]
+    at com.intellij.rt.execution.application.AppMain.main(AppMain.java:120) [idea_rt.jar:na]
+[2014-05-03 03:47:14 [34mINFO [0;39m com.qunar.dubbo.LogTest.main(LogTest.java:35)] 三个参数:agrs1:args1;agrs2:args2;args3:java.io.IOException: 测试抛出IO异常信息 的info级别日志
+[2014-05-03 03:47:14 [34mINFO [0;39m com.qunar.dubbo.LogTest.main(LogTest.java:36)] 三个参数:agrs1:args1;agrs2:args2;args3:agrs3 的info级别日志
+java.io.IOException: 测试抛出IO异常信息
+    at com.qunar.dubbo.LogTest.main(LogTest.java:36) [classes/:na]
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[na:1.7.0_45]
+    at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57) ~[na:1.7.0_45]
+    at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[na:1.7.0_45]
+    at java.lang.reflect.Method.invoke(Method.java:606) ~[na:1.7.0_45]
+    at com.intellij.rt.execution.application.AppMain.main(AppMain.java:120) [idea_rt.jar:na]
+[2014-05-03 03:47:14 [34mINFO [0;39m com.qunar.dubbo.LogTest.main(LogTest.java:38)] 三个参数:agrs1:args1;agrs2:args2;args3:args3 的info级别日志
+java.io.IOException: 测试抛出IO异常信息
+    at com.qunar.dubbo.LogTest.main(LogTest.java:38) [classes/:na]
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[na:1.7.0_45]
+    at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57) ~[na:1.7.0_45]
+    at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[na:1.7.0_45]
+    at java.lang.reflect.Method.invoke(Method.java:606) ~[na:1.7.0_45]
+    at com.intellij.rt.execution.application.AppMain.main(AppMain.java:120) [idea_rt.jar:na]
+[2014-05-03 03:47:14 [34mINFO [0;39m com.qunar.dubbo.LogTest.main(LogTest.java:39)] 三个参数:agrs1:args1;agrs2:args2;args3:java.io.IOException: 测试抛出IO异常信息 的info级别日志
+</code></pre>
+<blockquote>
+<p>Note: 从代码调用可以看到，throwable 异常信息单独作为一个参数输入，因此，如果把异常信息作为<code>&#123;&#125;</code>占位符中的字符串，则会调用其对应toString方法，而无法打印异常堆栈信息。可以看看下面的截取源码：  </p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">info</span><span class="params">(String msg, Throwable t)</span> </span>&#123;</span><br><span class="line">  filterAndLog_0_Or3Plus(FQCN, <span class="keyword">null</span>, Level.INFO, msg, <span class="keyword">null</span>, t);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 当日志的参数string 大于1，并且包含 Throwable类型参数，则调用下面的方法</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">info</span><span class="params">(String format, Object[] argArray)</span> </span>&#123;</span><br><span class="line">  filterAndLog_0_Or3Plus(FQCN, <span class="keyword">null</span>, Level.INFO, format, argArray, <span class="keyword">null</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"> <span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 在logback代码中，作者表明如果不使用Object[]创建参数数组对象，则会减少20 纳秒的时间开销。</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">filterAndLog_0_Or3Plus</span><span class="params">(<span class="keyword">final</span> String localFQCN,</span></span></span><br><span class="line"><span class="params"><span class="function">    <span class="keyword">final</span> Marker marker, <span class="keyword">final</span> Level level, <span class="keyword">final</span> String msg,</span></span></span><br><span class="line"><span class="params"><span class="function">    <span class="keyword">final</span> Object[] params, <span class="keyword">final</span> Throwable t)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">final</span> FilterReply decision = loggerContext</span><br><span class="line">      .getTurboFilterChainDecision_0_3OrMore(marker, <span class="keyword">this</span>, level, msg,</span><br><span class="line">          params, t);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (decision == FilterReply.NEUTRAL) &#123;</span><br><span class="line">    <span class="keyword">if</span> (effectiveLevelInt &gt; level.levelInt) &#123;</span><br><span class="line">      <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (decision == FilterReply.DENY) &#123;</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  buildLoggingEventAndAppend(localFQCN, marker, level, msg, params, t);<span class="comment">// 在这个方法里面，会LoggingEvent方法构架日志信息，而对于Throwable非空时，则会创建一个ThrowableProxy对象，具体代码见下面。</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// 下面的代码，是对日志中的异常打印信息。显然，在messageFormat里面，使用String来处理，是无法获得这么丰富的异常堆栈信息的。</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">ThrowableProxy</span><span class="params">(Throwable throwable)</span> </span>&#123;</span><br><span class="line"> </span><br><span class="line">  <span class="keyword">this</span>.throwable = throwable;</span><br><span class="line">  <span class="keyword">this</span>.className = throwable.getClass().getName();</span><br><span class="line">  <span class="keyword">this</span>.message = throwable.getMessage();</span><br><span class="line">  <span class="keyword">this</span>.stackTraceElementProxyArray = ThrowableProxyUtil.steArrayToStepArray(throwable</span><br><span class="line">      .getStackTrace());</span><br><span class="line">  </span><br><span class="line">  <span class="comment">//下面构建详细异常的堆栈信息，这也就是我们在代码输出时，看到的一大坨at... 输出错误代码位置等。</span></span><br><span class="line">  Throwable nested = throwable.getCause();</span><br><span class="line">  </span><br><span class="line">  <span class="keyword">if</span> (nested != <span class="keyword">null</span>) &#123;</span><br><span class="line">    <span class="keyword">this</span>.cause = <span class="keyword">new</span> ThrowableProxy(nested);</span><br><span class="line">    <span class="keyword">this</span>.cause.commonFrames = ThrowableProxyUtil</span><br><span class="line">        .findNumberOfCommonFrames(nested.getStackTrace(),</span><br><span class="line">            stackTraceElementProxyArray);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span>(GET_SUPPRESSED_METHOD != <span class="keyword">null</span>) &#123;</span><br><span class="line">    <span class="comment">// this will only execute on Java 7</span></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      Object obj = GET_SUPPRESSED_METHOD.invoke(throwable);</span><br><span class="line">      <span class="keyword">if</span>(obj <span class="keyword">instanceof</span> Throwable[]) &#123;</span><br><span class="line">        Throwable[] throwableSuppressed = (Throwable[]) obj;</span><br><span class="line">        <span class="keyword">if</span>(throwableSuppressed.length &gt; <span class="number">0</span>) &#123;</span><br><span class="line">          suppressed = <span class="keyword">new</span> ThrowableProxy[throwableSuppressed.length];</span><br><span class="line">          <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;throwableSuppressed.length;i++) &#123;</span><br><span class="line">            <span class="keyword">this</span>.suppressed[i] = <span class="keyword">new</span> ThrowableProxy(throwableSuppressed[i]);</span><br><span class="line">            <span class="keyword">this</span>.suppressed[i].commonFrames = ThrowableProxyUtil</span><br><span class="line">                .findNumberOfCommonFrames(throwableSuppressed[i].getStackTrace(),</span><br><span class="line">                    stackTraceElementProxyArray);</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IllegalAccessException e) &#123;</span><br><span class="line">      <span class="comment">// ignore</span></span><br><span class="line">    &#125; <span class="keyword">catch</span> (InvocationTargetException e) &#123;</span><br><span class="line">      <span class="comment">// ignore</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>Note: 上面代码只是一般的步骤，对于调用<code>Object[]</code>形式的方法，则<code>ThrowableProxy</code>之前，还会对<code>Object[]</code>中的元素进行过滤处理，提取出最后一个元素判断是不是 <code>Throwable</code>类型的对象。代码参考如下：</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"> <span class="function"><span class="keyword">final</span> <span class="keyword">public</span> <span class="keyword">static</span> FormattingTuple <span class="title">format</span><span class="params">(<span class="keyword">final</span> String messagePattern,</span></span></span><br><span class="line"><span class="params"><span class="function">      Object arg1, Object arg2)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> arrayFormat(messagePattern, <span class="keyword">new</span> Object[] &#123; arg1, arg2 &#125;);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//这方法会对输入参数进行特殊处理和过滤</span></span><br><span class="line"> <span class="function"><span class="keyword">final</span> <span class="keyword">public</span> <span class="keyword">static</span> FormattingTuple <span class="title">arrayFormat</span><span class="params">(<span class="keyword">final</span> String messagePattern,</span></span></span><br><span class="line"><span class="params"><span class="function">      <span class="keyword">final</span> Object[] argArray)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    Throwable throwableCandidate = getThrowableCandidate(argArray);</span><br><span class="line"></span><br><span class="line">	......</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (L &lt; argArray.length - <span class="number">1</span>) &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">new</span> FormattingTuple(sbuf.toString(), argArray, throwableCandidate);<span class="comment">// 如果元素中有Throwable类型，则size会减少，因此，对应的Throwale参数位置为 置提取出来的异常对象</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">new</span> FormattingTuple(sbuf.toString(), argArray, <span class="keyword">null</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">static</span> <span class="keyword">final</span> Throwable <span class="title">getThrowableCandidate</span><span class="params">(Object[] argArray)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (argArray == <span class="keyword">null</span> || argArray.length == <span class="number">0</span>) &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">final</span> Object lastEntry = argArray[argArray.length - <span class="number">1</span>];</span><br><span class="line">    <span class="keyword">if</span> (lastEntry <span class="keyword">instanceof</span> Throwable) &#123;</span><br><span class="line">      <span class="keyword">return</span> (Throwable) lastEntry;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="后记"><a href="#后记" class="headerlink" title="后记"></a><a id="End">后记</a></h2><p>slf4j的日志，打印抛出异常的信息时，如果只需要message，则需要在log api接口中的String 里面对应位置添加<code>&#123;&#125;</code>符号；否则，如果想要打印全量<font color="red">异常栈信息，则<strong>不能也不可以</strong></font>在string字符串中添加<code>&#123;&#125;</code>，不然会大失所望。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2014/04/29/2014-04-29-Intelij-IDEA-Remote-Debug-Tomcat-App/" rel="prev" title="Intelij IDEA 远程调试Tomcat服务">
+      <i class="fa fa-chevron-left"></i> Intelij IDEA 远程调试Tomcat服务
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2014/05/03/2014-05-03-Java-MultiThread-ThreadPool-Introduce/" rel="next" title="Java 多线程线程池分析">
+      Java 多线程线程池分析 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Facade%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%E7%AE%80%E4%BB%8B"><span class="nav-number">2.</span> <span class="nav-text">Facade设计模式简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#slf4j%E7%BB%91%E5%AE%9A%E6%97%A5%E5%BF%97"><span class="nav-number">3.</span> <span class="nav-text">slf4j绑定日志</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-slf4j-%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%E8%AF%B4%E6%98%8E"><span class="nav-number">3.1.</span> <span class="nav-text">3.1 slf4j 设计模式说明</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-slf4j-%E6%97%A5%E5%BF%97%E7%BB%91%E5%AE%9A%E6%B5%81%E7%A8%8B"><span class="nav-number">3.2.</span> <span class="nav-text">3.2 slf4j 日志绑定流程</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#slf4j-API%E4%BD%BF%E7%94%A8"><span class="nav-number">4.</span> <span class="nav-text">slf4j API使用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%8E%E8%AE%B0"><span class="nav-number">5.</span> <span class="nav-text">后记</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="柯小小西"
+      src="/images/ava.gif">
+  <p class="site-author-name" itemprop="name">柯小小西</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">47</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">柯小小西</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">476k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">7:13</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

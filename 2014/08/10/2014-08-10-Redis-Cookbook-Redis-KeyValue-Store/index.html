@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="问题许多的应用服务都需要存储关于使用，配置或者其他相关的信息的临时数据，这些数据结构并不适合存储在关系数据库中。通常情况下，开发者会是MySQL或者其他RDBMS来存储这种数据。在这里，我们将使用Redis和它内建的数据结构，以一种更轻量级、更快速、更宽松的方式完成存储应用临时数据的功能。 解决方法Redis本身的定位并不仅仅是key&#x2F;value存储服务，同时也可以作为存储数据结构的服务器。这意味">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Redis Cookbook 之 Redis 键值对存储服务">
+<meta property="og:url" content="http://example.com/2014/08/10/2014-08-10-Redis-Cookbook-Redis-KeyValue-Store/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="问题许多的应用服务都需要存储关于使用，配置或者其他相关的信息的临时数据，这些数据结构并不适合存储在关系数据库中。通常情况下，开发者会是MySQL或者其他RDBMS来存储这种数据。在这里，我们将使用Redis和它内建的数据结构，以一种更轻量级、更快速、更宽松的方式完成存储应用临时数据的功能。 解决方法Redis本身的定位并不仅仅是key&#x2F;value存储服务，同时也可以作为存储数据结构的服务器。这意味">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2014-08-10T14:21:35.000Z">
+<meta property="article:modified_time" content="2021-05-17T14:57:11.573Z">
+<meta property="article:author" content="柯小小西">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://example.com/2014/08/10/2014-08-10-Redis-Cookbook-Redis-KeyValue-Store/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Redis Cookbook 之 Redis 键值对存储服务 | Hexo</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hexo</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2014/08/10/2014-08-10-Redis-Cookbook-Redis-KeyValue-Store/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ava.gif">
+      <meta itemprop="name" content="柯小小西">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hexo">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Redis Cookbook 之 Redis 键值对存储服务
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2014-08-10 22:21:35" itemprop="dateCreated datePublished" datetime="2014-08-10T22:21:35+08:00">2014-08-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-05-17 22:57:11" itemprop="dateModified" datetime="2021-05-17T22:57:11+08:00">2021-05-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Redis/" itemprop="url" rel="index"><span itemprop="name">Redis</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Redis/Redis-Cookbook/" itemprop="url" rel="index"><span itemprop="name">Redis Cookbook</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4.9k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a><a id="Problem">问题</a></h2><p>许多的应用服务都需要存储关于使用，配置或者其他相关的信息的临时数据，这些数据结构并不适合存储在关系数据库中。<br>通常情况下，开发者会是MySQL或者其他RDBMS来存储这种数据。在这里，我们将使用Redis和它内建的数据结构，以一种更轻量级、更快速、更宽松的方式完成存储应用临时数据的功能。</p>
+<h2 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a><a id="Solution">解决方法</a></h2><p>Redis本身的定位并不仅仅是<code>key/value</code>存储服务，同时也可以作为存储数据结构的服务器。这意味着，在传统的<code>key/value</code>存储功能之上，它还提供给你一些存储和操作应用数据的方式。<br>我们将使用这些数据结构和命令来存储应用示例数据：比如，我们在一些<code>regular keys</code>里面存储有用的计数器，在<code>Redis hashes</code>里面存储用户对象，以及使用<code>sets</code>实现朋友圈（像Google+）。</p>
+<h2 id="讨论"><a href="#讨论" class="headerlink" title="讨论"></a><a id="Discussion">讨论</a></h2><h3 id="存储应用使用计数器"><a href="#存储应用使用计数器" class="headerlink" title="存储应用使用计数器"></a>存储应用使用计数器</h3><p>首先，让我们开始存储一些非常基础的事情：计数器。想象我们运营一个商业的社交网络，然后想要追踪<code>profile/page</code>的访问数据。我们可以在RDBMS的存储我们页数据的表里面增加一列，<br>但是希望我们的流量足够高以至于每次更新这一列会带来一些麻烦。因此，我们需要更快的工具来更新和查询，所以我们使用Redis来代替。</p>
+<p>由于Redis命令的原子性，我们知道如果我们存储一个计数器的key，则我们可以使用命令，比如：<code>INCR(或者INCRBY)和DECR(或者DECRBY)</code>，来增加增加或者减少它包含的值。所以，通过为我们的数据设计一个合适的命名保证我们的计数器单次操作成本微乎其微。</p>
+<p>Redis系统内实际上并没有约定的方法来组织keys，但是许多人（包括作者）都喜欢使用<code>冒号：</code>来区分关键字从而创建keys，因此在这里也这样约定。为了存储我们的社交网络页面访问数据，我们可以有一个像<code>visits:pageid:totals</code>的命名，比如页面id为635，则命名为<code>visits:635:totals</code>。如果我们已经在一些地方存储访问数据，我们可以首先根据这些数据产生redis的keys，并且设置对应的值，比如：</p>
+<pre><code>    SET visits:1:totals 21389 
+    SET visits:2:totals 1367894 
+    (...)
+</code></pre>
+<p>当访问一个给定的页面，一个简单地<code>INCR</code>命令将更新Redis中的计数器：</p>
+<pre><code>    INCR visits:635:totals
+    
+</code></pre>
+<p>然后我们可以获取任何页面在任何时候的访问次数，这只需要通过简单地<code>GET</code>命令：</p>
+<pre><code>    GET visits:635:totals
+    
+</code></pre>
+<p>你也可以让你的命令更智能，比如你可以在人们查看页面的时候，显示当前该页面被访问的次数给他看。当然，你也可以计算他自己访问的次数，所以你甚至不需要执行最后的<code>GET</code>命令：你可以利用<code>INCR</code>命令返回值的特点，因为<code>INCR</code>命令会返回自增之后的计数值。一个简单地关于访问和计数器的伪代码如下所示：</p>
+<pre><code>    1. 访问者访问页面.
+    2. 我们 INCR 相关页面的访问计数器 (比如：INCR visits:635:totals）        3. 我们获取INCR命令的返回值。
+    4. 我们展示返回的值在用户页面上。
+</code></pre>
+<p>这种方式我们保证用户在查看页面的时候，常常可以看见实时计数值，以及他自己访问的计数–着所有都可以使用Redis命令。</p>
+<span id="more"></span>
+
+<h3 id="存储对象数据在hashes内"><a href="#存储对象数据在hashes内" class="headerlink" title="存储对象数据在hashes内"></a>存储对象数据在hashes内</h3><p>Redis关于hashes的实现对于存储对象数据应用来说是一个很好的方案。在下面的例子里，我们将调查我们怎样使用<code>hashes</code>来在给定系统上存储用户相关的信息。</p>
+<p>我们将开始设计一个key命名来存储我们的用户。在此之前，我们使用分号来分割我们的关键字，进而产生意义丰富的key。为了达到这个案例的目的，我们将构建一个简单的key，形如：<code>users:alias</code>，其中<code>alias</code>是二进制安全的字符串。所以，为了存储一个叫做<code>John Doe</code>的用户，我们将建一个hash叫做<code>users:jdoe</code>。</p>
+<p>我们也假设我们将要存储关于用户的许多属性，比如全名、邮件地址、电话号码、以及访问我们英语的次数。我们将使用Redis的<code>hash管理命令</code>–像<code>HSET</code>、<code>HGET</code>和<code>HINCRBY</code>–存储用户的这些信息。</p>
+<pre><code>    redis&gt; hset users:jdoe name &quot;John Doe&quot; 
+    (integer) 1
+    
+    redis&gt; hset users:jdoe email &quot;jdoe@test.com&quot; 
+    (integer) 1
+    
+    redis&gt; hset users:jdoe phone &quot;+1555313940&quot; 
+    (integer) 1
+    
+    redis&gt; hincrby users:jdoe visits 1 
+    (integer) 1
+</code></pre>
+<p>随着我们hash的建立，我们可以在合适的地方通过<code>HGET</code>获取简单地属性值或者通过<code>HGETALL</code>命令所有hash对象数据，如同下面的示例：</p>
+<pre><code>    redis&gt; hget users:jdoe email 
+    &quot;jdoe@test.com&quot;
+
+    redis&gt; hgetall users:jdoe
+    1) &quot;name&quot;
+    2) &quot;John Doe&quot;
+    3) &quot;email&quot;
+    4) &quot;jdoe@test.com&quot; 5) &quot;phone&quot;
+    6) &quot;+1555313940&quot; 7) &quot;visits&quot;
+    8) &quot;1&quot;
+</code></pre>
+<p>还有辅助的命令，比如<code>HKEYS</code>，该命令返回一个特定的hash里面存储的所有keys；<code>HVALS</code>，该命令仅仅返回values。当从你应用的Redis中检索数据时，你可能会发现使用<code>HGETALL</code>或者其他命令很有用，这其实取决于你想怎样检索你的数据。</p>
+<pre><code>    redis&gt; hkeys users:jdoe 
+    1) &quot;name&quot;
+    2) &quot;email&quot;
+    3) &quot;phone&quot;
+    4) &quot;visits&quot;
+
+    redis&gt; hvals users:jdoe 
+    1) &quot;John Doe&quot;
+    2) &quot;jdoe@test.com&quot;
+    3) &quot;+1555313940&quot;
+    4) &quot;1&quot;
+</code></pre>
+<p>关于我们用户hash的其他命令列表，你可以详细阅读 <code>Redis official documentation for hash commands</code>，这里面包含他自己的使用<code>hashes</code>管理数据的示例。</p>
+<h3 id="使用sets存储用户的朋友圈"><a href="#使用sets存储用户的朋友圈" class="headerlink" title="使用sets存储用户的朋友圈"></a>使用sets存储用户的朋友圈</h3><p>为了完成Redis特有的方式存储数据，我们看看怎么样使用Redis支持的sets来创建和google+相似的朋友圈功能。sets天生就适应朋友圈，因为sets代码数据的集合，并且有一些天生的功能来做一些有趣的事情，比如交集和并集。</p>
+<p>首先，让我们定义一个朋友圈的命名。我们想要为我们每一个用户存储一些朋友圈，所以我们的key需要包含用户和实际的朋友圈。举个例子，<code>John Doe</code>的家庭圈可能有一个key像<code>circle:jdoe:family</code>样子。相似地，他的足球训练朋友可能在key为<code>circle:jdoe:soccer</code>的set里面。这里没有key设计的设置规则，所以常常以一种对我们应用有意义的方式来设计它们。</p>
+<p>现在，我们知道存储我们sets里面的keys，接下来，我们来创建<code>John Doe</code>的家庭集和足球朋友集。在集合本身里面，我们可以通过用户id来获取Redis里其他的keys。如果我们想要获取属于<code>John Doe</code>家庭圈用户的列表，和它们的用户信息，我们可以使用我们set的操作结果，然后为每一个用户提取真实的hashes（使用hashes来存储用户信息）。</p>
+<pre><code>    redis&gt; sadd circle:jdoe:family users:anna 
+    (integer) 1
+
+    redis&gt; sadd circle:jdoe:family users:richard
+    (integer) 1 
+    
+    redis&gt; sadd circle:jdoe:family users:mike
+    (integer) 1 
+    
+    redis&gt; sadd circle:jdoe:soccer users:mike
+    (integer) 1 
+    
+    redis&gt; sadd circle:jdoe:soccer users:adam
+    (integer) 1 
+    
+    redis&gt; sadd circle:jdoe:soccer users:toby
+    (integer) 1 
+    
+    redis&gt; sadd circle:jdoe:soccer users:apollo
+    (integer) 1
+    
+</code></pre>
+<p>需要记住的是，在上面的例子里，我们需要规范化我们set的成员通过使用实际的id数值而不是<code> users:name</code>。虽然上面的例子工作得很好，但它可能为了性能原因牺牲一些可读性而获取更快的速度和更高的内存使用效率。</p>
+<p>现在我们有一个set叫做<code>circle:jdoe:family</code>,带有三个值（分别是：users:anna, users:richard, and users:mike），第二个叫做<code>    circle:jdoe:soccer</code>,带有四个值（分别是：users:mike, users:adam, users:toby, and users:apollo）。它们的值仅仅只是字符串，但是通过使用字符串对我们来说是有意义的（这和我们设计用户的hashes很相似），我们可以使用<code>SMEMBERS</code>命令的结果进而获取特点用户的信息。如下面的例子：</p>
+<pre><code>    redis&gt; smembers circle:jdoe:family 
+    1) &quot;users:richard&quot;
+    2) &quot;users:mike&quot;
+    3) &quot;users:anna&quot;
+
+    redis&gt; hgetall users:mike 
+    (...)
+</code></pre>
+<p>现在，我们已经知道了怎么在sets里面存储信息了，我们可以扩展这个只是，做一些有趣的事情，比如获取属于这两个sets里面的人，或者获取一个<code>John Doe</code>添加到我们系统朋友圈中的完整的用户列表。</p>
+<pre><code>    redis&gt; sinter circle:jdoe:family circle:jdoe:soccer 
+    1) &quot;users:mike&quot;
+
+    redis&gt; sunion circle:jdoe:family circle:jdoe:soccer 
+    1) &quot;users:anna&quot;
+    2) &quot;users:mike&quot;
+    3) &quot;users:apollo&quot; 
+    4) &quot;users:adam&quot;
+    5) &quot;users:richard&quot; 
+    6) &quot;users:toby&quot;
+</code></pre>
+<p>根据我们的结果，<code>Mike</code>在<code>John Doe</code>的家庭圈和足球圈里面，通过两个圈的并集，我们也可以获取完整地成员列表。</p>
+<p>如你所见，Redis sets使得RDBMS一些查询变得非常简单。Redis完成得非常的快，使得对于那些管理集合操作的应用来说，<code>Redis sets</code>是一个理想的候选者。朋友圈就是一个例子，此外像 推荐或者甚至文本搜素也很适合。在随后的案例里面，将会看到更深入的例子。</p>
+<pre><code>SET key value
+    Sets the key to hold the given value. Existing data is overwritten (even if of a dif- ferent data type).    
+
+GET key
+    Returns the content held by the key. Works only with string values.
+
+INCR key
+    Increments the integer stored at key by 1.
+
+INCRBY key value
+    Performs the same operation as INCR, but incrementing by value instead.    
+DECR key
+    Decrements the integer stored at key by 1.
+
+DECRBY key value
+    Performs the same operation as DECR, but decrementing by value instead
+</code></pre>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2014/07/03/2014-07-03-Query-DB-Python-Shell/" rel="prev" title="使用Python操作线上数据库脚本">
+      <i class="fa fa-chevron-left"></i> 使用Python操作线上数据库脚本
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2014/08/10/2014-08-10-Redis-CookBook-Redis-Data-Types/" rel="next" title="Redis Cookbook 之 Redis数据类型">
+      Redis Cookbook 之 Redis数据类型 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%97%AE%E9%A2%98"><span class="nav-number">1.</span> <span class="nav-text">问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95"><span class="nav-number">2.</span> <span class="nav-text">解决方法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%A8%E8%AE%BA"><span class="nav-number">3.</span> <span class="nav-text">讨论</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%98%E5%82%A8%E5%BA%94%E7%94%A8%E4%BD%BF%E7%94%A8%E8%AE%A1%E6%95%B0%E5%99%A8"><span class="nav-number">3.1.</span> <span class="nav-text">存储应用使用计数器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%98%E5%82%A8%E5%AF%B9%E8%B1%A1%E6%95%B0%E6%8D%AE%E5%9C%A8hashes%E5%86%85"><span class="nav-number">3.2.</span> <span class="nav-text">存储对象数据在hashes内</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8sets%E5%AD%98%E5%82%A8%E7%94%A8%E6%88%B7%E7%9A%84%E6%9C%8B%E5%8F%8B%E5%9C%88"><span class="nav-number">3.3.</span> <span class="nav-text">使用sets存储用户的朋友圈</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="柯小小西"
+      src="/images/ava.gif">
+  <p class="site-author-name" itemprop="name">柯小小西</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">47</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">柯小小西</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">476k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">7:13</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

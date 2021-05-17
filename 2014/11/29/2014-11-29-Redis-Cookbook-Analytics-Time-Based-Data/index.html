@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="问题存储分析或者其他基于时间序列的数据，对于传统的存储系统（比如RDBMS）来说，是有一点挑战的。可能你想要对输入流量的速率进行限制（要求快速和高并发更新）或者简单地追踪网站访问者（或者其他更复杂的度量指标），然后以图表的形式画出来。 虽然当前在其他系统中，有很多的方式存储这类数据；但是，Redis是一个非常优秀的候选者，由于它强大的数据结构。 解决方法Redis 理念上非常适合存储这类数据，以及">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Redis Cookbook 之 使用Redis存储基于时间序列的数据和进行分析">
+<meta property="og:url" content="http://example.com/2014/11/29/2014-11-29-Redis-Cookbook-Analytics-Time-Based-Data/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="问题存储分析或者其他基于时间序列的数据，对于传统的存储系统（比如RDBMS）来说，是有一点挑战的。可能你想要对输入流量的速率进行限制（要求快速和高并发更新）或者简单地追踪网站访问者（或者其他更复杂的度量指标），然后以图表的形式画出来。 虽然当前在其他系统中，有很多的方式存储这类数据；但是，Redis是一个非常优秀的候选者，由于它强大的数据结构。 解决方法Redis 理念上非常适合存储这类数据，以及">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2014-11-29T14:21:35.000Z">
+<meta property="article:modified_time" content="2021-05-17T14:57:11.577Z">
+<meta property="article:author" content="柯小小西">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://example.com/2014/11/29/2014-11-29-Redis-Cookbook-Analytics-Time-Based-Data/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Redis Cookbook 之 使用Redis存储基于时间序列的数据和进行分析 | Hexo</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hexo</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2014/11/29/2014-11-29-Redis-Cookbook-Analytics-Time-Based-Data/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ava.gif">
+      <meta itemprop="name" content="柯小小西">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hexo">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Redis Cookbook 之 使用Redis存储基于时间序列的数据和进行分析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2014-11-29 22:21:35" itemprop="dateCreated datePublished" datetime="2014-11-29T22:21:35+08:00">2014-11-29</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-05-17 22:57:11" itemprop="dateModified" datetime="2021-05-17T22:57:11+08:00">2021-05-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Redis/" itemprop="url" rel="index"><span itemprop="name">Redis</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Redis/Redis-Cookbook/" itemprop="url" rel="index"><span itemprop="name">Redis Cookbook</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4.7k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a><a id="Problem">问题</a></h2><p>存储分析或者其他基于时间序列的数据，对于传统的存储系统（比如RDBMS）来说，是有一点挑战的。可能你想要对输入流量的速率进行限制（要求快速和高并发更新）或者简单地追踪网站访问者（或者其他更复杂的度量指标），然后以图表的形式画出来。</p>
+<p>虽然当前在其他系统中，有很多的方式存储这类数据；但是，Redis是一个非常优秀的候选者，由于它强大的数据结构。</p>
+<h2 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a><a id="Solution">解决方法</a></h2><p>Redis 理念上非常适合存储这类数据，以及跟踪某种特定的事件。具有原子性的，并且非常快的（O(1)时间复杂度）<code>HINCR</code>和<code>HINCRBY</code>命令，结合快速数据查找，使得它非常适合这类场景。</p>
+<p>在Redis中一种好的高效内存存储这类数据的方式是使用hash来存储统计值，使用<code>HINCRBY</code>增加它们，然后使用<code>HGET</code>和<code>HMGET</code>来获取这些数据。查找位于top位置的元素通过<code>SORT</code>命令也是很容易做到的。</p>
+<span id="more"></span>
+
+<h2 id="讨论"><a href="#讨论" class="headerlink" title="讨论"></a><a id="Discussion">讨论</a></h2><p>为了简单起见，在这个实例中，我们将只追踪网页点击率数据。这也可以很简单地扩展到其他任务类型的事件。</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">require</span> <span class="string">&#x27;rubygems&#x27;</span></span><br><span class="line"><span class="keyword">require</span> <span class="string">&#x27;active_support/time&#x27;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 增加访问者的点击数，id表，date键，field数值</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">add_hit</span><span class="params">(id)</span></span></span><br><span class="line">    <span class="variable">$redis</span>.sadd(<span class="string">&quot;clients&quot;</span>, id)</span><br><span class="line">    <span class="variable">$redis</span>.hincrby(<span class="string">&quot;stats/client:<span class="subst">#&#123;id&#125;</span>&quot;</span>, <span class="string">&quot;total&quot;</span>, <span class="number">1</span>) </span><br><span class="line">    <span class="variable">$redis</span>.hincrby(<span class="string">&quot;stats/client:<span class="subst">#&#123;id&#125;</span>&quot;</span>, Date.today.to_s(<span class="symbol">:number</span>), <span class="number">1</span>)</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>我们在这里把用户（如果我们追踪网站的访问者，那么可以只简单地根据IP地址来区分用户）的ID添加到访问者列表中，然后记录在两个不同时间空挡中的点击数：”total”总数和日常的数。因此，这就允许我们追踪每天的网页点击数和一段时间内的全局总数。</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment"># 获取某id的key对应的值</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">hits</span><span class="params">(id, day = Date.today)</span></span> </span><br><span class="line">    <span class="variable">$redis</span>.hget(<span class="string">&quot;stats/client:<span class="subst">#&#123;id&#125;</span>&quot;</span>, day.to_s(<span class="symbol">:number</span>)).to_i</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 判断是否超过阈值</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">over_limit?</span><span class="params">(id, limit)</span></span> </span><br><span class="line">    hits(id) &gt; limit</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>这允许我们通过简单地检查访问者访问，是否超过了我们设置的在一段时间区间内的阈值，来执行速率限制功能。</p>
+<p>获取一个给定时间区间内的数据，也是一项琐碎但是高效的操作，我们可以用来画图表或者以其他方式展示这些数据：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment"># 计算给定开始时间和结束时间对应的key值</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">keys</span><span class="params">(beg_p, end_p)</span></span> </span><br><span class="line">    keys = []</span><br><span class="line">    <span class="keyword">while</span> beg_p &lt;= end_p</span><br><span class="line">        keys &lt;&lt; <span class="keyword">if</span> block_given? </span><br><span class="line">            <span class="keyword">yield</span>(beg_p.to_s(<span class="symbol">:number</span>))</span><br><span class="line">        <span class="keyword">else</span> </span><br><span class="line">            beg_p.to_s(<span class="symbol">:number</span>)</span><br><span class="line">        <span class="keyword">end</span></span><br><span class="line">        beg_p += <span class="number">1</span>.day </span><br><span class="line">    <span class="keyword">end</span></span><br><span class="line">    keys </span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">stats_for_period</span><span class="params">(id, beginning_of_period, end_of_period)</span></span> </span><br><span class="line">    beg_p = Date.parse(beginning_of_period)</span><br><span class="line">    end_p = Date.parse(end_of_period)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 获取id表中key对应的数据集</span></span><br><span class="line">    <span class="variable">$redis</span>.hmget <span class="string">&quot;stats/client:<span class="subst">#&#123;id&#125;</span>&quot;</span>, *keys(beg_p, end_p) </span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>我们也可以获取我们存储数据中在任何时间空挡的位于top的用户，可以使用<code>SORT</code>命令完成。SORT允许我们排序一个集合set，有序的集合sorted set,，或者本例中得列表list，访问者可以选择使用外键-我们时间片，然后指定order，offset，limit等参数：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 按照key为period进行排序，默认DESC，前0-limit个元素</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">top_clients</span><span class="params">(period = <span class="string">&quot;total&quot;</span>, limit = <span class="number">5</span>)</span></span></span><br><span class="line"><span class="variable">$redis</span>.sort(<span class="string">&quot;clients&quot;</span>, <span class="symbol">:by</span> =&gt; <span class="string">&quot;stats/client:*-&gt;<span class="subst">#&#123;period&#125;</span>&quot;</span>, <span class="symbol">:order</span> =&gt; <span class="string">&quot;DESC&quot;</span>,<span class="symbol">:get</span> =&gt; [<span class="string">&quot;#&quot;</span>, <span class="string">&quot;stats/client:*-&gt;<span class="subst">#&#123;period&#125;</span>&quot;</span>], <span class="symbol">:limit</span> =&gt; [<span class="number">0</span>, limit])</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>使用hash的实现方式，对于存储，检索和更新都是高度优化的（所有都是O(1)操作），但是对于计算top用户而言则不是（尤其是一个时间区间内）。你需要要求这些操作-比如当你显示一个高分值表格，你可以重新使用有序集合sorted set来完成排序，这样可以保证你拿到的数据是有序的：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">add_hit</span><span class="params">(id)</span></span></span><br><span class="line">    <span class="variable">$redis</span>.zincrby(<span class="string">&quot;stats/total&quot;</span>, <span class="number">1</span>, id) </span><br><span class="line">    <span class="variable">$redis</span>.zincrby(<span class="string">&quot;stats/<span class="subst">#&#123;Date.today.to_s(<span class="symbol">:number</span>)&#125;</span>&quot;</span>, <span class="number">1</span>, id)</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">hits</span><span class="params">(id, day = Date.today)</span></span> </span><br><span class="line">    <span class="variable">$redis</span>.zrank(<span class="string">&quot;stats/<span class="subst">#&#123;day.to_s(<span class="symbol">:number</span>)&#125;</span>&quot;</span>, id)</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">over_limit?</span><span class="params">(id, limit)</span></span> </span><br><span class="line">    hits(id) &gt; limit</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">stats_for_period</span><span class="params">(id, beginning_of_period, end_of_period)</span></span> </span><br><span class="line">    beg_p = Date.parse(beginning_of_period)</span><br><span class="line">    end_p = Date.parse(end_of_period)</span><br><span class="line"></span><br><span class="line">    keys(beg_p, end_p) &#123; <span class="params">|k|</span> <span class="variable">$redis</span>.zrank(<span class="string">&quot;stats/<span class="subst">#&#123;k&#125;</span>&quot;</span>, id) &#125; </span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">top_clients</span><span class="params">(period = <span class="string">&quot;total&quot;</span>, limit = <span class="number">5</span>)</span></span> </span><br><span class="line">    <span class="variable">$redis</span>.zrevrange(<span class="string">&quot;stats/<span class="subst">#&#123;period&#125;</span>&quot;</span>, <span class="number">0</span>, limit, <span class="symbol">:withscores</span> =&gt; <span class="literal">true</span>)</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">top_for_period</span><span class="params">(beginning_of_period, end_of_period, limit = <span class="number">5</span>)</span></span> </span><br><span class="line">    beg_p = Date.parse(beginning_of_period)</span><br><span class="line">    end_p = Date.parse(end_of_period)</span><br><span class="line"></span><br><span class="line">    result_key = <span class="string">&quot;top/<span class="subst">#&#123;beg_p.to_s(<span class="symbol">:number</span>)&#125;</span>/<span class="subst">#&#123;end_p.to_s(<span class="symbol">:number</span>)&#125;</span>&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="variable">$redis</span>.zrevrange(result_key, <span class="number">0</span>, limit, <span class="symbol">:withscores</span> =&gt; <span class="literal">true</span>) <span class="keyword">if</span> <span class="variable">$redis</span>.exists result_key</span><br><span class="line"></span><br><span class="line">    <span class="variable">$redis</span>.multi <span class="keyword">do</span></span><br><span class="line">        <span class="variable">$redis</span>.zunionstore result_key, keys(beg_p, end_p)&#123;<span class="params">|k|</span> <span class="string">&quot;stats/<span class="subst">#&#123;k&#125;</span>&quot;</span>&#125; <span class="variable">$redis</span>.expire result_key, <span class="number">10</span>.minutes</span><br><span class="line">        <span class="variable">$redis</span>.zrevrange result_key, <span class="number">0</span>, limit, <span class="symbol">:withscores</span> =&gt; <span class="literal">true</span></span><br><span class="line">    <span class="keyword">end</span>.last </span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>Notes：我们保持了<code>ZUNIONSTORE</code>的结果，然后在它上面设置一个超时时间戳。这是一个通用的Redis模式：缓存一个计算昂贵的操作结果，然后每次有请求过来，都会在重新操作之前先检查缓存情况。<br>在上面的例子中，我们使用hash的地方，我们也可以存储SORT操作的结果，然后使用和EXISTS相似的方式检查它的缓存对象的存在性。</p>
+</blockquote>
+<p>当我们使用有序集合sorted sets时，这些top操作会更高效率的多（因为数据已经是排好序了），但是我们的内存使用率也会更高。</p>
+<blockquote>
+<p>Warns：这个特定的例子有一个竞争条件：如果缓存不存在，我们可能在结束之前会进行多次<code>ZUNIONSTORE</code>操作。因为我们最后期待的输出显然是相同或者更新的数值结果，因此存在竞争条件比使用<code>WATCH</code>，然后在我们在做客户端的计算时锁定其他访问者，效果可能会更好。</p>
+</blockquote>
+<p>-</p>
+<blockquote>
+<p><em>Redis 命令</em>:</p>
+<ul>
+<li><p><code>HINCRBY hash-name field increment-value</code></p>
+<p>   按照给定的increment-value值增加hash表中存储的对应整数。这个命令和INCRBY很相似，但是和增加字符串不一样，这个使用在hash表中。而且increment-value的值也允许为负数。</p>
+</li>
+<li><p><code>HMGET hash-name field1 [field2 ...]</code></p>
+<p>   从给定的hash表中获取一些field值。这个命令和HGET很相似，但是这个允许你在一个单操作中获取一些field值。</p>
+</li>
+<li><p><code>SORT key [BY pattern] [LIMIT offset count] [GET pattern1 [GET pattern2 ...]] [ASC| DESC] [ALPHA] [STORE destination]</code></p>
+<p>  允许你排序一个list,set,或者sorted set，比较他们的值。排序也可以是使用外键完成，使用来自字符串或者hashes的模式匹配查询，就像我们在上面的例子中那样：<code>SORT clients BY stats/client:*-&gt;20110407</code>。其中，通配符*可以被set中成员所替换，所以在这些hash表中排序是基于匹配field 为20110407的值来完成的。如果我们把分析数据存储在strings中而不是hash表，则我们可以提交命令：<code>SORT clients BY stats/client:*/20110407</code>。<br>   使用相同的模式，你除了排好序的list也可以获取更多地数据（比如你用来排序的值）.可选择地，在list里SORT的输出也可以被排序。</p>
+</li>
+<li><p><code>ZRANK set-name member</code></p>
+<p>   返回在给定的有序集合中给定成员的排名。</p>
+</li>
+<li><p><code>ZUNIONSTORE destination number-of-keys sorted-set1 [sorted-set2 ...] [WEIGHTS weight1 [weight2 ...]] [AGGREGATE SUM|MIN|MAX]</code></p>
+<p>   聚合sorted sets集合，然后作为一个新的sorted set存储。可选择地，你可以为每一个set指定 weight，并且只需聚合函数：sum（默认）,maximum scores, 或者 minimum scores。</p>
+</li>
+<li><p><code>EXISTS key</code></p>
+<p>   检查key是否存在。如果key存在则返回1；否则返回0.</p>
+</li>
+</ul>
+</blockquote>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2014/11/26/2014-11-26-Java-Implement-One-Algorithm-by-Day/" rel="prev" title="一天一算法之java实现">
+      <i class="fa fa-chevron-left"></i> 一天一算法之java实现
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2014/12/19/2014-12-19-Guava-Cache-Guide-And-Implement-Analyse/" rel="next" title="Guava LocalCache 缓存介绍及实现源码深入剖析">
+      Guava LocalCache 缓存介绍及实现源码深入剖析 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%97%AE%E9%A2%98"><span class="nav-number">1.</span> <span class="nav-text">问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95"><span class="nav-number">2.</span> <span class="nav-text">解决方法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%A8%E8%AE%BA"><span class="nav-number">3.</span> <span class="nav-text">讨论</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="柯小小西"
+      src="/images/ava.gif">
+  <p class="site-author-name" itemprop="name">柯小小西</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">47</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">柯小小西</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">476k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">7:13</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

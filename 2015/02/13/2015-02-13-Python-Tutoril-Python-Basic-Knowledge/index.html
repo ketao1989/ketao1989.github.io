@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="前言2015年春节临近，提前请假回家，闲下来的功夫，系统学习下 python 语言，倒是也好。 Python 在日常工作中，主要是脚本语言的开发，由于开发快捷容易，并且在所有 Linux 版本都会安装 Python 的语言环境，不需要额外的配置工作。 Sublime Python 插件安装对于 Python 的基础知识的学习，已经工作中脚本语言的开发，使用 Sublime 编辑器可以非常好的满足我">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Python 教程学习之Python基础知识">
+<meta property="og:url" content="http://example.com/2015/02/13/2015-02-13-Python-Tutoril-Python-Basic-Knowledge/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="前言2015年春节临近，提前请假回家，闲下来的功夫，系统学习下 python 语言，倒是也好。 Python 在日常工作中，主要是脚本语言的开发，由于开发快捷容易，并且在所有 Linux 版本都会安装 Python 的语言环境，不需要额外的配置工作。 Sublime Python 插件安装对于 Python 的基础知识的学习，已经工作中脚本语言的开发，使用 Sublime 编辑器可以非常好的满足我">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2015-02-13T14:21:35.000Z">
+<meta property="article:modified_time" content="2021-05-17T14:57:11.580Z">
+<meta property="article:author" content="柯小小西">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://example.com/2015/02/13/2015-02-13-Python-Tutoril-Python-Basic-Knowledge/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Python 教程学习之Python基础知识 | Hexo</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hexo</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2015/02/13/2015-02-13-Python-Tutoril-Python-Basic-Knowledge/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ava.gif">
+      <meta itemprop="name" content="柯小小西">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hexo">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Python 教程学习之Python基础知识
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2015-02-13 22:21:35" itemprop="dateCreated datePublished" datetime="2015-02-13T22:21:35+08:00">2015-02-13</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-05-17 22:57:11" itemprop="dateModified" datetime="2021-05-17T22:57:11+08:00">2021-05-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Python/" itemprop="url" rel="index"><span itemprop="name">Python</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3.6k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a><a id="Intro">前言</a></h2><p>2015年春节临近，提前请假回家，闲下来的功夫，系统学习下 python 语言，倒是也好。</p>
+<p>Python 在日常工作中，主要是脚本语言的开发，由于开发快捷容易，并且在所有 Linux 版本都会安装 Python 的语言环境，不需要额外的配置工作。</p>
+<h2 id="Sublime-Python-插件安装"><a href="#Sublime-Python-插件安装" class="headerlink" title="Sublime Python 插件安装"></a><a id="Sublime">Sublime Python 插件安装</a></h2><p>对于 Python 的基础知识的学习，已经工作中脚本语言的开发，使用 Sublime 编辑器可以非常好的满足我们的需求，并且 Sublime 提供了丰富的插件供使用，非常便捷。</p>
+<p>开发 Python(Django) 语言，一般推荐安装 :</p>
+<ul>
+<li><p><code>SublimeCodeIntel</code> 插件：一款代码自动提示的插件。</p>
+</li>
+<li><p><code>Python PEP8 Autoformat</code> 插件：一款针对 Python 的代码格式化插件，快捷键为<code>Ctrl + Shift + R</code>。</p>
+</li>
+<li><p><code>SublimeTmpl</code> 插件：一款自定义文件模板的插件，可以跟进我们的配置在创建文件时，跟进模板完成初始化填充。关于 Python 的代码模板如下所示：</p>
+</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">#!/usr/bin/env python</span></span><br><span class="line"><span class="comment"># -*- coding: utf-8 -*-</span></span><br><span class="line"><span class="comment"># @Date    : $&#123;date&#125;</span></span><br><span class="line"><span class="comment"># @Author  : $&#123;author&#125;</span></span><br><span class="line"><span class="comment"># @Version : \$Id\$</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line">$&#123;<span class="number">1</span>:<span class="keyword">import</span> os&#125;</span><br><span class="line"></span><br><span class="line">reload(sys)</span><br><span class="line">sys.setdefaultencoding(<span class="string">&#x27;utf8&#x27;</span>)</span><br><span class="line">$<span class="number">0</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>Notes：打开 <code>preferences --&gt; pachages</code>，在打开的目录下依次找到<code>sublimeTmpl --&gt; templates --&gt; python.tmpl</code>，直接修改就好了。</p>
+</blockquote>
+<span id="more"></span>
+
+<h2 id="Python-基础知识"><a href="#Python-基础知识" class="headerlink" title="Python 基础知识"></a><a id="BasicKnowledge">Python 基础知识</a></h2><p>基础知识都非常简单，这里贴一下学习的测试代码，就好了。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">#!/usr/bin/env python</span></span><br><span class="line"><span class="comment"># -*- coding: utf-8 -*-</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line"></span><br><span class="line">reload(sys)</span><br><span class="line">sys.setdefaultencoding(<span class="string">&#x27;utf8&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 100</span></span><br><span class="line">a = -<span class="number">100</span></span><br><span class="line"><span class="keyword">if</span> a &gt; <span class="number">0</span>:</span><br><span class="line">    <span class="built_in">print</span> a</span><br><span class="line"><span class="keyword">elif</span> a == <span class="number">0</span>:</span><br><span class="line">    <span class="built_in">print</span> <span class="number">0</span></span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    <span class="built_in">print</span> -a</span><br><span class="line"></span><br><span class="line"><span class="comment"># 中文</span></span><br><span class="line"><span class="built_in">print</span> <span class="string">u&#x27;中文&#x27;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 4</span></span><br><span class="line">names = [<span class="string">&#x27;zhang&#x27;</span>, <span class="string">&#x27;li&#x27;</span>, <span class="string">&#x27;wang&#x27;</span>, <span class="string">&#x27;er&#x27;</span>]</span><br><span class="line"><span class="built_in">print</span> <span class="built_in">len</span>(names)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 5</span></span><br><span class="line">names.append(<span class="string">&#x27;ma&#x27;</span>)</span><br><span class="line"><span class="built_in">print</span> <span class="built_in">len</span>(names)</span><br><span class="line"></span><br><span class="line"><span class="comment"># [&#x27;zhang&#x27;, &#x27;li&#x27;, &#x27;wang&#x27;, &#x27;zi&#x27;, &#x27;er&#x27;, &#x27;ma&#x27;]</span></span><br><span class="line">names.insert(<span class="number">3</span>, <span class="string">&#x27;zi&#x27;</span>)</span><br><span class="line"><span class="built_in">print</span> names</span><br><span class="line"></span><br><span class="line"><span class="comment"># [&#x27;zhang&#x27;, &#x27;li&#x27;, &#x27;wang&#x27;, &#x27;zi&#x27;, &#x27;er&#x27;]</span></span><br><span class="line">names.pop()</span><br><span class="line"><span class="built_in">print</span> names</span><br><span class="line"></span><br><span class="line"><span class="comment"># [&#x27;ma&#x27;, &#x27;li&#x27;, &#x27;wang&#x27;, &#x27;zi&#x27;, &#x27;er&#x27;]</span></span><br><span class="line">names[<span class="number">0</span>] = <span class="string">&#x27;ma&#x27;</span></span><br><span class="line"><span class="built_in">print</span> names</span><br><span class="line"></span><br><span class="line"><span class="comment"># [&#x27;ma&#x27;, &#x27;li&#x27;, &#x27;wang&#x27;, &#x27;zi&#x27;, &#x27;er&#x27;, [&#x27;subzhang&#x27;, &#x27;subwang&#x27;]]</span></span><br><span class="line">names.append([<span class="string">&#x27;subzhang&#x27;</span>, <span class="string">&#x27;subwang&#x27;</span>])</span><br><span class="line"><span class="built_in">print</span> names</span><br><span class="line"></span><br><span class="line"><span class="comment"># (&#x27;ma&#x27;, &#x27;li&#x27;, &#x27;wang&#x27;, &#x27;zi&#x27;, &#x27;er&#x27;, [&#x27;subzhang&#x27;, &#x27;subwang&#x27;])</span></span><br><span class="line">tumples = <span class="built_in">tuple</span>(names)</span><br><span class="line"><span class="built_in">print</span> tumples</span><br><span class="line"></span><br><span class="line"><span class="comment"># [&#x27;ma&#x27;, &#x27;li&#x27;, &#x27;wang&#x27;, &#x27;zi&#x27;, &#x27;er&#x27;, [&#x27;subzhang&#x27;, &#x27;subwang&#x27;]]</span></span><br><span class="line">names = <span class="built_in">list</span>(tumples)</span><br><span class="line"><span class="built_in">print</span> names</span><br><span class="line"></span><br><span class="line"><span class="comment"># 分别打印元素，[&#x27;subzhang&#x27;, &#x27;subwang&#x27;]是一体的</span></span><br><span class="line"><span class="keyword">for</span> x <span class="keyword">in</span> tumples:</span><br><span class="line">    <span class="built_in">print</span> x</span><br><span class="line"><span class="comment"># dict字典，ketao</span></span><br><span class="line">maps = &#123;<span class="string">&#x27;name&#x27;</span>: <span class="string">&#x27;ketao&#x27;</span>, <span class="string">&#x27;age&#x27;</span>: <span class="number">25</span>, <span class="string">&#x27;job&#x27;</span>: <span class="string">&#x27;dev&#x27;</span>&#125;</span><br><span class="line"><span class="built_in">print</span> maps[<span class="string">&#x27;name&#x27;</span>]</span><br><span class="line"></span><br><span class="line"><span class="comment"># &#123;&#x27;job&#x27;: &#x27;dev&#x27;, &#x27;age&#x27;: 25, &#x27;program&#x27;: &#x27;python&#x27;, &#x27;name&#x27;: &#x27;ketao&#x27;&#125;</span></span><br><span class="line">maps[<span class="string">&#x27;program&#x27;</span>] = <span class="string">&#x27;python&#x27;</span></span><br><span class="line"><span class="built_in">print</span> maps</span><br><span class="line"></span><br><span class="line"><span class="comment"># &#123;&#x27;job&#x27;: &#x27;dev&#x27;, &#x27;gender&#x27;: &#x27;male&#x27;, &#x27;age&#x27;: 25, &#x27;program&#x27;: &#x27;python&#x27;, &#x27;name&#x27;: &#x27;ketao&#x27;&#125;</span></span><br><span class="line"><span class="keyword">if</span> <span class="string">&#x27;gender&#x27;</span> <span class="keyword">in</span> maps:</span><br><span class="line">    <span class="keyword">pass</span></span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    maps[<span class="string">&#x27;gender&#x27;</span>] = <span class="string">&#x27;male&#x27;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> maps.get(<span class="string">&#x27;gender&#x27;</span>):</span><br><span class="line">    <span class="built_in">print</span> maps</span><br><span class="line"></span><br><span class="line"><span class="comment"># set([&#x27;wang&#x27;, 14, &#x27;zhang&#x27;])</span></span><br><span class="line">sets = <span class="built_in">set</span>([<span class="string">&#x27;zhang&#x27;</span>, <span class="string">&quot;wang&quot;</span>, <span class="number">14</span>])</span><br><span class="line"><span class="built_in">print</span> sets</span><br><span class="line"></span><br><span class="line"><span class="comment"># set([&#x27;li&#x27;, &#x27;wang&#x27;, 14, &#x27;zhang&#x27;])</span></span><br><span class="line">sets.add(<span class="string">&#x27;li&#x27;</span>)</span><br><span class="line"><span class="built_in">print</span> sets</span><br><span class="line"></span><br><span class="line"><span class="comment"># set([14, &#x27;zhang&#x27;]); set([&#x27;ma&#x27;, &#x27;wang&#x27;, &#x27;zhang&#x27;, 14, &#x27;li&#x27;])</span></span><br><span class="line">setss = <span class="built_in">set</span>([<span class="string">&#x27;zhang&#x27;</span>, <span class="number">14</span>, <span class="string">&#x27;ma&#x27;</span>])</span><br><span class="line"><span class="built_in">print</span> setss &amp; sets</span><br><span class="line"><span class="built_in">print</span> setss | sets</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>Notes : 需要说明的是，必须在python 脚本中，注入 utf-8 相关配置，不然会出现下面的编码问题。如果使用模板，请参考上一节。</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">Traceback (most recent call last):</span><br><span class="line">  File &quot;/Users/ketao/python/test.py&quot;, line 20, in &lt;module&gt;</span><br><span class="line">    print u&#x27;中文&#x27;</span><br><span class="line">UnicodeEncodeError: &#x27;ascii&#x27; codec can&#x27;t encode characters in position 0-1: ordinal not in range(128)</span><br><span class="line">[Finished in 0.0s with exit code 1]</span><br><span class="line">[shell_cmd: python -u &quot;/Users/ketao/python/test.py&quot;]</span><br><span class="line">[dir: /Users/ketao/python]</span><br><span class="line">[path: /usr/bin:/bin:/usr/sbin:/sbin]</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2015/02/10/2015-02-10-Jackson-Deserialize-Java-Object-Implementation/" rel="prev" title="Jackson 自定义反序列化Java对象实现">
+      <i class="fa fa-chevron-left"></i> Jackson 自定义反序列化Java对象实现
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2015/02/15/2015-02-15-Python-Tutoril-Python-Function-And-Advances/" rel="next" title="Python 教程学习之 Python 函数和高级特性">
+      Python 教程学习之 Python 函数和高级特性 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Sublime-Python-%E6%8F%92%E4%BB%B6%E5%AE%89%E8%A3%85"><span class="nav-number">2.</span> <span class="nav-text">Sublime Python 插件安装</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Python-%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86"><span class="nav-number">3.</span> <span class="nav-text">Python 基础知识</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="柯小小西"
+      src="/images/ava.gif">
+  <p class="site-author-name" itemprop="name">柯小小西</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">47</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">柯小小西</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">476k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">7:13</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

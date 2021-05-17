@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="Netty官方文档：Netty是一款异步的事件驱动的网络应用程序框架，支持快速地开发可维护的高性能的面向协议的服务器和客户端。  其实，在官网 https:&#x2F;&#x2F;netty.io&#x2F; 中特别指出，netty是基于NIO的网络通信框架。因此，在学习Netty之前，先熟悉java NIO组件。一般，我们说NIO，指的是非阻塞IO (Non-blocking IO)。 1. I&#x2F;O模型在计算机开发领域">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Netty系列--NIO学习">
+<meta property="og:url" content="http://example.com/2018/05/05/2018-05-05-netty-series-of-nio/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="Netty官方文档：Netty是一款异步的事件驱动的网络应用程序框架，支持快速地开发可维护的高性能的面向协议的服务器和客户端。  其实，在官网 https:&#x2F;&#x2F;netty.io&#x2F; 中特别指出，netty是基于NIO的网络通信框架。因此，在学习Netty之前，先熟悉java NIO组件。一般，我们说NIO，指的是非阻塞IO (Non-blocking IO)。 1. I&#x2F;O模型在计算机开发领域">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/2018/block_io.png">
+<meta property="og:image" content="http://example.com/images/2018/multi_io.png">
+<meta property="og:image" content="http://example.com/images/2018/buffer.png">
+<meta property="og:image" content="http://example.com/images/2018/bytebuf_main_class.png">
+<meta property="article:published_time" content="2018-05-05T13:36:00.000Z">
+<meta property="article:modified_time" content="2021-05-17T14:57:11.585Z">
+<meta property="article:author" content="柯小小西">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/2018/block_io.png">
+
+<link rel="canonical" href="http://example.com/2018/05/05/2018-05-05-netty-series-of-nio/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Netty系列--NIO学习 | Hexo</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hexo</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2018/05/05/2018-05-05-netty-series-of-nio/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ava.gif">
+      <meta itemprop="name" content="柯小小西">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hexo">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Netty系列--NIO学习
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-05-05 21:36:00" itemprop="dateCreated datePublished" datetime="2018-05-05T21:36:00+08:00">2018-05-05</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-05-17 22:57:11" itemprop="dateModified" datetime="2021-05-17T22:57:11+08:00">2021-05-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/java/netty/" itemprop="url" rel="index"><span itemprop="name">netty</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>28k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>26 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>Netty官方文档：Netty是一款异步的事件驱动的网络应用程序框架，支持快速地开发可维护的高性能的面向协议的服务器和客户端。</p>
+</blockquote>
+<p>其实，在官网 <a target="_blank" rel="noopener" href="https://netty.io/">https://netty.io/</a> 中特别指出，netty是基于NIO的网络通信框架。因此，在学习Netty之前，先熟悉java NIO组件。一般，我们说NIO，指的是非阻塞IO (Non-blocking IO)。</p>
+<h1 id="1-I-O模型"><a href="#1-I-O模型" class="headerlink" title="1. I/O模型"></a>1. I/O模型</h1><p><br>在计算机开发领域中，一个服务的性能受制于两方面：CPU处理能力和I/O处理能力。也就是说，我们希望我们的服务，可以消耗更少的CPU计算单元，消耗更少的I/O处理等待时长。</p>
+<p>因此，由于I/O性能对整个系统的影响如此重要，在很多系统里，尽量来避免IO问题。例如，Redis通过使用内存，异步刷磁盘来提高IO性能，保证系统的处理能力。</p>
+<p>当然，在很多时候，我们是避免不了I/O性能的制约的。比如，网络通信，就是一个典型的I/O问题。在优化I/O问题之前，先来聊聊I/O模型。</p>
+<p>在《UNIX网络编程卷1》中，将I/O模型分为5种：</p>
+<ul>
+<li>阻塞式I/O；</li>
+<li>非租塞式I/O；</li>
+<li>I/O复用(select，poll，epoll等)；</li>
+<li>信号驱动式I/O(SIGIO)；</li>
+<li>异步I/O(POSIX的aio_系列函数)</li>
+</ul>
+<p>在区分阻塞和非租塞，异步和同步之前，先介绍下，一个输入操作主要包括两个阶段：</p>
+<ol>
+<li>等待数据准备好；</li>
+<li>从内核向进程复制数据。</li>
+</ol>
+<p>对于一个网络I/O请求来说，第一步就是等待网络通信的数据传输到服务器上，系统内核会将所有传输过来的数据保存在对应位置的缓冲区中；第二步就是将网络的数据从内核区复制到用户进程的缓冲区中，然后应用就可以处理。</p>
+<span id="more"></span>
+
+<h2 id="1-1-概念解释"><a href="#1-1-概念解释" class="headerlink" title="1.1 概念解释"></a>1.1 概念解释</h2><h3 id="1-1-1-同步和异步"><a href="#1-1-1-同步和异步" class="headerlink" title="1.1.1 同步和异步"></a>1.1.1 同步和异步</h3><p>所谓同步，就是系统中最小CPU调度单位在执行任务的过程中，前一个任务没有执行完成返回之前，是一直处于阻塞的状态，不行进行后续的动作。</p>
+<p>与此相反，所以异步，就是前一个任务执行还未完成的时候，其也可以执行后续的动作，而不需一直处理等待过程中。</p>
+<p>在I/O模型中：<br>我们通常认为，同步就是在整个输入过程中，线程都是处理等待的状态，直到用户态的进程缓冲区中有了数据可以触发后续执行；<br>而异步，执行发出数据请求之后，直接返回执行后续的动作，直到内核数据接收完成拷贝到进程缓冲区之后，触发预先设置的回调动作。因此，我们说nodeJs是异步的，就是因为nodejs都是通过各种回调函数来处理I/O请求的。</p>
+<h3 id="1-1-2-阻塞和非阻塞"><a href="#1-1-2-阻塞和非阻塞" class="headerlink" title="1.1.2 阻塞和非阻塞"></a>1.1.2 阻塞和非阻塞</h3><p>所谓阻塞，就是系统中细小CPU调用单位在执行任务过程中，需要一些条件准备好之后，等待条件确认满足，才能返回继续执行。</p>
+<p>与此相反，所谓非阻塞，就是执行任务的时候，如果需要一些条件准备好时，系统不会一直处在等待的状态，而是返回一个标识，然后，可能会循环check条件是否满足。</p>
+<p>在I/O模型中：<br>我们通常认为，阻塞就是在输入过程中，如果数据没有准备好，线程会一直处理等待准备数据的动作完成；<br>而非阻塞，则不会盲目去等待所有数据完成，而是内核会立刻返回一个错误标识，系统根据这个标识来循环的去check数据是否准备好。等数据准备好了之后，再由进程把数据复制到进程缓冲区中。</p>
+<h3 id="1-1-3-总结"><a href="#1-1-3-总结" class="headerlink" title="1.1.3 总结"></a>1.1.3 总结</h3><p>从上面的介绍，可以看出，阻塞和同步，非阻塞和异步，并没有什么必然的等号关系。完全是两个不同维度的定义。<br>比如说，非阻塞I/O也会是同步I/O；虽然说异步I/O必然是非阻塞的。</p>
+<h2 id="1-2-阻塞和多路复用I-O"><a href="#1-2-阻塞和多路复用I-O" class="headerlink" title="1.2 阻塞和多路复用I/O"></a>1.2 阻塞和多路复用I/O</h2><p>虽然有5中I/O模型，但是实际上，我们用的最多的就是2种。阻塞I/O和多路复用I/O(Java中的非阻塞NIO)。</p>
+<h3 id="1-2-1-阻塞式I-O"><a href="#1-2-1-阻塞式I-O" class="headerlink" title="1.2.1 阻塞式I/O"></a>1.2.1 阻塞式I/O</h3><p>上文介绍了，I/O分成两个阶段，而这两个阶段都是处理等待的时候，则是阻塞式I/O。如下图：</p>
+<p><img src="/images/2018/block_io.png" alt="阻塞式I/O模型"></p>
+<p>在上图中，调用recvfrom，系统调用直到数据包到达并且数据被复制到应用的缓冲区时才返回，而在此之间，进程一直处理阻塞等待的状态。</p>
+<h3 id="1-2-2-多路复用I-O"><a href="#1-2-2-多路复用I-O" class="headerlink" title="1.2.2 多路复用I/O"></a>1.2.2 多路复用I/O</h3><p>如上面非租塞I/O所述，系统在知道数据未准备好的时候，会根据标识，不停的轮询内核拿到结果，其实这对于系统性能而言，并不是十分友好。</p>
+<p>于是，多路复用I/O将其拆成两个方法调用，首先以“准非阻塞方式”等待数据准备好，然后再来copy数据。如下图所示：</p>
+<p><img src="/images/2018/multi_io.png" alt="多路复用I/O模型"></p>
+<p>实际上，多路复用就是用一个统一的内核线程来管理所有需要获取数据的请求，当统一线程发现有数据准备好后，会通知相应的用户线程来copy数据。所以，上面说“准非阻塞方式”，当多个线程中的至少一个数据准备好后，统一线程就会返回。</p>
+<h3 id="1-2-3-总结"><a href="#1-2-3-总结" class="headerlink" title="1.2.3 总结"></a>1.2.3 总结</h3><p>从如上的图可以发现，多路复用I/O和阻塞I/O相比，并没有什么优势，毕竟阻塞I/O还只需要一个接口。多路复用，顾名思义，就是针对多路请求的，如果请求量很少很少的时候，直接使用多线程+阻塞I/O才是一个更好的选择。</p>
+<p>此外，当请求量很大，并且每个连接都很活跃的时候，多路复用并不推荐，因为这个时候，每个连接都会非常活跃，而使用一个统一的内核线程管理数据准备情况，会导致单点严重。</p>
+<p>但是，从现实的网络应用模型来说，绝大部分的网络连接，都是处于非活跃状态，因此，多路复用模型才在网络应用上，效果会如此好，应用如此广泛。</p>
+<h2 id="1-3-多路复用方法"><a href="#1-3-多路复用方法" class="headerlink" title="1.3 多路复用方法"></a>1.3 多路复用方法</h2><p>在linux系统中，主要有select，poll和epoll三个方法，而在linux内核2.6推出epoll之后，基本上多路复用指的就是epoll。</p>
+<h3 id="1-3-1-wakeup-callback机制"><a href="#1-3-1-wakeup-callback机制" class="headerlink" title="1.3.1 wakeup callback机制"></a>1.3.1 wakeup callback机制</h3><p>在linux 2.6内核中，推出了所谓wakeup callback机制。linux内核通过睡眠队列来组织所有等待某个事件的任务，而wakeup方法则可以异步唤醒整个睡眠队列上的任务，而队列上的任务都会关联上一个callback回调方法。当我们的wakeup方法执行唤醒动作的时候，会遍历整个睡眠队列的节点，然后调用对应的callback方法。</p>
+<h4 id="1-3-1-1-睡眠等待"><a href="#1-3-1-1-睡眠等待" class="headerlink" title="1.3.1.1 睡眠等待"></a>1.3.1.1 睡眠等待</h4><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">define sleep_list;  </span><br><span class="line">define wait_entry;  </span><br><span class="line">wait_entry.task= current_task;  </span><br><span class="line">wait_entry.callback = func1;  </span><br><span class="line"><span class="keyword">if</span> (something_not_ready); <span class="keyword">then</span>  </span><br><span class="line">    // 如果条件没有准备好，则陷入内核阻塞路径  </span><br><span class="line">    add_entry_to_list(wait_entry, sleep_list);  </span><br><span class="line">go on:    </span><br><span class="line">    // 进行循环等待中，直到关心的事件准备好</span><br><span class="line">    schedule();  </span><br><span class="line">    <span class="keyword">if</span> (something_not_ready); <span class="keyword">then</span>  </span><br><span class="line">        goto go_on;  </span><br><span class="line">    endif  </span><br><span class="line">    // 将当前的任务从睡眠队列中移除</span><br><span class="line">    del_entry_from_list(wait_entry, sleep_list);  </span><br><span class="line">endif  </span><br></pre></td></tr></table></figure>
+
+<h4 id="1-3-1-2-唤醒动作"><a href="#1-3-1-2-唤醒动作" class="headerlink" title="1.3.1.2 唤醒动作"></a>1.3.1.2 唤醒动作</h4><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">something_ready;  </span><br><span class="line">// 当某个事情准备好之后，唤醒整个睡眠队列</span><br><span class="line">for_each(sleep_list) as wait_entry; <span class="keyword">do</span>  </span><br><span class="line">    // 对每个睡眠队列中的节点执行回调方法</span><br><span class="line">    wait_entry.callback(...);  </span><br><span class="line">    <span class="keyword">if</span>(wait_entry.exclusion); <span class="keyword">then</span>  </span><br><span class="line">        <span class="built_in">break</span>;  </span><br><span class="line">    endif  </span><br><span class="line"><span class="keyword">done</span>  </span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>一般而言，在callback中执行如下逻辑：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">common_callback_func(...)  </span><br><span class="line">&#123;  </span><br><span class="line">    // 自定义逻辑</span><br><span class="line">    do_something_private;  </span><br><span class="line">    wakeup_common;  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+<p>其中，do_something_private是wait_entry自己的自定义逻辑，而wakeup_common则是公共逻辑，旨在将该wait_entry的task加入到CPU的就绪task队列，然后让CPU去调度它。</p>
+<h3 id="1-3-2-select-amp-amp-poll"><a href="#1-3-2-select-amp-amp-poll" class="headerlink" title="1.3.2 select &amp;&amp; poll"></a>1.3.2 select &amp;&amp; poll</h3><p>select函数允许进程指示内核等待多个事件中的任何一个发生，并只在有一个或者多个事件发生或者经历一段指定的时间后才会唤醒它，结束阻塞等待。</p>
+<p>简单的看下，linux select函数：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @params nfds         集合中所有文件描述符的范围，即所有文件描述符的最大值加1</span></span><br><span class="line"><span class="comment"> * @params readfds      需要监视的读变化的文件描述符集合</span></span><br><span class="line"><span class="comment"> * @params writefds     需要监视的写变化的文件描述符集合</span></span><br><span class="line"><span class="comment"> * @params exceptfds    需要监视的出现的错误异常的文件描述符集合</span></span><br><span class="line"><span class="comment"> * @params timeout      select方法阻塞等待的最长时间，超过该超时时间则结束阻塞，返回0</span></span><br><span class="line"><span class="comment"> * @return &lt;0：表示方法执行出错；=0：表示等待超时，没有可读写或异常事件；&gt;0：表示某fd可读写或出错</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">select</span><span class="params">(<span class="keyword">int</span> nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout)</span></span>;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>上文已经介绍了多路复用IO的使用场景：网络连接需要处理大量网络连接，并且只会有部分是处于活跃状态，当应用调用select方法的时候，select函数会将需要监控的各个fd_set集合copy到系统的内核空间，然后自己会先遍历一次需要监控的所有fd_set集合，确认对应等待的数据是否满足条件。如果，不存在任何一个fd条件满足，则会进入schedule_timeout的内部循环。</p>
+<p>在schedule_timeout中，在超时时间内，select会阻塞，将所有的set中的socket放入了<code>wakeup callback机制</code>中介绍的睡眠队列中，等待数据的状态的变化。当其中一个socket事件发现数据发生变化的时候，则会执行对应统一的callback方法，如下：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">for_each_N_socket as sk; <span class="keyword">do</span>  </span><br><span class="line">    event.evt = sk.poll(...);  </span><br><span class="line">    event.sk = sk;  </span><br><span class="line">    put_event_to_user; </span><br><span class="line"><span class="keyword">done</span>; </span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>也就是说，由于wakeup中的callback并没有给出是哪个socket准备好了，所以select会遍历所有注册在其上的socket，执行poll函数，判断对应的socket数据是否准备好。</p>
+<p>虽然select限制了最大只能有1024个socket可以服用，但是如果每次唤醒都只因为1个socket数据准备好了，而需要遍历1024个socket，对性能的影响也是非常大的。更不用说，我们还可以通过修改<code>FD_SETSIZE</code>配置，来增大这个大小限制。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @params fds     所有需要监视变化的文件描述符集合</span></span><br><span class="line"><span class="comment"> * @params nfds    需要监视的文件描述符范围，即所有文件描述符的最大值加1</span></span><br><span class="line"><span class="comment"> * @params timeout 超时时间，超时返回0</span></span><br><span class="line"><span class="comment"> * @return &lt;0：表示方法执行出错；=0：表示等待超时，没有可读写或异常事件；&gt;0：表示某fd可读写或出错</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">poll</span><span class="params">(struct pollfd *fds, <span class="keyword">nfds_t</span> nfds, <span class="keyword">int</span> timeout)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p>poll底层和select是基本上一致的，其主要是为了解决1024数量的限制，但是性能上的问题，并没有解决，甚至由于限制的大小增大，反而性能更差。</p>
+<h3 id="1-3-3-epoll"><a href="#1-3-3-epoll" class="headerlink" title="1.3.3 epoll"></a>1.3.3 epoll</h3><p>在<code>select&amp;&amp;poll</code>中介绍了，其对应的callback只是通知对应的fd_set中某个socket数据准备好了，并没有告知具体情况，这个时候，select方法只能遍历所有的fd_set来找到真正准备好的socket，来处理后续流程。</p>
+<p>然而，我们显然可以做的更进一步，每个socket都有自己的callback方法，来完成自己对应的回调逻辑。</p>
+<p>epoll 新增了一个链表ready_list，这个链表内的所有socket都是数据已经准备好了，应用进程可以处理了。这个时候，当等待在睡眠队列上的节点呗唤醒之后，将自己加入到epoll准备好的ready_lis中，然后epoll_wait返回的时候，只需要遍历ready_list链表即可。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">epoll_wakecallback(...)  </span><br><span class="line">&#123;  </span><br><span class="line">    <span class="comment">// 将自己这个socket加入到ready_list中</span></span><br><span class="line">    add_this_socket_to_ready_list;  </span><br><span class="line">    <span class="comment">// 唤醒epoll_wait等待函数</span></span><br><span class="line">    wakeup_single_epoll_waitlist;  </span><br><span class="line">&#125;  </span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>如上所述，因为epoll和select不同之处，在于每个socket fd 都有一个callback，因此在使用epoll的时候，也需要添加对应的socket callback。所以，epoll在使用上，会相对比较复杂。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 创建一个epoll句柄，因此其返回时一个fd文件描述符</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * @params size 监听的socket数目，显然和select方法的nfds是不同的。</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">epoll_create</span><span class="params">(<span class="keyword">int</span> size)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * epoll事件注册函数。这个方法其实是核心方法，其告诉内核需要监听什么事件，并且在事件触发的时候，执行什么回调</span></span><br><span class="line"><span class="comment"> * </span></span><br><span class="line"><span class="comment"> * @params epfd create返回的epoll句柄fd</span></span><br><span class="line"><span class="comment"> * @params op 需要执行的动作，比如EPOLL_CTL_ADD：注册新的fd到epoll句柄中</span></span><br><span class="line"><span class="comment"> * @params fd 要监听的fd</span></span><br><span class="line"><span class="comment"> * @params event 监听的事件，内核根据这个事件来决定是否触发callback，例如EPOLLIN读事件</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">epoll_ctl</span><span class="params">(<span class="keyword">int</span> epfd, <span class="keyword">int</span> op, <span class="keyword">int</span> fd, struct epoll_event *event)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 类似select方法一样，阻塞等待监听的所有fd中某个事件触发。</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * @params epfd create返回的epoll句柄fd</span></span><br><span class="line"><span class="comment"> * @params event 内核中得到的fd集合，表示哪些fd已经准备好了</span></span><br><span class="line"><span class="comment"> * @params maxevents events的大小。</span></span><br><span class="line"><span class="comment"> * @params timeout 超时时间，如果阻塞直到超时，则返回0</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">epoll_wait</span><span class="params">(<span class="keyword">int</span> epfd, struct epoll_event * events, <span class="keyword">int</span> maxevents, <span class="keyword">int</span> timeout)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p>在epoll中还有一个很重要的概念：ET(Edge Triggered) 和 LT(Level Triggered)。</p>
+<p>所谓ET：只有状态发生变化的时候，才会通知，比如数据缓冲去从无到有的时候(不可读-可读)，如果缓冲区里面有数据，便不会一直通知；</p>
+<p>所谓LT：只要缓冲区里面有数据，而这些数据没有被应用处理的时候，就会一直通知。</p>
+<p>一般而言，为了代码健壮，绝大部分框架都对外提供基于LT触发的epoll，从而避免代码bug导致事件丢失。java NIO Selector提供的就是基于LT触发的，而如果想使用基于ET的epoll，则可以使用Netty提供的Epoll类。</p>
+<h1 id="2-java-NIO-介绍"><a href="#2-java-NIO-介绍" class="headerlink" title="2. java NIO 介绍"></a>2. java NIO 介绍</h1><p>上文，只是简单的介绍了linux下I/O模型，以及开发服务端尝尝接触到的多路复用I/O底层接口。</p>
+<p>在java的世界里，都进行了很好的封装。如下，我们将继续学习nio相关的类功能。</p>
+<p>java nio 三剑客：</p>
+<ul>
+<li>Buffer(缓冲区)</li>
+<li>Channel(通道)</li>
+<li>Selector(多路复用选择器)</li>
+</ul>
+<p>我们知道，传统的I/O接口是基于流（字节流/字符流）来进行操作的，内部所有的接口，都是在输入输出stream上操作。因为基于流，所以不需要额外的空间来存储数据，但是同样因为基于流，所以对于stream，是不能前后移动来获取流中的数据，除非先将所有数据保存下来。</p>
+<p>而，java nio类接口是基于缓冲区buffer和通道channel来操作的。在java nio中，数据从channel读出到buffer中，然后应用程序操作buffer中的字节；或者应用程序将缓冲区buffer中的数据写入到channel中。</p>
+<p>如上面讲的多路复用那样，应用线程在需要读写数据的时候，只需要把请求包装之后交给selector线程来阻塞等待，而业务自己的线程可以去做一些别的事情。等到事件触发之后，再由业务线程来处理数据即可。</p>
+<h2 id="2-1-Buffer"><a href="#2-1-Buffer" class="headerlink" title="2.1 Buffer"></a>2.1 Buffer</h2><h3 id="2-1-1-Buffer类介绍"><a href="#2-1-1-Buffer类介绍" class="headerlink" title="2.1.1 Buffer类介绍"></a>2.1.1 Buffer类介绍</h3><p>Buffer是一个用于特定类型数据的容器，在java nio中，有多个缓冲区实现，如：<br><code>ByteBuffer, CharBuffer, DoubleBuffer, FloatBuffer, IntBuffer, LongBuffer, ShortBuffer</code>。在网络应用开发中，用的最多的是ByteBuffer类。</p>
+<p>Buffer除了数据内容之后，还会有一些基本的属性，例如：</p>
+<ul>
+<li>容量capacity：表示该缓冲区包含元素的数量；</li>
+<li>限制limit：第一个不应该读取或者写入的元素的索引；</li>
+<li>位置position：下一个要读取或者写入的元素的索引。</li>
+</ul>
+<p>以上，三个属性特别重要，基于buffer上的所有方法都是操作以上三个属性来完成各种功能的。</p>
+<blockquote>
+<p>需要特别说明下，buffer是非线程安全的，如果多个线程操作buffer，则需要使用同步加锁来进行约束。</p>
+</blockquote>
+<p>对于Buffer读写数据，主要是5个步骤：</p>
+<ol>
+<li>对于Buffer容器，首先需要申请分配内存空间来保存数据；</li>
+<li>写入数据到Buffer容器中，Buffer容器会记录下写入的数据，以及更新position的值；</li>
+<li>调用flip()方法切换读写模式,这个时候Buffer类的三个属性会进行更新，例如position现在是读位置索引等；</li>
+<li>从Buffer容器中读取数据，Buffer容器讲数据操作了之后，会同步更新position值；</li>
+<li>调用clear()方法或者compact()方法来请客缓冲区。clear()方法会清空整个缓冲区。compact()方法只会清除已经读过的数据。任何未读的数据都被移到缓冲区的起始处，新写入的数据将放到缓冲区未读数据的后面。</li>
+</ol>
+<h3 id="2-1-2-ByteBuffer类使用"><a href="#2-1-2-ByteBuffer类使用" class="headerlink" title="2.1.2 ByteBuffer类使用"></a>2.1.2 ByteBuffer类使用</h3><p>由于ByteBuffer是使用最多的容器类型，这里直接用这种类型来介绍buffer的使用。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line"></span><br><span class="line">    RandomAccessFile aFile = <span class="keyword">new</span> RandomAccessFile(<span class="string">&quot;test.txt&quot;</span>, <span class="string">&quot;rw&quot;</span>);</span><br><span class="line">    FileChannel inChannel = aFile.getChannel();</span><br><span class="line"></span><br><span class="line">    <span class="comment">//create buffer with capacity of 48 bytes</span></span><br><span class="line">    ByteBuffer buf = ByteBuffer.allocate(<span class="number">48</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//read into buffer.</span></span><br><span class="line">    <span class="keyword">int</span> bytesRead = inChannel.read(buf);</span><br><span class="line">    <span class="keyword">while</span> (bytesRead != -<span class="number">1</span>) &#123;</span><br><span class="line"></span><br><span class="line">        System.out.println(<span class="string">&quot;read byte size: &quot;</span> + bytesRead);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//make buffer ready for read</span></span><br><span class="line">        System.out.println(<span class="string">&quot;--------------------读写切换开始--------------------- &quot;</span>);</span><br><span class="line">        System.out.println(<span class="string">&quot;before flip position: &quot;</span> + buf.position() + <span class="string">&quot;, limit: &quot;</span> + buf.limit());</span><br><span class="line">        buf.flip();</span><br><span class="line">        System.out.println(<span class="string">&quot;after flip position: &quot;</span> + buf.position() + <span class="string">&quot;, limit: &quot;</span> + buf.limit());</span><br><span class="line">        System.out.println(<span class="string">&quot;--------------------读写切换结束--------------------- &quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">int</span> readSize = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">while</span> (buf.hasRemaining()) &#123;</span><br><span class="line">            <span class="comment">// read 1 byte at a time</span></span><br><span class="line">            readSize++;</span><br><span class="line">            <span class="comment">// 如果这里不操作get方法，则这个while会死循环，因为buffer的position一直没变化</span></span><br><span class="line">            buf.get();</span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(<span class="string">&quot;this time read buffer data size: &quot;</span> + readSize);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//make buffer ready for writing</span></span><br><span class="line">        System.out.println(<span class="string">&quot;++++++++++++++++++++++清缓冲区开始+++++++++++++++++++++++ &quot;</span>);</span><br><span class="line">        System.out.println(<span class="string">&quot;before clear position: &quot;</span> + buf.position() + <span class="string">&quot;, limit: &quot;</span> + buf.limit());</span><br><span class="line">        buf.clear();</span><br><span class="line">        System.out.println(<span class="string">&quot;after clear position: &quot;</span> + buf.position() + <span class="string">&quot;, limit: &quot;</span> + buf.limit());</span><br><span class="line">        System.out.println(<span class="string">&quot;++++++++++++++++++++++清缓冲区结束+++++++++++++++++++++++ &quot;</span>);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        bytesRead = inChannel.read(buf);</span><br><span class="line">    &#125;</span><br><span class="line">    aFile.close();</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>代码其实并不重要，我们通过打印的数据，可以发现buffer对于三个属性的更新操作。如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">read <span class="keyword">byte</span> size: <span class="number">48</span></span><br><span class="line">--------------------读写切换开始--------------------- </span><br><span class="line">before flip position: <span class="number">48</span>, limit: <span class="number">48</span></span><br><span class="line">after flip position: <span class="number">0</span>, limit: <span class="number">48</span></span><br><span class="line">--------------------读写切换结束--------------------- </span><br><span class="line"><span class="keyword">this</span> time read buffer data size: <span class="number">48</span></span><br><span class="line">++++++++++++++++++++++清缓冲区开始+++++++++++++++++++++++ </span><br><span class="line">before clear position: <span class="number">48</span>, limit: <span class="number">48</span></span><br><span class="line">after clear position: <span class="number">0</span>, limit: <span class="number">48</span></span><br><span class="line">++++++++++++++++++++++清缓冲区结束+++++++++++++++++++++++ </span><br><span class="line">read <span class="keyword">byte</span> size: <span class="number">29</span></span><br><span class="line">--------------------读写切换开始--------------------- </span><br><span class="line">before flip position: <span class="number">29</span>, limit: <span class="number">48</span></span><br><span class="line">after flip position: <span class="number">0</span>, limit: <span class="number">29</span></span><br><span class="line">--------------------读写切换结束--------------------- </span><br><span class="line"><span class="keyword">this</span> time read buffer data size: <span class="number">29</span></span><br><span class="line">++++++++++++++++++++++清缓冲区开始+++++++++++++++++++++++ </span><br><span class="line">before clear position: <span class="number">29</span>, limit: <span class="number">29</span></span><br><span class="line">after clear position: <span class="number">0</span>, limit: <span class="number">48</span></span><br><span class="line">++++++++++++++++++++++清缓冲区结束+++++++++++++++++++++++ </span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>通过返回结果，我们可以清晰的知道读写flip之后，三个属性的变化，以及clear之后，三个属性的变化。如下图，会有个形象的说明：</p>
+<p><img src="/images/2018/buffer.png" alt="Buffer数据模型"></p>
+<h3 id="nio-buffer-API不足之处"><a href="#nio-buffer-API不足之处" class="headerlink" title="nio buffer API不足之处"></a>nio buffer API不足之处</h3><p>如上用例的用例，我们会发现buffer API使用过程中的一些不足：</p>
+<ol>
+<li><p> <code>ByteBuffer buf = ByteBuffer.allocate(48);</code> 在申请的时候，需要明确指出buffer的大小，分配完成之后，则大小固定，如果后续的内容过大，则会抛异常，导致<code>BufferOverflowException</code>.</p>
+</li>
+<li><p>另外，还有一个很不好的体验，就是我们做读写切换的时候，需要自己手动flip来切换position位置，一不小心就可以能到读写出错。</p>
+</li>
+</ol>
+<h2 id="2-2-Channel"><a href="#2-2-Channel" class="headerlink" title="2.2 Channel"></a>2.2 Channel</h2><p>在java nio体系中，channel就类似一个stream流，但是其相对stream来说，在使用上有更多的进步：</p>
+<ol>
+<li><p>如上所述，Channel是基于buffer缓冲区的，所以其支持在同个channel中执行读和写操作, 然而同一个Stream在构造的时候，就需要明确指出其针对的是读还是写.</p>
+</li>
+<li><p>buffer的引入，让Channel可以提供异步的读写，但是Stream基于流，只支持同步阻塞的读写操作；</p>
+</li>
+</ol>
+<p>在java nio中，目前主要分为：</p>
+<ul>
+<li><p>FileChanel：用来读取、写入、映射和操作文件的通道。通过FileChannel从一个文件中读取数据, 也可以将数据写入到文件中。不过FileChannel是同步的，如果想要异步的文件Channel，则需要使用<code>AsynchronousFileChannel</code>。所谓AsynchronousFileChannel，其实就是在读写的时候，其直接返回一个future，后面只需要在需要的时候，执行future.get来感知读写进度即可。</p>
+</li>
+<li><p>SocketChannel：用来操作连接套接字TCP流的通道，主要是针对客户端连接。</p>
+</li>
+<li><p>ServerSocketChannel：用来操作连接套接字TCP流的通道，主要是针对服务端连接。</p>
+</li>
+</ul>
+<p>以上，是主要的channel，还会有些其他的，暂不说明。</p>
+<h3 id="2-2-1-SocketChannel-amp-amp-ServerSocketChannel介绍"><a href="#2-2-1-SocketChannel-amp-amp-ServerSocketChannel介绍" class="headerlink" title="2.2.1 SocketChannel &amp;&amp; ServerSocketChannel介绍"></a>2.2.1 SocketChannel &amp;&amp; ServerSocketChannel介绍</h3><p><code>SocketChannel</code> 和 <code>ServerSocketChannel</code>对应Stream模式下的Socket和ServerSocket，其最大的不同就是支持非阻塞模式。</p>
+<p>所以，我们如下使用ServerSocketChannel：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">NioServer</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line"></span><br><span class="line">        ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();</span><br><span class="line"></span><br><span class="line">        serverSocketChannel.socket().bind(<span class="keyword">new</span> InetSocketAddress(<span class="number">8888</span>));</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 设置成阻塞模式</span></span><br><span class="line">        <span class="comment">//serverSocketChannel.configureBlocking(false);</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line"></span><br><span class="line">            SocketChannel socketChannel = serverSocketChannel.accept();</span><br><span class="line">            </span><br><span class="line">            <span class="comment">// 阻塞模式</span></span><br><span class="line">            ByteBuffer buf = ByteBuffer.allocate(<span class="number">48</span>);</span><br><span class="line">            <span class="keyword">int</span> bytesRead = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">while</span> ((bytesRead = socketChannel.read(buf)) != -<span class="number">1</span>) &#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;read socket data size: &quot;</span> + bytesRead);</span><br><span class="line">                <span class="comment">// 空操作，只是为了把数据读出来</span></span><br><span class="line">                buf.get();</span><br><span class="line">            &#125;</span><br><span class="line">            </span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>特别说明，上面是一个使用serverSocketChannel的简单示例，读内容的逻辑，只试用于阻塞，开启非阻塞模式，则会出现：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Exception in thread <span class="string">&quot;main&quot;</span> java.lang.NullPointerException</span><br><span class="line">at io.github.ketao1989.nio.NioServer.main(NioServer.java:<span class="number">32</span>)</span><br></pre></td></tr></table></figure>
+<p>关于非阻塞模式，在Selector中说明。此外，实际上在ServerSocketChannelImpl中的实现非阻塞的时候，是会关联一个Selector的，而这个Selector在不同的系统环境，是不同的。</p>
+<table>
+<thead>
+<tr>
+<th>系统</th>
+<th align="center">Selector</th>
+<th align="left">备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Unix(MacOs)</td>
+<td align="center">KQueueSelectorImpl</td>
+<td align="left">类Unix系统的多路复用器</td>
+</tr>
+<tr>
+<td>Linux</td>
+<td align="center">PollSelectorImpl</td>
+<td align="left">内部应该是使用的epoll多路复用</td>
+</tr>
+<tr>
+<td>windows</td>
+<td align="center">WindowsSelectorImpl</td>
+<td align="left">内部应该是有的是iocp</td>
+</tr>
+</tbody></table>
+<p>具体Selector的介绍，见下一节。</p>
+</blockquote>
+<p>从上面的代码，可以明确看出，channel数据操作是基于buffer来的，其所有的接口都是基于Buffer对外暴露的。</p>
+<p>而在，Buffer的介绍中，说过Buffer是缓冲区，可以读和写一起操作，不需要在构造一个对象。因此，基于其数据结构之上的channel也是可以读写一起操作的。</p>
+<h2 id="2-3-Selector"><a href="#2-3-Selector" class="headerlink" title="2.3 Selector"></a>2.3 Selector</h2><p>Selector，多路复用选择器。其可以通过一个线程来同步检测多个通道channel是都有相关事件准备好了，从而减少线程hang在IO等事件上。</p>
+<p>通常情况下，使用一个线程监听事件，而不是多线程来处理，主要原因是线程上下文切换的开销会比较大，并且每个资源暂用的资源也会有一些，因此使用单线程对于系统来说，可能当前是比较友好的。</p>
+<blockquote>
+<p>但是，需要说明的，由于CPU的技术发展以及操作系统的不断优化，现在多线程的开销会越来越小。如果有多核，而程序不去使用，那显然是浪费CPU能力。因此，我们会看到，有一种线程模型，是多个selector来并发执行。例如thrift的TThreadedSelectorServer，这个模型，以后有机会再详说。</p>
+</blockquote>
+<h3 id="2-3-1-Selector-介绍"><a href="#2-3-1-Selector-介绍" class="headerlink" title="2.3.1 Selector 介绍"></a>2.3.1 Selector 介绍</h3><p>在java中，linux环境下，selector使用epoll来实现多路复用。</p>
+<p>下面通过代码了解selector的使用：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">NioServer</span> </span>&#123;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line"></span><br><span class="line">        ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();</span><br><span class="line"></span><br><span class="line">        serverSocketChannel.socket().bind(<span class="keyword">new</span> InetSocketAddress(<span class="number">8888</span>));</span><br><span class="line"></span><br><span class="line">        Selector selector = Selector.open();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 设置成阻塞模式</span></span><br><span class="line">        serverSocketChannel.configureBlocking(<span class="keyword">false</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 注册监听事件</span></span><br><span class="line">        serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">int</span> select = selector.select();</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (select == <span class="number">0</span>) &#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;啦啦啦啦啦，谁把我弄起来了&quot;</span>);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (select &gt; <span class="number">0</span>) &#123;</span><br><span class="line"></span><br><span class="line">                Iterator&lt;SelectionKey&gt; iterator = selector.selectedKeys().iterator();</span><br><span class="line">                <span class="keyword">while</span> (iterator.hasNext()) &#123;</span><br><span class="line">                    SelectionKey selectionKey = iterator.next();</span><br><span class="line"></span><br><span class="line">                    <span class="comment">// 接收连接请求</span></span><br><span class="line">                    <span class="keyword">if</span> (selectionKey.isAcceptable()) &#123;</span><br><span class="line"></span><br><span class="line">                        SocketChannel socketChannel = serverSocketChannel.accept();</span><br><span class="line">                        socketChannel.configureBlocking(<span class="keyword">false</span>);</span><br><span class="line"></span><br><span class="line">                        System.out.println(<span class="string">&quot;开始处理连接:&quot;</span> + socketChannel.getRemoteAddress().toString());</span><br><span class="line"></span><br><span class="line">                        <span class="comment">//每接收请求之后，感兴趣的树读事件，所以在同一个selector中注册读事件</span></span><br><span class="line">                        socketChannel.register(selector, SelectionKey.OP_READ);</span><br><span class="line">                    &#125;</span><br><span class="line"></span><br><span class="line">                    <span class="keyword">if</span> (selectionKey.isReadable()) &#123;</span><br><span class="line"></span><br><span class="line">                        System.out.println(<span class="string">&quot;开始读取数据......&quot;</span>);</span><br><span class="line">                        <span class="comment">// 简单处理，不起线程了</span></span><br><span class="line">                        ByteBuffer buf = ByteBuffer.allocate(<span class="number">48</span>);</span><br><span class="line">                        <span class="keyword">int</span> bytesRead = <span class="number">0</span>;</span><br><span class="line">                        SocketChannel socketChannel = (SocketChannel) (selectionKey.channel());</span><br><span class="line">                        <span class="keyword">while</span> ((bytesRead = socketChannel.read(buf)) &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                            System.out.println(<span class="string">&quot;read socket data size: &quot;</span> + bytesRead);</span><br><span class="line">                            <span class="comment">// 空操作，只是为了把数据读出来</span></span><br><span class="line">                            buf.get();</span><br><span class="line">                        &#125;</span><br><span class="line"></span><br><span class="line">                        <span class="comment">// 这里一定需要判断，不然关闭client之后，会出现死循环</span></span><br><span class="line">                        <span class="comment">// 一直处在 &#x27;开始读取数据......&#x27;</span></span><br><span class="line">                        <span class="keyword">if</span> (bytesRead == -<span class="number">1</span>) &#123;</span><br><span class="line"></span><br><span class="line">                            System.out.println(<span class="string">&quot;开始关闭会话......&quot;</span>);</span><br><span class="line">                            selectionKey.cancel();</span><br><span class="line">                            socketChannel.close();</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                    iterator.remove();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>以上是实现一个很简单的selector的非阻塞服务器，在开发过程中，会存在很多小问题，例如如果我们不对bytesRead为-1的情况进行处理，则会一直处在有读事件没有处理，然后就会出现死循环。此外，基于多线程处理读数据，又会有很多地方修改和注意点，需要非常谨慎和细致。<br>因此，开发一个nio的服务器是非常需要技术的，一旦一个点遗漏，就会导致死循环。java nio 接口使用的不友好，造就了mina，netty网络库的出现。</p>
+</blockquote>
+<h3 id="2-3-2-Selector-wakeup方法"><a href="#2-3-2-Selector-wakeup方法" class="headerlink" title="2.3.2 Selector wakeup方法"></a>2.3.2 Selector wakeup方法</h3><p>在selector中，也有一个wakeup方法，虽然和上面的wakeup并不是一个东西，但是其目的是一样的。</p>
+<p>在Selector中，我们知道其是一个线程阻塞的来处理所有事件监听的，如果selector不设置超时的话，就会一直处于阻塞状态，直到有时间发生。</p>
+<p>但是，如果这个时候，其他线程需要这个线程返回，停止阻塞，就需要调用wakeup来唤醒处在select()中的线程。</p>
+<p>举个例子，比如我服务端使用selector来处理事件，现在，我需要停止服务,但是因为没事件发生，导致selector的select方法处于阻塞状态，这个时候就需要使用wakeup唤醒。例如在thrift的TNonblockingServer，在停止server的时候，就会调用wakeup，代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Stop serving and shut everything down.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">stop</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  stopped_ = <span class="keyword">true</span>;</span><br><span class="line">  <span class="keyword">if</span> (selectAcceptThread_ != <span class="keyword">null</span>) &#123;</span><br><span class="line">    selectAcceptThread_.wakeupSelector();</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * If the selector is blocked, wake it up.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">wakeupSelector</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    selector.wakeup();</span><br><span class="line">  &#125;  </span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>wakeup的实现，其实很有意思，就是mock一个事件发生，然后select()方法就可以从阻塞中醒过来，从而完成wakeup的动作。<br>具体，可以参考：<a target="_blank" rel="noopener" href="http://jm.taobao.org/2010/10/22/380/">http://jm.taobao.org/2010/10/22/380/</a></p>
+</blockquote>
+<h1 id="3-Netty-ByteBuf-介绍"><a href="#3-Netty-ByteBuf-介绍" class="headerlink" title="3. Netty ByteBuf 介绍"></a>3. Netty ByteBuf 介绍</h1><p>由于Nio的ByteBuffer的一些不足，在netty中提供了一个相同功能的类：ByteBuf。但是ByteBuf很好的简化了nio bytebuffer的使用，并且将一些常用的方法包装出来对外提供。</p>
+<p>在介绍各个bytebuf特性之前，先看看netty bytebuf提供了哪些常用的类</p>
+<p><img src="/images/2018/bytebuf_main_class.png" alt="netty bytebuf主要实现类图"></p>
+<ul>
+<li><p>EmptyByteBuf：一个空的bytebuf，其capacity为0，读写index也为0.</p>
+</li>
+<li><p>WrappedByteBuf：主要是对ByteBuf类进行一些包装的类型，也就是其只是对例如CompositeByteBuf进行一些装饰，额外加一些日志或者记录等。</p>
+<ul>
+<li>SimpleLeakAwareByteBuf：对于一些方法，比如slice，duplicate，touch等等对buf对象会有引用的时候，会进行record引用记录。</li>
+<li>AdvancedLeakAwareByteBuf：看实现跟上面的Simple是类似的，只不过对更多的操作会记录详细的操作计数的日志。</li>
+<li>UnreleasableByteBuf：顾名思义，就是不允许release buf空间。调用release直接返回false，不做任何处理。一般，我们在定义一个常量的bytebuf会使用这种类型，比如说，我们对每一个文件都会加以java结尾，则将java定义成一个UnreleasableByteBuf，这样内容不会修改和释放，每一次文件路径过来，加上java buf 返回。</li>
+</ul>
+</li>
+<li><p>DuplicatedByteBuf：在底层数据共享的时候，该bytebuf可以对每一个Duplicated出来的对象单独提供readIndex和writeIndex，彼此之间互不影响，但是缓冲区是共享的，这样子可以节省内存占用。</p>
+</li>
+<li><p>ReadOnlyByteBuf/ReadOnlyByteBufferBuf：和上一个bytebuf类似，只不会新创建出来的bytebuf引用，不能操作writeIndex，也就意味着在很多为了数据安全，只能够共享读数据的地方，非常适用。</p>
+</li>
+<li><p>CompositeByteBuf：一个虚拟的buffer，实际上他本身并不额外分配buffer空间，而是引用组合的各个buffer为一个list和迭代器。有的时候，我们可能从好几个地方获取到buf数据，然后聚合起来返回。使用CompositeByteBuf可以避免申请新的空间，然后复制数据的过程。</p>
+<blockquote>
+<p>需要说明下，SlicedByteBuf这种和CompositeByteBuf刚好相反，只截取bytebuf部分缓冲区数据的类型。现在这种类型之间使用bytebuf.slice方法构造。</p>
+</blockquote>
+</li>
+<li><p>PooledByteBuf：基于内存池的ByteBuf子类型，主要是重用ByteBuf对象，避免内存申请释放导致的性能问题。由于内存获取方式的不同，还有如下更优化的子类型bytebuf存在。</p>
+<ul>
+<li>PooledDirectByteBuf：基于directByteBuffer来构造，直接使用堆外内存进行分配空间。堆外内存的时候，可以避免内存到JVM内存的一次拷贝，在和内核做数据交换的时候，对性能的提升很大。</li>
+<li>PooledHeapByteBuf：使用JVM堆进行内存分配的byteBuf子类型。堆内分配，如果一些数据只是在java进程内部使用，则使用堆内存分配安全性 和速度上都会比较好，毕竟内存的回收有JVM来处理。</li>
+<li>PooledUnsafeDirectByteBuf：和PooledDirectByteBuf类似，只不过其不是使用directByteBuffer来处理，而是自己通过PlatformDependent来根据不同系统平台使用不同的分配内存方式。<br>如下代码：</li>
+</ul>
+  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">getBytes</span><span class="params">(<span class="keyword">long</span> inAddr, <span class="keyword">byte</span>[] in, <span class="keyword">int</span> inOffset, <span class="keyword">int</span> inLen, OutputStream out, <span class="keyword">int</span> outLen)</span></span></span><br><span class="line"><span class="function">        <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">        <span class="keyword">int</span> len = Math.min(inLen, outLen);</span><br><span class="line">        PlatformDependent.copyMemory(inAddr, in, inOffset, len);</span><br><span class="line">        out.write(in, inOffset, len);</span><br><span class="line">        outLen -= len;</span><br><span class="line">        inAddr += len;</span><br><span class="line">    &#125; <span class="keyword">while</span> (outLen &gt; <span class="number">0</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p><code>UnpooledByteBuf</code>：在netty不存在UnpooledByteBuf这种类型，这里只是相对<code>PooledByteBuf</code>而言。</p>
+<ul>
+<li>UnpooledHeapByteBuf：在堆内及时分配内存的bytebuf，内部代码直接基于ByteBuffer来实现的，不过增加了引用计数的内存回收。</li>
+<li>UnpooledDirectByteBuf：在对外分配内存的bytebuf，每次需要就直接申请分配内存空间，在大量操作分配和回收内存额时候，会导致性能下降。</li>
+<li>UnpooledUnsafeDirectByteBuf：基于平台优化的堆外内存分配的UnpooledDirectByteBuf。</li>
+</ul>
+</li>
+</ul>
+<p>因此，如上，我们可以大概了解，bytebuf主要基于两个维度：1.堆内&amp;堆外；2.池化&amp;非池化。所以在使用的时候，需要仔细考虑下。</p>
+<h2 id="3-1-Netty-ByteBuf-接口"><a href="#3-1-Netty-ByteBuf-接口" class="headerlink" title="3.1 Netty ByteBuf 接口"></a>3.1 Netty ByteBuf 接口</h2><h3 id="3-1-1-读写标记分离"><a href="#3-1-1-读写标记分离" class="headerlink" title="3.1.1 读写标记分离"></a>3.1.1 读写标记分离</h3><p>在nio的ByteBuffer的实现中，是使用一个position来表示读位置和写位置，使得操作的时候，读写切换，需要在此之前把position进行更新，保证不会出现非预期结果。</p>
+<p>在netty的实现中，ByteBuf申明了两个变量，分别表示读位置readerIndex，写位置writerIndex。读操作的时候，使用和更新readerIndexn；写操作的时候，使用和更新writerIndex。于是，在初始化之后，两者都为0。然后，写执行，writerIndex递增；读执行，readerIndex递增；约束条件就是readerIndex&lt;= writerIndex.</p>
+<p>如：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">*      +-------------------+------------------+------------------+</span><br><span class="line">*      | discardable bytes |  readable bytes  |  writable bytes  |</span><br><span class="line">*      |                   |     (CONTENT)    |                  |</span><br><span class="line">*      +-------------------+------------------+------------------+</span><br><span class="line">*      |                   |                  |                  |</span><br><span class="line">*      <span class="number">0</span>      &lt;=      readerIndex   &lt;=   writerIndex    &lt;=    capacity</span><br><span class="line">*</span><br></pre></td></tr></table></figure>
+<p>例如，我们读写一个字节时，则可以如下实现：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">byte</span> <span class="title">readByte</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    checkReadableBytes0(<span class="number">1</span>);<span class="comment">//check读空间</span></span><br><span class="line">    <span class="keyword">int</span> i = readerIndex;</span><br><span class="line">    <span class="keyword">byte</span> b = _getByte(i);</span><br><span class="line">    readerIndex = i + <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">return</span> b;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> ByteBuf <span class="title">writeByte</span><span class="params">(<span class="keyword">int</span> value)</span> </span>&#123;</span><br><span class="line">    ensureWritable0(<span class="number">1</span>);<span class="comment">//check写空间</span></span><br><span class="line">    _setByte(writerIndex++, value);</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+<p>如果，我们需要清理已读的空间，只需要将当前readIndex之前的空间clear即可，相应的index往前移，非常简单。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">* </span><br><span class="line">*  <span class="function">BEFORE <span class="title">discardReadBytes</span><span class="params">()</span></span></span><br><span class="line"><span class="function">*</span></span><br><span class="line"><span class="function">*      +-------------------+------------------+------------------+</span></span><br><span class="line"><span class="function">*      | discardable bytes |  readable bytes  |  writable bytes  |</span></span><br><span class="line"><span class="function">*      +-------------------+------------------+------------------+</span></span><br><span class="line"><span class="function">*      |                   |                  |                  |</span></span><br><span class="line"><span class="function">*      0      &lt;</span>=      readerIndex   &lt;=   writerIndex    &lt;=    capacity</span><br><span class="line">*</span><br><span class="line">*</span><br><span class="line">*  <span class="function">AFTER <span class="title">discardReadBytes</span><span class="params">()</span></span></span><br><span class="line"><span class="function">*</span></span><br><span class="line"><span class="function">*      +------------------+--------------------------------------+</span></span><br><span class="line"><span class="function">*      |  readable bytes  |    writable <span class="title">bytes</span> <span class="params">(got more space)</span>   |</span></span><br><span class="line"><span class="function">*      +------------------+--------------------------------------+</span></span><br><span class="line"><span class="function">*      |                  |                                      |</span></span><br><span class="line"><span class="function">* <span class="title">readerIndex</span> <span class="params">(<span class="number">0</span>)</span> &lt;</span>= writerIndex (decreased)        &lt;=        capacity</span><br><span class="line">* </span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>代码简单实现如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> ByteBuf <span class="title">discardReadBytes</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    ensureAccessible();</span><br><span class="line">    <span class="keyword">if</span> (readerIndex == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (readerIndex != writerIndex) &#123;</span><br><span class="line">        setBytes(<span class="number">0</span>, <span class="keyword">this</span>, readerIndex, writerIndex - readerIndex);</span><br><span class="line">        writerIndex -= readerIndex;</span><br><span class="line">        adjustMarkers(readerIndex);</span><br><span class="line">        readerIndex = <span class="number">0</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        adjustMarkers(readerIndex);</span><br><span class="line">        writerIndex = readerIndex = <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="3-1-2-动态扩容"><a href="#3-1-2-动态扩容" class="headerlink" title="3.1.2 动态扩容"></a>3.1.2 动态扩容</h3><p>java 的list相对于C，其提供的动态扩容。在使用list之前，开发同学不需要事先明确集合空间的大小，等到空间预期不够的时候，则执行动态扩容。</p>
+<p>但是，在nio的ByteBuffer中，竟然不支持动态扩容，如果一不小心写多数据了，则会抛出BufferOverflowException异常，显然和java的风格不一致。因此，在netty中，其次需要解决的，就是支持动态扩容功能。</p>
+<p>netty的实现原理，很简单。就是在写的时候，如果空间不足，则分配一个新的更大空间，将老数据复制过去。这涉及到两个点：</p>
+<ol>
+<li>什么时候扩容，扩容多少？</li>
+<li>怎么分配更大空间？</li>
+</ol>
+<p>在netty中，当新写入的byte数组不够存放到byteBuf空间时，才会申请扩容。在分配器Allocator中，当整个内容大小(writeIndex+bytes.size)小于4M的时候，则从64开始，*2，直到可以存放整个内容。如果需要的空间大于4M，则按照4M的倍数来存放内容。代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">calculateNewCapacity</span><span class="params">(<span class="keyword">int</span> minNewCapacity, <span class="keyword">int</span> maxCapacity)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">int</span> threshold = <span class="number">1048576</span> * <span class="number">4</span>; <span class="comment">// 4 MiB page</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (minNewCapacity == threshold) &#123;</span><br><span class="line">        <span class="keyword">return</span> threshold;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// If over threshold, do not double but just increase by threshold.</span></span><br><span class="line">    <span class="keyword">if</span> (minNewCapacity &gt; threshold) &#123;</span><br><span class="line">        <span class="keyword">int</span> newCapacity = minNewCapacity / threshold * threshold;</span><br><span class="line">        <span class="comment">// 如果离最大空间不足4M，则直接以最大空间来创建</span></span><br><span class="line">        <span class="keyword">if</span> (newCapacity &gt; maxCapacity - threshold) &#123;</span><br><span class="line">            newCapacity = maxCapacity;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">// 如果空间足够，则直接增加一个4M来申请新空间即可</span></span><br><span class="line">            newCapacity += threshold;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> newCapacity;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Not over threshold. Double up to 4 MiB, starting from 64.</span></span><br><span class="line">    <span class="comment">// 如果新空间少于4M，则以64开始，找到刚好大于新空间的2的幂次方数</span></span><br><span class="line">    <span class="keyword">int</span> newCapacity = <span class="number">64</span>;</span><br><span class="line">    <span class="keyword">while</span> (newCapacity &lt; minNewCapacity) &#123;</span><br><span class="line">        newCapacity &lt;&lt;= <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> Math.min(newCapacity, maxCapacity);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>确认好了新空间的大小之后，就是开始分配空间内存了。由于ByteBuf有很多种实现，比如pool的，unpool的，heapbuffer的，directBuffer的。拿个最简单的实现示例UnpooledHeapByteBuf来看：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> ByteBuf <span class="title">capacity</span><span class="params">(<span class="keyword">int</span> newCapacity)</span> </span>&#123;</span><br><span class="line">    checkNewCapacity(newCapacity);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> oldCapacity = array.length;</span><br><span class="line">    <span class="keyword">byte</span>[] oldArray = array;</span><br><span class="line">    <span class="keyword">if</span> (newCapacity &gt; oldCapacity) &#123;</span><br><span class="line">        <span class="comment">// new 一个byte数组</span></span><br><span class="line">        <span class="keyword">byte</span>[] newArray = allocateArray(newCapacity);</span><br><span class="line">        <span class="comment">// 数据copy</span></span><br><span class="line">        System.arraycopy(oldArray, <span class="number">0</span>, newArray, <span class="number">0</span>, oldArray.length);</span><br><span class="line">        <span class="comment">//替换底层数据结构byte array</span></span><br><span class="line">        setArray(newArray);</span><br><span class="line">        <span class="comment">// 非pool的，这块等着gc回收好了</span></span><br><span class="line">        freeArray(oldArray);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (newCapacity &lt; oldCapacity) &#123;</span><br><span class="line">        <span class="comment">//.......</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="3-1-3-引用计数"><a href="#3-1-3-引用计数" class="headerlink" title="3.1.3 引用计数"></a>3.1.3 引用计数</h3><p>引用计数是最简单的GC方式，其在循环引用的场景下，会存在内存泄漏的问题；但是由于其简单性，在某些确认不会存在彼此循环引用的情况下，是非常易于开发和理解的。</p>
+<p>引用计数，算是ByteBuf提供的基本功能，在最基础的接口定义上，就把<code>ReferenceCounted</code>包含进去了，如：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@SuppressWarnings(&quot;ClassMayBeInterface&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">ByteBuf</span> <span class="keyword">implements</span> <span class="title">ReferenceCounted</span>, <span class="title">Comparable</span>&lt;<span class="title">ByteBuf</span>&gt; </span>&#123;&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>特别说明下，这个注解ClassMayBeInterface，表明其实ByteBuf是个接口，使用abstract class只是为了后期可能内部实现一些默认方法，或者其他一些工具性质方法，在jdk8之前，只能使用抽象类来解决。<br>此外，其实在netty3中，ByteBuf就是一个接口，将接口改为abstract class会有5%的性能提升。</p>
+</blockquote>
+<p>和GC中的引用计数一样，当byteBuf对象被引用的时候，调用retain方法计数增一；调用release方法计数减一。当最终计数为1的时候，再执行release的时候，则会使用deallocate将buf对象释放。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 以下两个保证多线程安全可见的特性组合使用，可以学习下。AtomicIntegerFieldUpdater+refCnt来原子CAS更新计数.</span></span><br><span class="line"><span class="comment"> * 上面的结合主要是在不修改对外暴露方法的前提下，内部来保证线程安全，从netty提交记录也大概可以看出来。</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> AtomicIntegerFieldUpdater&lt;AbstractReferenceCountedByteBuf&gt; refCntUpdater =</span><br><span class="line">        AtomicIntegerFieldUpdater.newUpdater(AbstractReferenceCountedByteBuf.class, <span class="string">&quot;refCnt&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">volatile</span> <span class="keyword">int</span> refCnt;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> ByteBuf <span class="title">retain0</span><span class="params">(<span class="keyword">final</span> <span class="keyword">int</span> increment)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> oldRef = refCntUpdater.getAndAdd(<span class="keyword">this</span>, increment);</span><br><span class="line">    <span class="comment">// 以下判断负数，或者加完increment之后整数溢出（这种判断很有趣）</span></span><br><span class="line">    <span class="keyword">if</span> (oldRef &lt;= <span class="number">0</span> || oldRef + increment &lt; oldRef) &#123;</span><br><span class="line">        <span class="comment">// Ensure we don&#x27;t resurrect (which means the refCnt was 0) and also that we encountered an overflow.</span></span><br><span class="line">        refCntUpdater.getAndAdd(<span class="keyword">this</span>, -increment);</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> IllegalReferenceCountException(oldRef, increment);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">boolean</span> <span class="title">release0</span><span class="params">(<span class="keyword">int</span> decrement)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> oldRef = refCntUpdater.getAndAdd(<span class="keyword">this</span>, -decrement);</span><br><span class="line">    <span class="keyword">if</span> (oldRef == decrement) &#123;</span><br><span class="line">        deallocate();</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (oldRef &lt; decrement || oldRef - decrement &gt; oldRef) &#123;</span><br><span class="line">        <span class="comment">// Ensure we don&#x27;t over-release, and avoid underflow.</span></span><br><span class="line">        refCntUpdater.getAndAdd(<span class="keyword">this</span>, decrement);</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> IllegalReferenceCountException(oldRef, decrement);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>引用计数，在netty中，也主要根据对象使用，然后自动释放&amp;回收空间。如上代码，具体释放的动作，是一个抽象方法，需要子类来实现。例如：</p>
+<p>池化的PooledByteBuf的实现：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * bytebuf上面的相关空间进行销毁，比如内存页的块chuck在堆外内存的时候，进行free，还有相关引用置为null</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title">deallocate</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (handle &gt;= <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">final</span> <span class="keyword">long</span> handle = <span class="keyword">this</span>.handle;</span><br><span class="line">        <span class="keyword">this</span>.handle = -<span class="number">1</span>;</span><br><span class="line">        memory = <span class="keyword">null</span>;</span><br><span class="line">        tmpNioBuf = <span class="keyword">null</span>;</span><br><span class="line">        chunk.arena.free(chunk, handle, maxLength, cache);</span><br><span class="line">        chunk = <span class="keyword">null</span>;</span><br><span class="line">        recycle();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 具体的实现回收，默认是将内存块push到stack栈中。</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">recycle</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    recyclerHandle.recycle(<span class="keyword">this</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>而在非池化的UnpooledByteBuf则基本上不会做什么操作，如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">deallocate</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    freeArray(array);<span class="comment">//空方法</span></span><br><span class="line">    array = EmptyArrays.EMPTY_BYTES;<span class="comment">//对应buffer的底层数据结构设置为空byte[] EMPTY_BYTES = &#123;&#125;</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>如上，对于需要进行内存管理的buf来说，retain &amp; release来管理引用计数，然后再必要的时候，进行内存释放和回归，是很需要的。</p>
+</blockquote>
+<h2 id="3-2-Netty-ByteBuf高级特性"><a href="#3-2-Netty-ByteBuf高级特性" class="headerlink" title="3.2 Netty ByteBuf高级特性"></a>3.2 Netty ByteBuf高级特性</h2><h3 id="3-2-1-内存泄漏检测"><a href="#3-2-1-内存泄漏检测" class="headerlink" title="3.2.1 内存泄漏检测"></a>3.2.1 内存泄漏检测</h3><p>上面有一个基于引用计数的内存回收。但是，由于retain和release的方法调用都是由开发者自己来主动触发的，这就导致可能哪里遗忘了release buf对象的操作，导致一直没办法进行主动内存释放的操作。</p>
+<p>内存泄漏检测，主要针对PooledByteBuf，因为是自己管理buf池子，就需要判断什么时候buf可以释放，当前有没有存在未释放的buf。</p>
+<p>当前，netty内存泄漏检测的级别主要有：</p>
+<ul>
+<li>DISABLED – 完全禁用检查。不推荐。</li>
+<li>SIMPLE – 检查1/128比例的缓冲区是否存在内存泄露。默认检测为该级别。</li>
+<li>ADVANCED – 检查1/128比例的缓冲区，并提示发生内存泄露的位置。</li>
+<li>PARANOID – 与ADVANCED等级一样，不同的是会检查所有的缓冲区。对于自动化测试很有用，你可以让构建测试失败 如果构建输出中包含’LEAK’, 用JVM选项 -Dio.netty.leakDetectionLevel 来指定内存泄露检查等级</li>
+</ul>
+<p>于是，开启检测之后，如果存在内存泄漏，则在日志里，会存在如下错误信息：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">LEAK: ByteBuf.release() was not called before it<span class="string">&#x27;s garbage-collected. &quot; +</span></span><br><span class="line"><span class="string">                &quot;Enable advanced leak reporting to find out where the leak occurred. &quot; +</span></span><br><span class="line"><span class="string">                &quot;To enable advanced leak reporting, &quot; +</span></span><br><span class="line"><span class="string">                &quot;specify the JVM option &#x27;</span>-Dio.netty.leakDetection.level=advanced<span class="string">&#x27; or call ResourceLeakDetector.setLevel() &quot; +</span></span><br><span class="line"><span class="string">                &quot;See http://netty.io/wiki/reference-counted-objects.html for more information.</span></span><br></pre></td></tr></table></figure>
+
+<p>在PooledByteBufAllocator中，新建buf都会进行装饰，如：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> ByteBuf <span class="title">newHeapBuffer</span><span class="params">(<span class="keyword">int</span> initialCapacity, <span class="keyword">int</span> maxCapacity)</span> </span>&#123;</span><br><span class="line">    PoolThreadCache cache = threadCache.get();</span><br><span class="line">    PoolArena&lt;<span class="keyword">byte</span>[]&gt; heapArena = cache.heapArena;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">final</span> ByteBuf buf;</span><br><span class="line">    <span class="keyword">if</span> (heapArena != <span class="keyword">null</span>) &#123;</span><br><span class="line">        buf = heapArena.allocate(cache, initialCapacity, maxCapacity);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        buf = PlatformDependent.hasUnsafe() ?</span><br><span class="line">                <span class="keyword">new</span> UnpooledUnsafeHeapByteBuf(<span class="keyword">this</span>, initialCapacity, maxCapacity) :</span><br><span class="line">                <span class="keyword">new</span> UnpooledHeapByteBuf(<span class="keyword">this</span>, initialCapacity, maxCapacity);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> toLeakAwareBuffer(buf);</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>当我们，在测试的时候，则可以调用open方法打开检测，然后执行track指令，如下代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> DefaultResourceLeak <span class="title">track0</span><span class="params">(T obj)</span> </span>&#123;</span><br><span class="line">     Level level = ResourceLeakDetector.level;</span><br><span class="line">     <span class="comment">// .....</span></span><br><span class="line">     <span class="comment">// 为了测试，检测所有怀疑资源泄漏的地方</span></span><br><span class="line">     <span class="keyword">if</span> (level.ordinal() &lt; Level.PARANOID.ordinal()) &#123;</span><br><span class="line">         <span class="comment">// 由于对系统压力大，所以进行采样，大概1/128比例</span></span><br><span class="line">         <span class="keyword">if</span> ((PlatformDependent.threadLocalRandom().nextInt(samplingInterval)) == <span class="number">0</span>) &#123;</span><br><span class="line">             reportLeak();</span><br><span class="line">             <span class="keyword">return</span> <span class="keyword">new</span> DefaultResourceLeak(obj, refQueue, allLeaks);</span><br><span class="line">         &#125;</span><br><span class="line">         <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">     &#125;</span><br><span class="line">     <span class="comment">// 其他设置，主动触发就会出一份检测报告</span></span><br><span class="line">     reportLeak();</span><br><span class="line">     <span class="keyword">return</span> <span class="keyword">new</span> DefaultResourceLeak(obj, refQueue, allLeaks);</span><br><span class="line"> &#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>此外，在内存泄漏检测的实现中，使用了：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 资源泄漏的统计对象是一个弱引用，在内存紧张的时候，会进行GC回收</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">DefaultResourceLeak</span>&lt;<span class="title">T</span>&gt;</span></span><br><span class="line"><span class="class">        <span class="keyword">extends</span> <span class="title">WeakReference</span>&lt;<span class="title">Object</span>&gt; <span class="keyword">implements</span> <span class="title">ResourceLeakTracker</span>&lt;<span class="title">T</span>&gt;, <span class="title">ResourceLeak</span> </span>&#123;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 在refQueue中保存的是DefaultResourceLeak类型的弱引用，然后放到ReferenceQueue中，当GC的时候，会查看</span></span><br><span class="line"><span class="comment"> * ReferenceQueue中的元素，进行GC回收，而不管外部是否还有改元素对象的引用。</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> ReferenceQueue&lt;Object&gt; refQueue = <span class="keyword">new</span> ReferenceQueue&lt;Object&gt;();</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="3-2-2-零拷贝优化"><a href="#3-2-2-零拷贝优化" class="headerlink" title="3.2.2 零拷贝优化"></a>3.2.2 零拷贝优化</h3><p>一般，我们拷贝，主要存在两种情况：</p>
+<ul>
+<li>我们创建新buf的时候，当需要从某个已存在的buf对象的部分或全部类型来回写新buf时，就需要拷贝这部分内容。</li>
+<li>当我们需要把数据从不同空间转移的时候，例如内核区到用户区，就需要进行数据拷贝的操作。</li>
+</ul>
+<p>针对以上两种情况，netty都存在一些针对使用场景的优化，来避免不必要的拷贝。这些操作，我们统一称之为零拷贝。</p>
+<h4 id="3-2-2-1-零拷贝之ByteBuf创建"><a href="#3-2-2-1-零拷贝之ByteBuf创建" class="headerlink" title="3.2.2.1 零拷贝之ByteBuf创建"></a>3.2.2.1 零拷贝之ByteBuf创建</h4><h5 id="CompositeByteBuf"><a href="#CompositeByteBuf" class="headerlink" title="CompositeByteBuf"></a>CompositeByteBuf</h5><p>当我们从不同的解析方法里面返回了header bytebuf和body bytebuf，然后想组合成一个请求整体进行后续反序列化等操作的时候，就需要将不同的buf组合成新的bytebuf，于是，就有了CompositeByteBuf。</p>
+<p>CompositeByteBuf并没有真的copy多个bytebuf的数据到最终的buf中，而只是维护各个bytebuf的对象引用。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CompositeByteBuf</span> <span class="keyword">extends</span> <span class="title">AbstractReferenceCountedByteBuf</span> <span class="keyword">implements</span> <span class="title">Iterable</span>&lt;<span class="title">ByteBuf</span>&gt; </span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Iterator&lt;ByteBuf&gt; EMPTY_ITERATOR = Collections.&lt;ByteBuf&gt;emptyList().iterator();</span><br><span class="line"></span><br><span class="line">    CompositeByteBuf(ByteBufAllocator alloc, <span class="keyword">boolean</span> direct, <span class="keyword">int</span> maxNumComponents, ByteBuf[] buffers, <span class="keyword">int</span> offset, <span class="keyword">int</span> len) &#123;</span><br><span class="line">        <span class="keyword">super</span>(AbstractByteBufAllocator.DEFAULT_MAX_CAPACITY);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">this</span>.alloc = alloc;</span><br><span class="line">        <span class="keyword">this</span>.direct = direct;</span><br><span class="line">        <span class="keyword">this</span>.maxNumComponents = maxNumComponents;</span><br><span class="line">        components = newList(maxNumComponents);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 这里讲buffer的数据加入到components列表中</span></span><br><span class="line">        addComponents0(<span class="keyword">false</span>, <span class="number">0</span>, buffers, offset, len);</span><br><span class="line">        <span class="comment">//当前components size 超过指定maxSize，触发copy数据操作</span></span><br><span class="line">        consolidateIfNeeded();</span><br><span class="line">        setIndex(<span class="number">0</span>, capacity());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">int</span> <span class="title">addComponent0</span><span class="params">(<span class="keyword">boolean</span> increaseWriterIndex, <span class="keyword">int</span> cIndex, ByteBuf buffer)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">boolean</span> wasAdded = <span class="keyword">false</span>;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">int</span> readableBytes = buffer.readableBytes();</span><br><span class="line"></span><br><span class="line">            Component c = <span class="keyword">new</span> Component(buffer.order(ByteOrder.BIG_ENDIAN).slice());</span><br><span class="line">            <span class="keyword">if</span> (cIndex == components.size()) &#123;</span><br><span class="line">                wasAdded = components.add(c);</span><br><span class="line">                <span class="comment">// 维护各个offset:对应buf在list中基于字节的开始偏移量和结束偏移量</span></span><br><span class="line">                <span class="keyword">if</span> (cIndex == <span class="number">0</span>) &#123;</span><br><span class="line">                    c.endOffset = readableBytes;</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    Component prev = components.get(cIndex - <span class="number">1</span>);</span><br><span class="line">                    c.offset = prev.endOffset;</span><br><span class="line">                    c.endOffset = c.offset + readableBytes;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="comment">// 不同之处在于，更新offset将是一个On的操作了</span></span><br><span class="line">                components.add(cIndex, c);</span><br><span class="line">                wasAdded = <span class="keyword">true</span>;</span><br><span class="line">                <span class="keyword">if</span> (readableBytes != <span class="number">0</span>) &#123;</span><br><span class="line">                    updateComponentOffsets(cIndex);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (increaseWriterIndex) &#123;</span><br><span class="line">                writerIndex(writerIndex() + buffer.readableBytes());</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span> cIndex;</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            <span class="comment">// 如果没有更新成功，则需要把对应的buffer引用-1</span></span><br><span class="line">            <span class="keyword">if</span> (!wasAdded) &#123;</span><br><span class="line">                buffer.release();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>从上面的代码，可以清晰的看到，正常情况下，完全没有copy每一个组合中的bytebuf数据，而是维护一个包含bytebuf的component list，每个bytebuf的偏移信息等维护在component中，便于后续对CompositeByteBuf对象的操作。</p>
+</blockquote>
+<h5 id="DuplicatedByteBuf"><a href="#DuplicatedByteBuf" class="headerlink" title="DuplicatedByteBuf"></a>DuplicatedByteBuf</h5><p>ByteBuf维护了writeIndex和readIndex，当多个地方同时操作ByteBuf的时候，就会导致index错乱，这个时候，我们就需要复制一份数据，构造一个全新的ByteBuf对象。但是，另外一个方案，就是我只重新构造index，对于底层的buf，还是沿用原始的bytebuf。这样子，我们就不需要copy bytebuf中的所有数据到新的对象中。</p>
+<h4 id="3-2-2-2-零拷贝之数据迁移"><a href="#3-2-2-2-零拷贝之数据迁移" class="headerlink" title="3.2.2.2 零拷贝之数据迁移"></a>3.2.2.2 零拷贝之数据迁移</h4><p>在不同系统空间之间会存在数据的来回拷贝，比如网络数据过来时，会从内核区的内存区间，拷贝到用户区的内存区间。如果加上JVM的堆内存，则还需要从用户区的Native内存拷贝到JVM堆内内存中，因此，正常需要好多次内存拷贝操作。</p>
+<p>因此，为了快速优化拷贝性能，则需要考虑：</p>
+<ol>
+<li>socket数据 –&gt; 内核区空间</li>
+<li>内核区空间 –&gt; Native内存空间</li>
+<li>Native内存 –&gt; 堆内内存空间</li>
+</ol>
+<p>一般情况下，用户态的内存空间和系统内核的内存空间之间是隔离的，不允许彼此操作。</p>
+<h5 id="DirectByteBuf"><a href="#DirectByteBuf" class="headerlink" title="DirectByteBuf"></a>DirectByteBuf</h5><p>直接操作堆外内存。避免堆内和堆外之间内存的复制拷贝。</p>
+<h2 id="4-Netty-ByteBuf-内存管理"><a href="#4-Netty-ByteBuf-内存管理" class="headerlink" title="4. Netty ByteBuf 内存管理"></a>4. Netty ByteBuf 内存管理</h2><h3 id="4-1-堆内堆外内存"><a href="#4-1-堆内堆外内存" class="headerlink" title="4.1 堆内堆外内存"></a>4.1 堆内堆外内存</h3><h3 id="4-2-池化非池化内存"><a href="#4-2-池化非池化内存" class="headerlink" title="4.2 池化非池化内存"></a>4.2 池化非池化内存</h3><h2 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2><ol>
+<li><a target="_blank" rel="noopener" href="https://cloud.tencent.com/developer/article/1005481">大话 Select、Poll、Epoll</a></li>
+<li><a target="_blank" rel="noopener" href="http://goldendoc.iteye.com/blog/1152079">Java NIO 的 wakeup 剖析</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/01/15/2018-01-15-design-principle-intro/" rel="prev" title="设计原则讨论123">
+      <i class="fa fa-chevron-left"></i> 设计原则讨论123
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/04/27/2020-04-27-ddd-system-arch-code/" rel="next" title="系统结构分层规范总结">
+      系统结构分层规范总结 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#1-I-O%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.</span> <span class="nav-text">1. I&#x2F;O模型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-1-%E6%A6%82%E5%BF%B5%E8%A7%A3%E9%87%8A"><span class="nav-number">1.1.</span> <span class="nav-text">1.1 概念解释</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-1-%E5%90%8C%E6%AD%A5%E5%92%8C%E5%BC%82%E6%AD%A5"><span class="nav-number">1.1.1.</span> <span class="nav-text">1.1.1 同步和异步</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-2-%E9%98%BB%E5%A1%9E%E5%92%8C%E9%9D%9E%E9%98%BB%E5%A1%9E"><span class="nav-number">1.1.2.</span> <span class="nav-text">1.1.2 阻塞和非阻塞</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-3-%E6%80%BB%E7%BB%93"><span class="nav-number">1.1.3.</span> <span class="nav-text">1.1.3 总结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1-2-%E9%98%BB%E5%A1%9E%E5%92%8C%E5%A4%9A%E8%B7%AF%E5%A4%8D%E7%94%A8I-O"><span class="nav-number">1.2.</span> <span class="nav-text">1.2 阻塞和多路复用I&#x2F;O</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-1-%E9%98%BB%E5%A1%9E%E5%BC%8FI-O"><span class="nav-number">1.2.1.</span> <span class="nav-text">1.2.1 阻塞式I&#x2F;O</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-2-%E5%A4%9A%E8%B7%AF%E5%A4%8D%E7%94%A8I-O"><span class="nav-number">1.2.2.</span> <span class="nav-text">1.2.2 多路复用I&#x2F;O</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-3-%E6%80%BB%E7%BB%93"><span class="nav-number">1.2.3.</span> <span class="nav-text">1.2.3 总结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1-3-%E5%A4%9A%E8%B7%AF%E5%A4%8D%E7%94%A8%E6%96%B9%E6%B3%95"><span class="nav-number">1.3.</span> <span class="nav-text">1.3 多路复用方法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-3-1-wakeup-callback%E6%9C%BA%E5%88%B6"><span class="nav-number">1.3.1.</span> <span class="nav-text">1.3.1 wakeup callback机制</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-3-1-1-%E7%9D%A1%E7%9C%A0%E7%AD%89%E5%BE%85"><span class="nav-number">1.3.1.1.</span> <span class="nav-text">1.3.1.1 睡眠等待</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-3-1-2-%E5%94%A4%E9%86%92%E5%8A%A8%E4%BD%9C"><span class="nav-number">1.3.1.2.</span> <span class="nav-text">1.3.1.2 唤醒动作</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-3-2-select-amp-amp-poll"><span class="nav-number">1.3.2.</span> <span class="nav-text">1.3.2 select &amp;&amp; poll</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-3-3-epoll"><span class="nav-number">1.3.3.</span> <span class="nav-text">1.3.3 epoll</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#2-java-NIO-%E4%BB%8B%E7%BB%8D"><span class="nav-number">2.</span> <span class="nav-text">2. java NIO 介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#2-1-Buffer"><span class="nav-number">2.1.</span> <span class="nav-text">2.1 Buffer</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-1-Buffer%E7%B1%BB%E4%BB%8B%E7%BB%8D"><span class="nav-number">2.1.1.</span> <span class="nav-text">2.1.1 Buffer类介绍</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-2-ByteBuffer%E7%B1%BB%E4%BD%BF%E7%94%A8"><span class="nav-number">2.1.2.</span> <span class="nav-text">2.1.2 ByteBuffer类使用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#nio-buffer-API%E4%B8%8D%E8%B6%B3%E4%B9%8B%E5%A4%84"><span class="nav-number">2.1.3.</span> <span class="nav-text">nio buffer API不足之处</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-2-Channel"><span class="nav-number">2.2.</span> <span class="nav-text">2.2 Channel</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-1-SocketChannel-amp-amp-ServerSocketChannel%E4%BB%8B%E7%BB%8D"><span class="nav-number">2.2.1.</span> <span class="nav-text">2.2.1 SocketChannel &amp;&amp; ServerSocketChannel介绍</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-3-Selector"><span class="nav-number">2.3.</span> <span class="nav-text">2.3 Selector</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-1-Selector-%E4%BB%8B%E7%BB%8D"><span class="nav-number">2.3.1.</span> <span class="nav-text">2.3.1 Selector 介绍</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-2-Selector-wakeup%E6%96%B9%E6%B3%95"><span class="nav-number">2.3.2.</span> <span class="nav-text">2.3.2 Selector wakeup方法</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#3-Netty-ByteBuf-%E4%BB%8B%E7%BB%8D"><span class="nav-number">3.</span> <span class="nav-text">3. Netty ByteBuf 介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#3-1-Netty-ByteBuf-%E6%8E%A5%E5%8F%A3"><span class="nav-number">3.1.</span> <span class="nav-text">3.1 Netty ByteBuf 接口</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-1-%E8%AF%BB%E5%86%99%E6%A0%87%E8%AE%B0%E5%88%86%E7%A6%BB"><span class="nav-number">3.1.1.</span> <span class="nav-text">3.1.1 读写标记分离</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-2-%E5%8A%A8%E6%80%81%E6%89%A9%E5%AE%B9"><span class="nav-number">3.1.2.</span> <span class="nav-text">3.1.2 动态扩容</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-3-%E5%BC%95%E7%94%A8%E8%AE%A1%E6%95%B0"><span class="nav-number">3.1.3.</span> <span class="nav-text">3.1.3 引用计数</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-2-Netty-ByteBuf%E9%AB%98%E7%BA%A7%E7%89%B9%E6%80%A7"><span class="nav-number">3.2.</span> <span class="nav-text">3.2 Netty ByteBuf高级特性</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-1-%E5%86%85%E5%AD%98%E6%B3%84%E6%BC%8F%E6%A3%80%E6%B5%8B"><span class="nav-number">3.2.1.</span> <span class="nav-text">3.2.1 内存泄漏检测</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-2-%E9%9B%B6%E6%8B%B7%E8%B4%9D%E4%BC%98%E5%8C%96"><span class="nav-number">3.2.2.</span> <span class="nav-text">3.2.2 零拷贝优化</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#3-2-2-1-%E9%9B%B6%E6%8B%B7%E8%B4%9D%E4%B9%8BByteBuf%E5%88%9B%E5%BB%BA"><span class="nav-number">3.2.2.1.</span> <span class="nav-text">3.2.2.1 零拷贝之ByteBuf创建</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#CompositeByteBuf"><span class="nav-number">3.2.2.1.1.</span> <span class="nav-text">CompositeByteBuf</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#DuplicatedByteBuf"><span class="nav-number">3.2.2.1.2.</span> <span class="nav-text">DuplicatedByteBuf</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-2-2-2-%E9%9B%B6%E6%8B%B7%E8%B4%9D%E4%B9%8B%E6%95%B0%E6%8D%AE%E8%BF%81%E7%A7%BB"><span class="nav-number">3.2.2.2.</span> <span class="nav-text">3.2.2.2 零拷贝之数据迁移</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#DirectByteBuf"><span class="nav-number">3.2.2.2.1.</span> <span class="nav-text">DirectByteBuf</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-Netty-ByteBuf-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86"><span class="nav-number">3.3.</span> <span class="nav-text">4. Netty ByteBuf 内存管理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#4-1-%E5%A0%86%E5%86%85%E5%A0%86%E5%A4%96%E5%86%85%E5%AD%98"><span class="nav-number">3.3.1.</span> <span class="nav-text">4.1 堆内堆外内存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-2-%E6%B1%A0%E5%8C%96%E9%9D%9E%E6%B1%A0%E5%8C%96%E5%86%85%E5%AD%98"><span class="nav-number">3.3.2.</span> <span class="nav-text">4.2 池化非池化内存</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">3.4.</span> <span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="柯小小西"
+      src="/images/ava.gif">
+  <p class="site-author-name" itemprop="name">柯小小西</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">47</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">柯小小西</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">476k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">7:13</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

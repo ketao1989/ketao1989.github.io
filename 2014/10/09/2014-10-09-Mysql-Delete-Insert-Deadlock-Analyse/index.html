@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="前言今天项目发布，上线上跟日志的时候，发现一些死锁信息的出现，查询了一下，发现日志里面虽然死锁出现很少，但是都是同一个代码sql语句产生的，如下图所示：   并且，一天产生死锁31次。 从DBA那边拿到了对应死锁的Mysql日志信息： 1234567891011121314151617181920212223------------------------LATEST DETECTED DEADL">
+<meta property="og:type" content="article">
+<meta property="og:title" content="线上Mysql Delete 和 Insert 操作导致死锁问题分析">
+<meta property="og:url" content="http://example.com/2014/10/09/2014-10-09-Mysql-Delete-Insert-Deadlock-Analyse/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="前言今天项目发布，上线上跟日志的时候，发现一些死锁信息的出现，查询了一下，发现日志里面虽然死锁出现很少，但是都是同一个代码sql语句产生的，如下图所示：   并且，一天产生死锁31次。 从DBA那边拿到了对应死锁的Mysql日志信息： 1234567891011121314151617181920212223------------------------LATEST DETECTED DEADL">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/2014/10/deadlock-log.png">
+<meta property="article:published_time" content="2014-10-09T14:21:35.000Z">
+<meta property="article:modified_time" content="2021-05-17T14:57:11.575Z">
+<meta property="article:author" content="柯小小西">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/2014/10/deadlock-log.png">
+
+<link rel="canonical" href="http://example.com/2014/10/09/2014-10-09-Mysql-Delete-Insert-Deadlock-Analyse/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>线上Mysql Delete 和 Insert 操作导致死锁问题分析 | Hexo</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hexo</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2014/10/09/2014-10-09-Mysql-Delete-Insert-Deadlock-Analyse/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ava.gif">
+      <meta itemprop="name" content="柯小小西">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hexo">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          线上Mysql Delete 和 Insert 操作导致死锁问题分析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2014-10-09 22:21:35" itemprop="dateCreated datePublished" datetime="2014-10-09T22:21:35+08:00">2014-10-09</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-05-17 22:57:11" itemprop="dateModified" datetime="2021-05-17T22:57:11+08:00">2021-05-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4.6k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a><a id="Intro">前言</a></h2><p>今天项目发布，上线上跟日志的时候，发现一些死锁信息的出现，查询了一下，发现日志里面虽然死锁出现很少，但是都是同一个代码<code>sql</code>语句产生的，如下图所示：</p>
+<img src="/images/2014/10/deadlock-log.png" />
+
+<p>并且，一天产生死锁<code>31</code>次。</p>
+<p>从DBA那边拿到了对应死锁的<code>Mysql</code>日志信息：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">------------------------</span><br><span class="line">LATEST DETECTED DEADLOCK</span><br><span class="line">------------------------</span><br><span class="line">141009 12:54:59</span><br><span class="line">*** (1) TRANSACTION:</span><br><span class="line">TRANSACTION AEE50DCB, ACTIVE 0 sec starting index <span class="built_in">read</span></span><br><span class="line">mysql tables <span class="keyword">in</span> use 1, locked 1</span><br><span class="line">LOCK WAIT 2 lock struct(s), heap size 376, 1 row lock(s)</span><br><span class="line">MySQL thread id 6055694, OS thread handle 0x7f4345c8d700, query id 2443700084 192.168.249.154 crm_w updating</span><br><span class="line">DELETE FROM crm_business WHERE serial_number = <span class="string">&#x27;CH01313320&#x27;</span></span><br><span class="line">*** (1) WAITING FOR THIS LOCK TO BE GRANTED:</span><br><span class="line">RECORD LOCKS space id 244 page no 817 n bits 824 index `uniq_serial_number_business_type` of table `crm`.`crm_business` trx id AEE50DCB lock_mode X waiting</span><br><span class="line">*** (2) TRANSACTION:</span><br><span class="line">TRANSACTION AEE50DCA, ACTIVE 0 sec inserting, thread declared inside InnoDB 500</span><br><span class="line">mysql tables <span class="keyword">in</span> use 1, locked 1</span><br><span class="line">3 lock struct(s), heap size 1248, 3 row lock(s), undo <span class="built_in">log</span> entries 1</span><br><span class="line">MySQL thread id 6055696, OS thread handle 0x7f4344941700, query id 2443700084 192.168.249.154 crm_w update</span><br><span class="line">INSERT INTO crm_business(serial_number, business_type) values (<span class="string">&#x27;CH01313318&#x27;</span>, 2)</span><br><span class="line">*** (2) HOLDS THE LOCK(S):</span><br><span class="line">RECORD LOCKS space id 244 page no 817 n bits 824 index `uniq_serial_number_business_type` of table `crm`.`crm_business` trx id AEE50DCA lock mode S</span><br><span class="line">*** (2) WAITING FOR THIS LOCK TO BE GRANTED:</span><br><span class="line">RECORD LOCKS space id 244 page no 817 n bits 824 index `uniq_serial_number_business_type` of table `crm`.`crm_business` trx id AEE50DCA lock_mode X locks gap before rec insert intention waiting</span><br><span class="line">*** WE ROLL BACK TRANSACTION (1)</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>Note: 数据库中，<code>CH01313318</code>和<code>CH01313320</code>序列号是连着的两个记录。</p>
+</blockquote>
+<h2 id="死锁问题定位"><a href="#死锁问题定位" class="headerlink" title="死锁问题定位"></a><a id="Problem">死锁问题定位</a></h2><p>之所以需要分析这个问题，主要原因是，这边代码并<em>没有</em>涉及到在一个事务内部sql操作导致死锁等常见的情况。</p>
+<span id="more"></span>
+
+<ul>
+<li>首先，我们看看设计问题的代码片段：</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">final</span> C c : cs) &#123;</span><br><span class="line">            threadPool.execute(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">                <span class="meta">@Override</span></span><br><span class="line">                <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                    processOneC(c);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">processOneC</span><span class="params">(C c)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (Strings.isNullOrEmpty(c.getSeqNumber())) &#123;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line"></span><br><span class="line">            <span class="comment">// 删除原合作业务</span></span><br><span class="line">            cBusinessDAO.deleteBySN(c.getSerialNumber()); <span class="comment">//delete操作</span></span><br><span class="line"></span><br><span class="line">            <span class="comment">//..........</span></span><br><span class="line">            </span><br><span class="line">            setTuanBusiness(c, hotelResult); <span class="comment">//insert操作</span></span><br><span class="line">            setDirectBusiness(c, hotelResult); <span class="comment">//insert操作</span></span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        </span><br><span class="line">            logger.error(<span class="string">&quot;CustomerBusinessProcess.processOneCustomer error, Exception&quot;</span>, e);</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;==========&quot;</span> + co.addAndGet(<span class="number">1</span>));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>上面代码的逻辑很简单，就是对一个列表对象，多线程来分别操作。每个对象的处理，删除原来的记录，然后添加新的记录。</p>
+<ul>
+<li>其次，设计到的SQL语句：</li>
+</ul>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">DELETE</span> </span><br><span class="line"><span class="keyword">FROM</span> crm_business </span><br><span class="line"><span class="keyword">WHERE</span> serial_number <span class="operator">=</span> <span class="string">&#x27;xxxx&#x27;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">INSERT</span> </span><br><span class="line"><span class="keyword">INTO</span> crm_business(</span><br><span class="line">serial_number, </span><br><span class="line">business_type</span><br><span class="line">) <span class="keyword">values</span> (</span><br><span class="line"><span class="string">&#x27;xxxx&#x27;</span>, </span><br><span class="line"><span class="number">1</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>最后，看看相关表的建表sql语句：</li>
+</ul>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> `crm_business` (</span><br><span class="line">  `id` <span class="type">int</span>(<span class="number">11</span>) unsigned <span class="keyword">NOT</span> <span class="keyword">NULL</span> AUTO_INCREMENT COMMENT <span class="string">&#x27;主键ID&#x27;</span>,</span><br><span class="line">  `serial_number` <span class="type">varchar</span>(<span class="number">50</span>) <span class="keyword">NOT</span> <span class="keyword">NULL</span> COMMENT <span class="string">&#x27;商户编号&#x27;</span>,</span><br><span class="line">  `business_type` tinyint(<span class="number">1</span>) <span class="keyword">NOT</span> <span class="keyword">NULL</span> COMMENT <span class="string">&#x27;业务类型&#x27;</span>,</span><br><span class="line">  <span class="keyword">PRIMARY</span> KEY (`id`),</span><br><span class="line">  <span class="keyword">UNIQUE</span> KEY `uniq_serial_number_business_type` (`serial_number`,`business_type`)</span><br><span class="line">) ENGINE<span class="operator">=</span>InnoDB AUTO_INCREMENT<span class="operator">=</span><span class="number">34856774</span> <span class="keyword">DEFAULT</span> CHARSET<span class="operator">=</span>utf8 COMMENT<span class="operator">=</span><span class="string">&#x27;合作业务&#x27;</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>数据表里面，字段很简单，但是里面涉及一个唯一键索引。</p>
+<blockquote>
+<p>Note: 上面的代码，<code>delete</code>和<code>insert</code>操作不在一个事务里面，因为代码上没有添加@transaction 注解，也就是单纯delete<code>和</code>insert`操作在多线程环境下，竟然会产生死锁。此外，需要注意，操作唯一键相关字段，经常会不注意就产生死锁问题。</p>
+</blockquote>
+<h2 id="死锁问题分析"><a href="#死锁问题分析" class="headerlink" title="死锁问题分析"></a><a id="Analyse">死锁问题分析</a></h2><p>首先，给出一篇博客，mysql大神写的<a target="_blank" rel="noopener" href="http://hedengcheng.com/?p=844">http://hedengcheng.com/?p=844</a>,一下分析，借鉴使用该博客的分析。</p>
+<blockquote>
+<p>Tips: 有兴趣，请直接阅读该博客的分析。</p>
+</blockquote>
+<h3 id="Mysql日志分析"><a href="#Mysql日志分析" class="headerlink" title="Mysql日志分析"></a>Mysql日志分析</h3><p>以上Mysql产生的死锁日志，包含两个事务。</p>
+<p><em>事务1</em>：当前正在操作一张表（mysql tables in use 1），持有两把锁(2 lock structs，一个表级意向锁，一个行锁(1 row lock))，这个事务，当前正在处理的语句是一条delete语句。同时，这唯一的一个行锁，处于等待状态(WAITING FOR THIS LOCK TO BE GRANTED)。</p>
+<p>事务1等待中的行锁，加锁的对象是唯一索引<code>uniq_serial_number_business_type</code>上页面号为<code>817</code>页面上的一行(注：具体是哪一行，无法看到。但是能够看到的是，这个行锁，一共有824个bits可以用来锁824个行记录，n bits 824：lock_rec_print()方法)。同时，等待的行锁模式为next key锁(lock_mode X)。简单来说，next key锁有两层含义，一是对当前记录加X锁，防止记录被并发修改，同时锁住记录之前的GAP，防止有新的记录插入到此记录之前。</p>
+<p><em>事务2</em>：和事务1一样，事务2上面有三个行锁，三个行锁，<code>undo log entries 1</code>，两个锁都是唯一索引<code>uniq_serial_number_business_type</code>上页号<code>817</code>上的某一条记录。其中，一个锁处于持有状态，锁模式为S mode，即共享锁，同时，另外一把锁处于等待状态，锁模式为X mode，即互斥锁。因此，拥有锁S模式不代表可以获取接下来的X模式的锁。</p>
+<p>事务1正在等待事务2释放锁的S模式，从而获取X模式的锁；但是事务2已经获取了S模式，但是其等待继续获取锁的X模型,这个模式事务1优先申请获取，因此就导致死锁。</p>
+<blockquote>
+<p>Note: 事务1优先去等待获取锁的X模式，是因为在Mysql中为了公平竞争，杜绝事务1发生饥饿现象。这样会导致上述死锁出现。</p>
+</blockquote>
+<p>那么为什么会出现<code>delete</code>操作抛出死锁失败，事务回滚。</p>
+<p>Mysql实现，会根据死锁冲突的两个事务的权重，事务1的权重会更低，然后被选为抛弃的对象，回滚该操作。</p>
+<h3 id="Delete操作的加锁逻辑"><a href="#Delete操作的加锁逻辑" class="headerlink" title="Delete操作的加锁逻辑"></a>Delete操作的加锁逻辑</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">DELETE</span> </span><br><span class="line"><span class="keyword">FROM</span> crm_business </span><br><span class="line"><span class="keyword">WHERE</span> serial_number <span class="operator">=</span> <span class="string">&#x27;xxxx&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p><code> serial_number</code>是数据表里面的唯一键索引，一个二级索引键值。</p>
+<p><code> serial_number</code>是unique索引，而主键是id列。因此delete语句会选择走<code>serial_number</code>列的索引进行where条件的过滤，在找到<code>serial_number = &#39;xxxx&#39;</code>的记录后，首先会将unique索引上的<code>serial_number = &#39;xxxx&#39;</code>索引记录加上X锁，同时，会根据读取到的<code>id</code>列，回主键索引(聚簇索引)，然后将聚簇索引上的<code>id = 10</code> 对应的主键索引项加X锁。为什么聚簇索引上的记录也要加锁？试想一下，如果并发的一个SQL，是通过主键索引来更新：<code>update crm_business set serial_number = xyy where id = 10</code>; 此时，如果delete语句没有将主键索引上的记录加锁，那么并发的update就会感知不到delete语句的存在，违背了同一记录上的更新/删除需要串行执行的约束。</p>
+<blockquote>
+<p>Note：和delete操作类似的加锁操作，还有：  </p>
+</blockquote>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> <span class="keyword">table</span> <span class="keyword">where</span> ? lock <span class="keyword">in</span> share mode;  </span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> <span class="keyword">table</span> <span class="keyword">where</span> ? <span class="keyword">for</span> update;  </span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> <span class="keyword">values</span> (<span class="string">&#x27;xxx&#x27;</span>);  </span><br><span class="line">update <span class="keyword">table</span> <span class="keyword">set</span> ? <span class="keyword">where</span> ?;  </span><br><span class="line"><span class="keyword">delete</span> <span class="keyword">from</span> <span class="keyword">table</span> <span class="keyword">where</span> ?;  </span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>上述操作都是当前读，需要读取记录的最新操作，读取之后，为了保证其他并发事务不能修改当前记录，会对读的记录加锁，可能是S模式锁，或者X模式锁。</p>
+</blockquote>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2014/09/09/2014-09-09-Jackson-Manual-and-Implementation-Analyzing/" rel="prev" title="Jackson 工具类使用及配置指南">
+      <i class="fa fa-chevron-left"></i> Jackson 工具类使用及配置指南
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2014/10/22/2014-10-22-Dubbo-Provider-Groups-Bug-Analyse/" rel="next" title="Dubbo provider 多组名注册问题分析">
+      Dubbo provider 多组名注册问题分析 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%AD%BB%E9%94%81%E9%97%AE%E9%A2%98%E5%AE%9A%E4%BD%8D"><span class="nav-number">2.</span> <span class="nav-text">死锁问题定位</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%AD%BB%E9%94%81%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90"><span class="nav-number">3.</span> <span class="nav-text">死锁问题分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Mysql%E6%97%A5%E5%BF%97%E5%88%86%E6%9E%90"><span class="nav-number">3.1.</span> <span class="nav-text">Mysql日志分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Delete%E6%93%8D%E4%BD%9C%E7%9A%84%E5%8A%A0%E9%94%81%E9%80%BB%E8%BE%91"><span class="nav-number">3.2.</span> <span class="nav-text">Delete操作的加锁逻辑</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="柯小小西"
+      src="/images/ava.gif">
+  <p class="site-author-name" itemprop="name">柯小小西</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">47</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">柯小小西</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">476k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">7:13</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="框架背景Apache Thrift是Facebook实现的一种高效的,支持多种编程语言的远程服务调用的框架.在多语言并行于业务之中的公司,其是一个很好的RPC框架选择,但是由于缺少服务发现管理功能,在使用的时候,需要告知业务方现有业务部署的地址,并且调用方需要自己实现服务状态的感知和重试机制.此外,对于互联网公司而言,业务快速变化必然导致机器的增减,这些变化,需要通知到所有调用方来更改调用机器的配">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Ourea-基于Zookeeper的Thrift服务发现框架实现">
+<meta property="og:url" content="http://example.com/2016/04/29/2016-04-29-thrift-service-discory-using-zookeeper-ourea/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="框架背景Apache Thrift是Facebook实现的一种高效的,支持多种编程语言的远程服务调用的框架.在多语言并行于业务之中的公司,其是一个很好的RPC框架选择,但是由于缺少服务发现管理功能,在使用的时候,需要告知业务方现有业务部署的地址,并且调用方需要自己实现服务状态的感知和重试机制.此外,对于互联网公司而言,业务快速变化必然导致机器的增减,这些变化,需要通知到所有调用方来更改调用机器的配">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/2016/04/ourea.png">
+<meta property="article:published_time" content="2016-04-29T03:18:10.000Z">
+<meta property="article:modified_time" content="2021-05-17T14:57:11.583Z">
+<meta property="article:author" content="柯小小西">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/2016/04/ourea.png">
+
+<link rel="canonical" href="http://example.com/2016/04/29/2016-04-29-thrift-service-discory-using-zookeeper-ourea/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Ourea-基于Zookeeper的Thrift服务发现框架实现 | Hexo</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hexo</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2016/04/29/2016-04-29-thrift-service-discory-using-zookeeper-ourea/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ava.gif">
+      <meta itemprop="name" content="柯小小西">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hexo">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Ourea-基于Zookeeper的Thrift服务发现框架实现
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2016-04-29 11:18:10" itemprop="dateCreated datePublished" datetime="2016-04-29T11:18:10+08:00">2016-04-29</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-05-17 22:57:11" itemprop="dateModified" datetime="2021-05-17T22:57:11+08:00">2021-05-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/Thrift/" itemprop="url" rel="index"><span itemprop="name">Thrift</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/Thrift/Zookeeper/" itemprop="url" rel="index"><span itemprop="name">Zookeeper</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>5.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>5 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="框架背景"><a href="#框架背景" class="headerlink" title="框架背景"></a><a id="Introduction">框架背景</a></h2><p>Apache Thrift是Facebook实现的一种高效的,支持多种编程语言的远程服务调用的框架.在多语言并行于业务之中的公司,其是一个很好的RPC框架选择,但是由于缺少服务发现管理功能,在使用的时候,需要告知业务方现有业务部署的地址,并且调用方需要自己实现服务状态的感知和重试机制.此外,对于互联网公司而言,业务快速变化必然导致机器的增减,这些变化,需要通知到所有调用方来更改调用机器的配置,是非常麻烦的.</p>
+<p>显然，对于Thrift来说，一个服务发现管理框架是多么的重要。</p>
+<p>那么，服务发现管理框架其实可以做的很重，也可以做的很轻；对于我们，需要满足什么需求：</p>
+<ul>
+<li>服务调用方自动获取服务提供方地址；</li>
+<li>服务提供方服务分组；</li>
+<li>服务调用方负载均衡策略；</li>
+<li>服务非兼容升级；</li>
+</ul>
+<p>具体的需求分析和实现，将在 <a href="#Ourea_Implement">Ourea服务发现实现原理</a>介绍。</p>
+<h2 id="Thrift服务原生使用"><a href="#Thrift服务原生使用" class="headerlink" title="Thrift服务原生使用"></a><a id="Thrift_Native_Demo">Thrift服务原生使用</a></h2><p>Thrift 接口使用还是比较简单地，对外提供的server和client接口封装了所有的内部实现细节，所以，一般我们只需要告诉<code>Thrift</code>地址端口信息，然后就可以完成简单地RPC调用。</p>
+<p>下面，给出一个简单地示例：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">// 服务端示例</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SimpleThriftServer</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Logger logger = LoggerFactory.getLogger(SimpleThriftServer.class);</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> port = <span class="number">9999</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span>  <span class="keyword">void</span> <span class="title">simple</span><span class="params">(<span class="keyword">int</span> port)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            TServerSocket tServerSocket = <span class="keyword">new</span> TServerSocket(port);</span><br><span class="line">            Hello.Processor processor = <span class="keyword">new</span> Hello.Processor(<span class="keyword">new</span> HelloService());</span><br><span class="line"></span><br><span class="line">            TServer server = <span class="keyword">new</span> TSimpleServer(<span class="keyword">new</span> TServer.Args(tServerSocket).processor(processor) );</span><br><span class="line">            server.serve();</span><br><span class="line"></span><br><span class="line">        &#125;<span class="keyword">catch</span> (Exception e)&#123;</span><br><span class="line">            logger.error(<span class="string">&quot;server start error........&quot;</span>,e);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        SimpleThriftServer server = <span class="keyword">new</span> SimpleThriftServer();</span><br><span class="line">        server.simple(port);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// client 端示例</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SimpleThriftClient</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Logger logger = LoggerFactory.getLogger(SimpleThriftClient.class);</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> port = <span class="number">9999</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String ip = <span class="string">&quot;127.0.0.1&quot;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        TTransport transport = <span class="keyword">null</span>;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            transport = <span class="keyword">new</span> TSocket(ip, port);</span><br><span class="line">            TProtocol protocol = <span class="keyword">new</span> TBinaryProtocol(transport);</span><br><span class="line">            Hello.Client client = <span class="keyword">new</span> Hello.Client(protocol);</span><br><span class="line">            transport.open();</span><br><span class="line">            HelloResult result = client.sayHello(<span class="string">&quot;hello world&quot;</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            logger.error(<span class="string">&quot;client invoke fail. &quot;</span>, e);</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (transport != <span class="keyword">null</span>) &#123;</span><br><span class="line">                transport.close();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<blockquote>
+<p>Note:</p>
+<ul>
+<li>TProtocol 协议和编解码组件</li>
+<li>TTransport 传输通信组件</li>
+<li>TProcessor 服务处理相关组件</li>
+<li>TServer 服务提供组件</li>
+<li>Client 服务调用客户端</li>
+</ul>
+</blockquote>
+</blockquote>
+<p>Thrift 原生的对外接口已经很简单了，但是为什么还需要去封装呢？上文的代码虽然简单，但是有几个点需要去注意：</p>
+<ol>
+<li>对于生产环境的服务，在发布新功能，出现故障down机，都会导致服务出现不可用的情况；此外，对外的服务一般都是集群部署，集群机器的增减也是很可能会出现的事情，因此，就会出现最初对外提供的服务IP地址会出现新增(新建服务)，减少(缩减服务)，暂时停服(机器故障)，这些所有变更通知所有业务服务调用方去更改是很难处理的事情。此外，由于服务可能存在大量的机器列表，这些配置在业务代码中，本身也是不可取的。</li>
+<li>服务调用的时候，可能存在某些服务当时负载过高，或者服务网络问题等导致服务调用策略需要调整。也就是在选择调用集群中某台机器的时候，每个业务都要自己去实现策略，这是不可取的。此外，对于服务的负载情况无法感知，即使是静态的服务提供权重都无法获取，导致了即使客户端自己实现均衡策略，由于缺少必要的数据支持，导致只能采用轮询和随机。</li>
+<li>业务上，服务调用之间隔离，服务接口的灰度升级等，是比较常见的技术需求。Thrift 对外发布的服务的所有IP，对于调用方来说都是平等的，也就是，如果我需要将集群中某些机器进行接口的非兼容的灰度升级，或者某些机器独立出来给一些非常重要的业务使用。目前，这种场景，只能新加机器来解决了。</li>
+<li>对于调用方Client的调用，每次都需要去创建连接，然后和server端交互，对于大请求场景下的应用，对性能的影响是很大的。创建connection对象，是很重的，需要进行池化。</li>
+<li>……</li>
+</ol>
+<p>基于以上的一些原因，开发了基于<code>Zookeeper</code>的Thrift服务发现机制框架。</p>
+<span id="more"></span>
+
+<h2 id="Ourea服务发现实现原理"><a href="#Ourea服务发现实现原理" class="headerlink" title=" Ourea服务发现实现原理"></a><a id="Ourea_Implement"> Ourea服务发现实现原理</a></h2><p>服务发现机制，在很多RPC套件中都会提供。<code>Zookeeper</code>一直作为经典实现服务发现机制的底层服务，所以这里显然也是这样的。下面给出，实现的模块交互图：</p>
+<img src="/images/2016/04/ourea.png" />
+
+<h3 id="交互说明"><a href="#交互说明" class="headerlink" title="交互说明"></a>交互说明</h3><p>在设计交互图中，<code>Server</code>服务提供方会在启动的时候，读取服务相关配置属性，比如版本号、组名等信息，以及注册<code>Zookeeper</code>地址及相关zk操作配置信息；然后根据配置去指定<code>Zookeeper</code>集群注册服务，其路径为<code>/ourea/service_name_xxx/group_yyy/version_zzz/provider/ip=mmm&amp;port=nnn&amp;weight=lll</code>,注册完成之后，就可以启动Thrift服务了；如果发现服务启动失败，则去<code>Zookeeper</code>上注销该路径节点。</p>
+<p>服务调用方启动的时候，同样也会读取相关配置，然后去<code>Zookeeper</code>上注册服务调用信息，注册完了之后，服务调用方会去查询<code> /ourea/service_name_xxx/group_yyy/version_zzz/provider/</code>下地子节点列表，并且注册监听逻辑，等待子节点变更则触发重新查询操作。服务调用方拿到ip列表之后，就可以按照选择的选择策略来拿到指定服务器的连接去调用相关服务接口。</p>
+<p>需要说明的是，由于服务调用方拿到服务提供方的地址列表后，其只会监听<code>Zookeeper</code>的变更通知，调用方是直接和服务方交互的，因此，当<code>Zookeeper</code>出现不可服务时，并不会影响Thrift的服务提供和调用交互。因此，也不会影响Thrift的性能。</p>
+<h3 id="针对Thrift原生接口的解决方案"><a href="#针对Thrift原生接口的解决方案" class="headerlink" title="针对Thrift原生接口的解决方案"></a>针对Thrift原生接口的解决方案</h3><ol>
+<li><p>服务扩张自动感知<br>当服务提供方的服务状态发生变更，比如新加机器扩展，或者服务发布上下线等，会自动在指定路径创建一个临时节点，节点包含机器相关信息，利用<code>Zookeeper</code>的临时节点特性来实现服务状态自动感知功能。</p>
+</li>
+<li><p>服务调用负载策略<br>目前，ourea 也只支持方法级轮询策略和权重随机分布策略。服务会记录某个方法上次调用情况，然后从服务list中找出这次选择的机器进行服务调用。权重随机分布，是根据服务提供方在服务启动的时候，配置的机器权重来计算，权重大的服务机器，被选择的几率大于权重小的服务提供者。</p>
+</li>
+<li><p>服务提供粒度细化<br>服务隔离保证重要业务调用方不被其他业务干扰；此外，由于前期设计的问题，需要对部分接口进行非兼容升级(虽然我们非常不提倡这种行为)，这些问题都需要对服务提供进行细化隔离。因此，在ourea中，增加了<code>group</code>和<code>version</code>的控制。在server端，初始都是为默认的group提供服务，当存在某个重要的业务需要抗干扰服务级别时，下面一些机器，配置为特定group给改业务调用，这时，其他业务是无法自动获取到这些服务提供者地址的，从而到达服务隔离的目的。</p>
+</li>
+<li><p>Thrift连接池化<br>java client端，会对获取到得服务提供者地址列表分别创建对应的socket连接池，保证经过策略选择到指定机器后，可以直接和服务端交互。</p>
+</li>
+</ol>
+<h2 id="Ourea服务发现框架使用示例"><a href="#Ourea服务发现框架使用示例" class="headerlink" title=" Ourea服务发现框架使用示例"></a><a id="Ourea_Demo"> Ourea服务发现框架使用示例</a></h2><p>使用ourea框架非常简单，生成jar包，引入到项目，然后如下调用方法即可完成Thrift交互。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ZkThriftServerSample</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        System.out.println(Ourea.Processor.class.getCanonicalName());</span><br><span class="line"></span><br><span class="line">        Properties properties = PropertiesUtils.load(<span class="string">&quot;provider.properties&quot;</span>);</span><br><span class="line"></span><br><span class="line">        ThriftServerConfig config = <span class="keyword">new</span> ThriftServerConfig(Integer.valueOf(properties.getProperty(<span class="string">&quot;port&quot;</span>)));</span><br><span class="line">        config.setGroup(properties.getProperty(<span class="string">&quot;group&quot;</span>));</span><br><span class="line">        ServiceProviderFactory.exposeService(<span class="keyword">new</span> OureaImpl(), <span class="keyword">new</span> ZkConfig(properties.getProperty(<span class="string">&quot;zkAddress&quot;</span>)),</span><br><span class="line">                config);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ZkThriftClientSample</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line"></span><br><span class="line">    Properties properties = PropertiesUtils.load(<span class="string">&quot;consumer.properties&quot;</span>);</span><br><span class="line"></span><br><span class="line">    Ourea.Iface client = ConsumerProxyFactory.getProxyClient(Ourea.Iface.class,</span><br><span class="line">        <span class="keyword">new</span> ZkConfig(properties.getProperty(<span class="string">&quot;zkAddress&quot;</span>)));</span><br><span class="line">    <span class="keyword">int</span> count =<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">long</span> start = System.currentTimeMillis();</span><br><span class="line">    <span class="keyword">while</span> (count++ &lt;<span class="number">1000</span>)&#123;</span><br><span class="line">      System.out.println(count + <span class="string">&quot;-----&quot;</span> + client.queryEcho(<span class="string">&quot;hello&quot;</span>));</span><br><span class="line">    &#125;</span><br><span class="line">    System.out.println(System.currentTimeMillis() - start);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>服务最少配置如下：</p>
+<figure class="highlight properties"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#zookeeper注册地址</span></span><br><span class="line"><span class="attr">zkAddress</span>=<span class="string">10.10.33.134:2181</span></span><br><span class="line"><span class="comment">#zookeeper超时时间</span></span><br><span class="line"><span class="attr">zkTimeout</span>=<span class="string">3000</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight properties"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#对外提供服务端口号</span></span><br><span class="line"><span class="attr">port</span>=<span class="string">9999</span></span><br><span class="line"><span class="comment">#zookeeper注册地址</span></span><br><span class="line"><span class="attr">zkAddress</span>=<span class="string">10.10.33.134:2181</span></span><br><span class="line"><span class="comment">#zookeeper超时时间</span></span><br><span class="line"><span class="attr">zkTimeout</span>=<span class="string">3000</span></span><br><span class="line"><span class="comment">#服务细分的组/topic</span></span><br><span class="line"><span class="attr">group</span>=<span class="string">bbb</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="总结"><a href="#总结" class="headerlink" title=" 总结"></a><a id="Summary"> 总结</a></h2><p>项目源码开源地址：<a target="_blank" rel="noopener" href="https://github.com/ketao1989/ourea">https://github.com/ketao1989/ourea</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2016/03/10/2016-03-10-junit-mockito-guice-in-action-and-junit-test-mechanism/" rel="prev" title="基于JUnit Mockito Guice测试实践及JUnit运行机制浅析">
+      <i class="fa fa-chevron-left"></i> 基于JUnit Mockito Guice测试实践及JUnit运行机制浅析
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2016/05/29/2016-05-29-talk-about-java-gc/" rel="next" title="聊聊 Java GC">
+      聊聊 Java GC <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A1%86%E6%9E%B6%E8%83%8C%E6%99%AF"><span class="nav-number">1.</span> <span class="nav-text">框架背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Thrift%E6%9C%8D%E5%8A%A1%E5%8E%9F%E7%94%9F%E4%BD%BF%E7%94%A8"><span class="nav-number">2.</span> <span class="nav-text">Thrift服务原生使用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ourea%E6%9C%8D%E5%8A%A1%E5%8F%91%E7%8E%B0%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86"><span class="nav-number">3.</span> <span class="nav-text"> Ourea服务发现实现原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BA%A4%E4%BA%92%E8%AF%B4%E6%98%8E"><span class="nav-number">3.1.</span> <span class="nav-text">交互说明</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%92%88%E5%AF%B9Thrift%E5%8E%9F%E7%94%9F%E6%8E%A5%E5%8F%A3%E7%9A%84%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="nav-number">3.2.</span> <span class="nav-text">针对Thrift原生接口的解决方案</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ourea%E6%9C%8D%E5%8A%A1%E5%8F%91%E7%8E%B0%E6%A1%86%E6%9E%B6%E4%BD%BF%E7%94%A8%E7%A4%BA%E4%BE%8B"><span class="nav-number">4.</span> <span class="nav-text"> Ourea服务发现框架使用示例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text"> 总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="柯小小西"
+      src="/images/ava.gif">
+  <p class="site-author-name" itemprop="name">柯小小西</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">47</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">柯小小西</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">476k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">7:13</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
