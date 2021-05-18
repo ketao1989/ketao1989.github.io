@@ -17,18 +17,18 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"valine","storage":true,"lazyload":false,"nav":null,"activeClass":"valine"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"valine","storage":true,"lazyload":false,"nav":null,"activeClass":"valine"},"algolia":{"appID":"U0HC0SK4N5","apiKey":"138bf6dd18601dab5008a291233d832a","indexName":"kexiaoxiaoxi_idx","hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta property="og:type" content="website">
 <meta property="og:title" content="没有期望的分布">
-<meta property="og:url" content="http://example.com/categories/Java/index.html">
+<meta property="og:url" content="http://example.com/categories/java/index.html">
 <meta property="og:site_name" content="没有期望的分布">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:author" content="柯小小西">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="http://example.com/categories/Java/">
+<link rel="canonical" href="http://example.com/categories/java/">
 
 
 <script id="page-configurations">
@@ -41,7 +41,7 @@
   };
 </script>
 
-  <title>分类: Java | 没有期望的分布</title>
+  <title>分类: java | 没有期望的分布</title>
   
 
 
@@ -145,21 +145,18 @@
   <span class="search-icon">
     <i class="fa fa-search"></i>
   </span>
-  <div class="search-input-container">
-    <input autocomplete="off" autocapitalize="off"
-           placeholder="搜索..." spellcheck="false"
-           type="search" class="search-input">
-  </div>
+  <div class="search-input-container"></div>
   <span class="popup-btn-close">
     <i class="fa fa-times-circle"></i>
   </span>
 </div>
-<div id="search-result">
-  <div id="no-result">
-    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
-  </div>
+<div class="algolia-results">
+  <div id="algolia-stats"></div>
+  <div id="algolia-hits"></div>
+  <div id="algolia-pagination" class="algolia-pagination"></div>
 </div>
 
+      
     </div>
   </div>
 
@@ -188,14 +185,14 @@
   <div class="post-block">
     <div class="posts-collapse">
       <div class="collection-title">
-        <h2 class="collection-header">Java
+        <h2 class="collection-header">java
           <small>分类</small>
         </h2>
       </div>
 
       
     <div class="collection-year">
-      <span class="collection-header">2016</span>
+      <span class="collection-header">2018</span>
     </div>
 
   <article itemscope itemtype="http://schema.org/Article">
@@ -203,15 +200,15 @@
 
       <div class="post-meta">
         <time itemprop="dateCreated"
-              datetime="2016-05-29T20:43:10+08:00"
-              content="2016-05-29">
-          05-29
+              datetime="2018-05-05T21:36:00+08:00"
+              content="2018-05-05">
+          05-05
         </time>
       </div>
 
       <div class="post-title">
-          <a class="post-title-link" href="/2016/05/29/2016-05-29-talk-about-java-gc/" itemprop="url">
-            <span itemprop="name">聊聊 Java GC</span>
+          <a class="post-title-link" href="/2018/05/05/2018-05-05-netty-series-of-nio/" itemprop="url">
+            <span itemprop="name">Netty系列--NIO学习</span>
           </a>
       </div>
 
@@ -223,22 +220,42 @@
 
       <div class="post-meta">
         <time itemprop="dateCreated"
-              datetime="2016-04-29T11:18:10+08:00"
-              content="2016-04-29">
-          04-29
+              datetime="2018-01-15T01:45:00+08:00"
+              content="2018-01-15">
+          01-15
         </time>
       </div>
 
       <div class="post-title">
-          <a class="post-title-link" href="/2016/04/29/2016-04-29-thrift-service-discory-using-zookeeper-ourea/" itemprop="url">
-            <span itemprop="name">Ourea-基于Zookeeper的Thrift服务发现框架实现</span>
+          <a class="post-title-link" href="/2018/01/15/2018-01-15-design-principle-intro/" itemprop="url">
+            <span itemprop="name">设计原则讨论123</span>
+          </a>
+      </div>
+
+    </header>
+  </article>
+
+  <article itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      <div class="post-meta">
+        <time itemprop="dateCreated"
+              datetime="2018-01-04T01:18:00+08:00"
+              content="2018-01-04">
+          01-04
+        </time>
+      </div>
+
+      <div class="post-title">
+          <a class="post-title-link" href="/2018/01/04/2018-01-03-dubbo-generic-serial-process/" itemprop="url">
+            <span itemprop="name">dubbo序列化机制处理-泛化&普通RPC</span>
           </a>
       </div>
 
     </header>
   </article>
     <div class="collection-year">
-      <span class="collection-header">2015</span>
+      <span class="collection-header">2017</span>
     </div>
 
   <article itemscope itemtype="http://schema.org/Article">
@@ -246,158 +263,15 @@
 
       <div class="post-meta">
         <time itemprop="dateCreated"
-              datetime="2015-02-10T22:21:35+08:00"
-              content="2015-02-10">
-          02-10
+              datetime="2017-03-29T20:52:39+08:00"
+              content="2017-03-29">
+          03-29
         </time>
       </div>
 
       <div class="post-title">
-          <a class="post-title-link" href="/2015/02/10/2015-02-10-Jackson-Deserialize-Java-Object-Implementation/" itemprop="url">
-            <span itemprop="name">Jackson 自定义反序列化Java对象实现</span>
-          </a>
-      </div>
-
-    </header>
-  </article>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <div class="post-meta">
-        <time itemprop="dateCreated"
-              datetime="2015-02-07T22:21:35+08:00"
-              content="2015-02-07">
-          02-07
-        </time>
-      </div>
-
-      <div class="post-title">
-          <a class="post-title-link" href="/2015/02/07/2015-02-07-Jackson-Serialize-Java-Object-Implementation/" itemprop="url">
-            <span itemprop="name">Jackson 自定义序列化Java对象实现</span>
-          </a>
-      </div>
-
-    </header>
-  </article>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <div class="post-meta">
-        <time itemprop="dateCreated"
-              datetime="2015-01-12T22:21:35+08:00"
-              content="2015-01-12">
-          01-12
-        </time>
-      </div>
-
-      <div class="post-title">
-          <a class="post-title-link" href="/2015/01/12/2015-01-12-Spring-Dynamic-Data-Source-Guide/" itemprop="url">
-            <span itemprop="name">Spring 中实现动态数据源</span>
-          </a>
-      </div>
-
-    </header>
-  </article>
-    <div class="collection-year">
-      <span class="collection-header">2014</span>
-    </div>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <div class="post-meta">
-        <time itemprop="dateCreated"
-              datetime="2014-12-19T22:21:35+08:00"
-              content="2014-12-19">
-          12-19
-        </time>
-      </div>
-
-      <div class="post-title">
-          <a class="post-title-link" href="/2014/12/19/2014-12-19-Guava-Cache-Guide-And-Implement-Analyse/" itemprop="url">
-            <span itemprop="name">Guava LocalCache 缓存介绍及实现源码深入剖析</span>
-          </a>
-      </div>
-
-    </header>
-  </article>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <div class="post-meta">
-        <time itemprop="dateCreated"
-              datetime="2014-11-26T22:21:35+08:00"
-              content="2014-11-26">
-          11-26
-        </time>
-      </div>
-
-      <div class="post-title">
-          <a class="post-title-link" href="/2014/11/26/2014-11-26-Java-Implement-One-Algorithm-by-Day/" itemprop="url">
-            <span itemprop="name">一天一算法之java实现</span>
-          </a>
-      </div>
-
-    </header>
-  </article>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <div class="post-meta">
-        <time itemprop="dateCreated"
-              datetime="2014-11-24T22:21:35+08:00"
-              content="2014-11-24">
-          11-24
-        </time>
-      </div>
-
-      <div class="post-title">
-          <a class="post-title-link" href="/2014/11/24/2014-11-24-java-some-tips/" itemprop="url">
-            <span itemprop="name">Java一些小Tips</span>
-          </a>
-      </div>
-
-    </header>
-  </article>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <div class="post-meta">
-        <time itemprop="dateCreated"
-              datetime="2014-10-22T22:21:35+08:00"
-              content="2014-10-22">
-          10-22
-        </time>
-      </div>
-
-      <div class="post-title">
-          <a class="post-title-link" href="/2014/10/22/2014-10-22-Dubbo-Provider-Groups-Bug-Analyse/" itemprop="url">
-            <span itemprop="name">Dubbo provider 多组名注册问题分析</span>
-          </a>
-      </div>
-
-    </header>
-  </article>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <div class="post-meta">
-        <time itemprop="dateCreated"
-              datetime="2014-09-09T22:21:35+08:00"
-              content="2014-09-09">
-          09-09
-        </time>
-      </div>
-
-      <div class="post-title">
-          <a class="post-title-link" href="/2014/09/09/2014-09-09-Jackson-Manual-and-Implementation-Analyzing/" itemprop="url">
-            <span itemprop="name">Jackson 工具类使用及配置指南</span>
+          <a class="post-title-link" href="/2017/03/29/2017-03-29-java-server-in-action/" itemprop="url">
+            <span itemprop="name">深入浅出Java服务端原理之基础篇</span>
           </a>
       </div>
 
@@ -411,9 +285,6 @@
   
 
   
-  <nav class="pagination">
-    <span class="page-number current">1</span><a class="page-number" href="/categories/Java/page/2/">2</a><a class="extend next" rel="next" href="/categories/Java/page/2/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
-  </nav>
 
 
 
@@ -573,7 +444,10 @@
 
 
   
-<script src="/js/local-search.js"></script>
+<script src="//cdn.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js"></script>
+<script src="//cdn.jsdelivr.net/npm/instantsearch.js@4/dist/instantsearch.production.min.js"></script>
+<script src="/js/algolia-search.js"></script>
+
 
 
 
