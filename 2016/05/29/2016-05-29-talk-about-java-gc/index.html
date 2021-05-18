@@ -17,43 +17,43 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"valine","storage":true,"lazyload":false,"nav":null,"activeClass":"valine"},"algolia":{"appID":"U0HC0SK4N5","apiKey":"138bf6dd18601dab5008a291233d832a","indexName":"kexiaoxiaoxi_idx","hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"ketao1989.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"valine","storage":true,"lazyload":false,"nav":null,"activeClass":"valine"},"algolia":{"appID":"U0HC0SK4N5","apiKey":"138bf6dd18601dab5008a291233d832a","indexName":"kexiaoxiaoxi_idx","hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="序GC 是每一个Java程序员不可绕过的话题。GC 是在某些时候对内存的垃圾对象数据进行搜寻定位，然后进行内存空间回收。根据这个定义，则学习GC相关知识，需要关注：对JVM整个内存结构中哪些区域进行垃圾回收；在这些内存区域中的类数据或者实例数据等数据结构是什么样子的；然后想想如何在JVM内存空间中分配内存给这些实例数据；在所有已分配了的实例里，怎么找出需要回收的数据。 综上，对于JVM GC知识体">
 <meta property="og:type" content="article">
 <meta property="og:title" content="聊聊 Java GC">
-<meta property="og:url" content="http://example.com/2016/05/29/2016-05-29-talk-about-java-gc/index.html">
+<meta property="og:url" content="https://ketao1989.github.io/2016/05/29/2016-05-29-talk-about-java-gc/index.html">
 <meta property="og:site_name" content="没有期望的分布">
 <meta property="og:description" content="序GC 是每一个Java程序员不可绕过的话题。GC 是在某些时候对内存的垃圾对象数据进行搜寻定位，然后进行内存空间回收。根据这个定义，则学习GC相关知识，需要关注：对JVM整个内存结构中哪些区域进行垃圾回收；在这些内存区域中的类数据或者实例数据等数据结构是什么样子的；然后想想如何在JVM内存空间中分配内存给这些实例数据；在所有已分配了的实例里，怎么找出需要回收的数据。 综上，对于JVM GC知识体">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://example.com/images/2016/05/jvm_conponent.png">
-<meta property="og:image" content="http://example.com/images/2016/05/classloader.png">
-<meta property="og:image" content="http://example.com/images/2016/05/jvm_mm.png">
-<meta property="og:image" content="http://example.com/images/2016/05/jvm_mm2.png">
-<meta property="og:image" content="http://example.com/images/2016/05/32_bits.png">
-<meta property="og:image" content="http://example.com/images/2016/05/64_bits.png">
-<meta property="og:image" content="http://example.com/images/2016/05/indirect.png">
-<meta property="og:image" content="http://example.com/images/2016/05/direct.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2016/05/jvm_conponent.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2016/05/classloader.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2016/05/jvm_mm.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2016/05/jvm_mm2.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2016/05/32_bits.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2016/05/64_bits.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2016/05/indirect.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2016/05/direct.png">
 <meta property="og:image" content="https://upload.wikimedia.org/wikipedia/commons/4/46/Animated_BFS.gif">
-<meta property="og:image" content="http://example.com/images/2016/05/jvm_heap.png">
-<meta property="og:image" content="http://example.com/images/2016/05/allocate_1.png">
-<meta property="og:image" content="http://example.com/images/2016/05/allocate_2.png">
-<meta property="og:image" content="http://example.com/images/2016/05/allocate_3.png">
-<meta property="og:image" content="http://example.com/images/2016/05/allocate_4.png">
-<meta property="og:image" content="http://example.com/images/2016/05/allocate_5.png">
-<meta property="og:image" content="http://example.com/images/2016/05/allocate_6.png">
-<meta property="og:image" content="http://example.com/images/2016/05/allocate_7.png">
-<meta property="og:image" content="http://example.com/images/2016/05/allocate_8.png">
-<meta property="og:image" content="http://example.com/images/2016/05/gc_mm.png">
-<meta property="og:image" content="http://example.com/images/2016/05/gc.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2016/05/jvm_heap.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2016/05/allocate_1.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2016/05/allocate_2.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2016/05/allocate_3.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2016/05/allocate_4.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2016/05/allocate_5.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2016/05/allocate_6.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2016/05/allocate_7.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2016/05/allocate_8.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2016/05/gc_mm.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2016/05/gc.png">
 <meta property="article:published_time" content="2016-05-29T12:43:10.000Z">
 <meta property="article:modified_time" content="2021-05-17T14:57:11.583Z">
 <meta property="article:author" content="柯小小西">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://example.com/images/2016/05/jvm_conponent.png">
+<meta name="twitter:image" content="https://ketao1989.github.io/images/2016/05/jvm_conponent.png">
 
-<link rel="canonical" href="http://example.com/2016/05/29/2016-05-29-talk-about-java-gc/">
+<link rel="canonical" href="https://ketao1989.github.io/2016/05/29/2016-05-29-talk-about-java-gc/">
 
 
 <script id="page-configurations">
@@ -208,7 +208,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2016/05/29/2016-05-29-talk-about-java-gc/">
+    <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2016/05/29/2016-05-29-talk-about-java-gc/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/ava.gif">
@@ -659,7 +659,7 @@ CMS remark：961330K（1572864K），指执行时old代的情况
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="http://example.com/2016/05/29/2016-05-29-talk-about-java-gc/" title="聊聊 Java GC">http://example.com/2016/05/29/2016-05-29-talk-about-java-gc/</a>
+    <a href="https://ketao1989.github.io/2016/05/29/2016-05-29-talk-about-java-gc/" title="聊聊 Java GC">https://ketao1989.github.io/2016/05/29/2016-05-29-talk-about-java-gc/</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！

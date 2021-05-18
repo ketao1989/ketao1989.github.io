@@ -17,13 +17,13 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"valine","storage":true,"lazyload":false,"nav":null,"activeClass":"valine"},"algolia":{"appID":"U0HC0SK4N5","apiKey":"138bf6dd18601dab5008a291233d832a","indexName":"kexiaoxiaoxi_idx","hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"ketao1989.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"valine","storage":true,"lazyload":false,"nav":null,"activeClass":"valine"},"algolia":{"appID":"U0HC0SK4N5","apiKey":"138bf6dd18601dab5008a291233d832a","indexName":"kexiaoxiaoxi_idx","hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="前言上一篇博客，介绍了关于Jackson 自定义序列化，本文将介绍关于 Jackson 自定义反序列化。 反序列化，Jackson 工具包中已经支持了开发中常用的 Java 类型的解析功能；但是还是会遇到一些我们需要自定义的解析转换工作。比如外部的一些非主流时间格式转换，再比如说对于一些类型转换，做一些额外数据校验和默认容错处理工作，再比如说前端的某种格式的字符串，我们想直接使用自定义反序列化类来">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Jackson 自定义反序列化Java对象实现">
-<meta property="og:url" content="http://example.com/2015/02/10/2015-02-10-Jackson-Deserialize-Java-Object-Implementation/index.html">
+<meta property="og:url" content="https://ketao1989.github.io/2015/02/10/2015-02-10-Jackson-Deserialize-Java-Object-Implementation/index.html">
 <meta property="og:site_name" content="没有期望的分布">
 <meta property="og:description" content="前言上一篇博客，介绍了关于Jackson 自定义序列化，本文将介绍关于 Jackson 自定义反序列化。 反序列化，Jackson 工具包中已经支持了开发中常用的 Java 类型的解析功能；但是还是会遇到一些我们需要自定义的解析转换工作。比如外部的一些非主流时间格式转换，再比如说对于一些类型转换，做一些额外数据校验和默认容错处理工作，再比如说前端的某种格式的字符串，我们想直接使用自定义反序列化类来">
 <meta property="og:locale" content="zh_CN">
@@ -32,7 +32,7 @@
 <meta property="article:author" content="柯小小西">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="http://example.com/2015/02/10/2015-02-10-Jackson-Deserialize-Java-Object-Implementation/">
+<link rel="canonical" href="https://ketao1989.github.io/2015/02/10/2015-02-10-Jackson-Deserialize-Java-Object-Implementation/">
 
 
 <script id="page-configurations">
@@ -187,7 +187,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2015/02/10/2015-02-10-Jackson-Deserialize-Java-Object-Implementation/">
+    <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2015/02/10/2015-02-10-Jackson-Deserialize-Java-Object-Implementation/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/ava.gif">
@@ -272,7 +272,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a><a id="Intro">前言</a></h2><p>上一篇博客，介绍了关于<a target="_blank" rel="noopener" href="http://ketao1989.github.io/posts/Jackson-Serialize-Java-Object-Implementation.html">Jackson 自定义序列化</a>，本文将介绍关于 Jackson 自定义反序列化。</p>
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a><a id="Intro">前言</a></h2><p>上一篇博客，介绍了关于<a href="http://ketao1989.github.io/posts/Jackson-Serialize-Java-Object-Implementation.html">Jackson 自定义序列化</a>，本文将介绍关于 Jackson 自定义反序列化。</p>
 <p>反序列化，Jackson 工具包中已经支持了开发中常用的 Java 类型的解析功能；但是还是会遇到一些我们需要自定义的解析转换工作。比如外部的一些非主流时间格式转换，再比如说对于一些类型转换，做一些额外数据校验和默认容错处理工作，再比如说前端的某种格式的字符串，我们想直接使用自定义反序列化类来完成到 Java Object 的转换工作等等，都需要我们去自己实现 Jackson 反序列化类。</p>
 <p>和<code>Jackson 自定义序列化</code>相似，Jackson 为自定义的反序列化扩展，也提供了简单易用的接口。</p>
 <h2 id="Jackson-自定义反序列化方法"><a href="#Jackson-自定义反序列化方法" class="headerlink" title="Jackson 自定义反序列化方法"></a><a id="CustomizeDeserialize">Jackson 自定义反序列化方法</a></h2><p>在 Jackson 自定义序列化中提供了两种接口，但是在反序列的时候，只有一个接口使用。不过，和序列化一样，反序列化的扩展也很简单，接口为：<code>org.codehaus.jackson.map.JsonDeserializer</code>，Jackson还提供了一个通用的扩展子类<code>com.fasterxml.jackson.databind.deser.std.StdDeserializer</code>。</p>
@@ -326,7 +326,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="http://example.com/2015/02/10/2015-02-10-Jackson-Deserialize-Java-Object-Implementation/" title="Jackson 自定义反序列化Java对象实现">http://example.com/2015/02/10/2015-02-10-Jackson-Deserialize-Java-Object-Implementation/</a>
+    <a href="https://ketao1989.github.io/2015/02/10/2015-02-10-Jackson-Deserialize-Java-Object-Implementation/" title="Jackson 自定义反序列化Java对象实现">https://ketao1989.github.io/2015/02/10/2015-02-10-Jackson-Deserialize-Java-Object-Implementation/</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！

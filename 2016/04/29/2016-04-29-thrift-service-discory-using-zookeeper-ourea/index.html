@@ -17,24 +17,24 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"valine","storage":true,"lazyload":false,"nav":null,"activeClass":"valine"},"algolia":{"appID":"U0HC0SK4N5","apiKey":"138bf6dd18601dab5008a291233d832a","indexName":"kexiaoxiaoxi_idx","hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"ketao1989.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"valine","storage":true,"lazyload":false,"nav":null,"activeClass":"valine"},"algolia":{"appID":"U0HC0SK4N5","apiKey":"138bf6dd18601dab5008a291233d832a","indexName":"kexiaoxiaoxi_idx","hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="框架背景Apache Thrift是Facebook实现的一种高效的,支持多种编程语言的远程服务调用的框架.在多语言并行于业务之中的公司,其是一个很好的RPC框架选择,但是由于缺少服务发现管理功能,在使用的时候,需要告知业务方现有业务部署的地址,并且调用方需要自己实现服务状态的感知和重试机制.此外,对于互联网公司而言,业务快速变化必然导致机器的增减,这些变化,需要通知到所有调用方来更改调用机器的配">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Ourea-基于Zookeeper的Thrift服务发现框架实现">
-<meta property="og:url" content="http://example.com/2016/04/29/2016-04-29-thrift-service-discory-using-zookeeper-ourea/index.html">
+<meta property="og:url" content="https://ketao1989.github.io/2016/04/29/2016-04-29-thrift-service-discory-using-zookeeper-ourea/index.html">
 <meta property="og:site_name" content="没有期望的分布">
 <meta property="og:description" content="框架背景Apache Thrift是Facebook实现的一种高效的,支持多种编程语言的远程服务调用的框架.在多语言并行于业务之中的公司,其是一个很好的RPC框架选择,但是由于缺少服务发现管理功能,在使用的时候,需要告知业务方现有业务部署的地址,并且调用方需要自己实现服务状态的感知和重试机制.此外,对于互联网公司而言,业务快速变化必然导致机器的增减,这些变化,需要通知到所有调用方来更改调用机器的配">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://example.com/images/2016/04/ourea.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2016/04/ourea.png">
 <meta property="article:published_time" content="2016-04-29T03:18:10.000Z">
 <meta property="article:modified_time" content="2021-05-17T14:57:11.583Z">
 <meta property="article:author" content="柯小小西">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://example.com/images/2016/04/ourea.png">
+<meta name="twitter:image" content="https://ketao1989.github.io/images/2016/04/ourea.png">
 
-<link rel="canonical" href="http://example.com/2016/04/29/2016-04-29-thrift-service-discory-using-zookeeper-ourea/">
+<link rel="canonical" href="https://ketao1989.github.io/2016/04/29/2016-04-29-thrift-service-discory-using-zookeeper-ourea/">
 
 
 <script id="page-configurations">
@@ -189,7 +189,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2016/04/29/2016-04-29-thrift-service-discory-using-zookeeper-ourea/">
+    <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2016/04/29/2016-04-29-thrift-service-discory-using-zookeeper-ourea/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/ava.gif">
@@ -355,7 +355,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="http://example.com/2016/04/29/2016-04-29-thrift-service-discory-using-zookeeper-ourea/" title="Ourea-基于Zookeeper的Thrift服务发现框架实现">http://example.com/2016/04/29/2016-04-29-thrift-service-discory-using-zookeeper-ourea/</a>
+    <a href="https://ketao1989.github.io/2016/04/29/2016-04-29-thrift-service-discory-using-zookeeper-ourea/" title="Ourea-基于Zookeeper的Thrift服务发现框架实现">https://ketao1989.github.io/2016/04/29/2016-04-29-thrift-service-discory-using-zookeeper-ourea/</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！

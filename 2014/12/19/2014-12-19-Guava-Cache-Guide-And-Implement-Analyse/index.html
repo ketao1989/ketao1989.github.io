@@ -17,31 +17,31 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"valine","storage":true,"lazyload":false,"nav":null,"activeClass":"valine"},"algolia":{"appID":"U0HC0SK4N5","apiKey":"138bf6dd18601dab5008a291233d832a","indexName":"kexiaoxiaoxi_idx","hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"ketao1989.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"valine","storage":true,"lazyload":false,"nav":null,"activeClass":"valine"},"algolia":{"appID":"U0HC0SK4N5","apiKey":"138bf6dd18601dab5008a291233d832a","indexName":"kexiaoxiaoxi_idx","hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="前言Guava是Google开源出来的Java常用工具集库,包括集合|缓存|并发|字符串|IO操作等在Java开发过程中经常需要去实现的工具类. 显然,对于这种十分常见的需求,Guava提供了自己的工具类实现.GuavaCache 提供了一般我们使用缓存所需要的几乎所有的功能,主要有:  自动将entry节点加载进缓存结构中;  当缓存的数据已经超过预先设置的最大值时，使用LRU算法移除一些数据；">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Guava LocalCache 缓存介绍及实现源码深入剖析">
-<meta property="og:url" content="http://example.com/2014/12/19/2014-12-19-Guava-Cache-Guide-And-Implement-Analyse/index.html">
+<meta property="og:url" content="https://ketao1989.github.io/2014/12/19/2014-12-19-Guava-Cache-Guide-And-Implement-Analyse/index.html">
 <meta property="og:site_name" content="没有期望的分布">
 <meta property="og:description" content="前言Guava是Google开源出来的Java常用工具集库,包括集合|缓存|并发|字符串|IO操作等在Java开发过程中经常需要去实现的工具类. 显然,对于这种十分常见的需求,Guava提供了自己的工具类实现.GuavaCache 提供了一般我们使用缓存所需要的几乎所有的功能,主要有:  自动将entry节点加载进缓存结构中;  当缓存的数据已经超过预先设置的最大值时，使用LRU算法移除一些数据；">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://example.com/images/2014/12/builder.png">
-<meta property="og:image" content="http://example.com/images/2014/12/builder-relation.png">
-<meta property="og:image" content="http://example.com/images/2014/12/reference.png">
-<meta property="og:image" content="http://example.com/images/2014/12/cpu_cache.jpg">
-<meta property="og:image" content="http://example.com/images/2014/12/java_mmm.png">
-<meta property="og:image" content="http://example.com/images/2014/12/reorder.png">
-<meta property="og:image" content="http://example.com/images/2014/12/currentHashMap.jpg">
-<meta property="og:image" content="http://example.com/images/2014/12/segement.jpg">
+<meta property="og:image" content="https://ketao1989.github.io/images/2014/12/builder.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2014/12/builder-relation.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2014/12/reference.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2014/12/cpu_cache.jpg">
+<meta property="og:image" content="https://ketao1989.github.io/images/2014/12/java_mmm.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2014/12/reorder.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2014/12/currentHashMap.jpg">
+<meta property="og:image" content="https://ketao1989.github.io/images/2014/12/segement.jpg">
 <meta property="article:published_time" content="2014-12-19T14:21:35.000Z">
 <meta property="article:modified_time" content="2021-05-17T14:57:11.577Z">
 <meta property="article:author" content="柯小小西">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://example.com/images/2014/12/builder.png">
+<meta name="twitter:image" content="https://ketao1989.github.io/images/2014/12/builder.png">
 
-<link rel="canonical" href="http://example.com/2014/12/19/2014-12-19-Guava-Cache-Guide-And-Implement-Analyse/">
+<link rel="canonical" href="https://ketao1989.github.io/2014/12/19/2014-12-19-Guava-Cache-Guide-And-Implement-Analyse/">
 
 
 <script id="page-configurations">
@@ -196,7 +196,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2014/12/19/2014-12-19-Guava-Cache-Guide-And-Implement-Analyse/">
+    <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2014/12/19/2014-12-19-Guava-Cache-Guide-And-Implement-Analyse/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/ava.gif">
@@ -385,7 +385,7 @@ Product：最终消费的产品
 </li>
 </ol>
 </blockquote>
-<h3 id="3-3-JMM可见性"><a href="#3-3-JMM可见性" class="headerlink" title="3.3 JMM可见性"></a>3.3 JMM可见性</h3><p>在<a target="_blank" rel="noopener" href="http://ketao1989.github.io/posts/java-some-tips.html">Java一些小Tips</a>博文中，简单地介绍了JMM模型，但是Java内存模型涉及了大量的规则内容指令。</p>
+<h3 id="3-3-JMM可见性"><a href="#3-3-JMM可见性" class="headerlink" title="3.3 JMM可见性"></a>3.3 JMM可见性</h3><p>在<a href="http://ketao1989.github.io/posts/java-some-tips.html">Java一些小Tips</a>博文中，简单地介绍了JMM模型，但是Java内存模型涉及了大量的规则内容指令。</p>
 <p><em>什么叫可见性？</em></p>
 <p>可见性就是，当程序中一个线程修改了某个全局共享变量的值之后，其他使用该值的线程都可以获知，在随后他们读该共享变量的时候，查询的都是最新的改改修改的值。</p>
 <p>在上一篇博文中，我们给出了内存模型访问的图。根据图可以了解，一个线程上修改共享变量，这个变量的最新的值不会立刻写入到共享内存中，还是暂时存放在线程本地缓存，然后某一时刻触发写入到共享内存中。可见性就是，当我们对共享变量修改的时候，立刻把新值同步到主内存中，然后该变量被读的时候从主内存获取最新的值确保所有对该变量的读取操作，总是获取最新最近修改的值。</p>
@@ -679,7 +679,7 @@ BEGIN---&gt;|||step 1 ===--===||| |||step 2 ===--===---|||
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="http://example.com/2014/12/19/2014-12-19-Guava-Cache-Guide-And-Implement-Analyse/" title="Guava LocalCache 缓存介绍及实现源码深入剖析">http://example.com/2014/12/19/2014-12-19-Guava-Cache-Guide-And-Implement-Analyse/</a>
+    <a href="https://ketao1989.github.io/2014/12/19/2014-12-19-Guava-Cache-Guide-And-Implement-Analyse/" title="Guava LocalCache 缓存介绍及实现源码深入剖析">https://ketao1989.github.io/2014/12/19/2014-12-19-Guava-Cache-Guide-And-Implement-Analyse/</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！

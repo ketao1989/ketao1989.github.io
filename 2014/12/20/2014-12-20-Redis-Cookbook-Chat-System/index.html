@@ -17,13 +17,13 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"valine","storage":true,"lazyload":false,"nav":null,"activeClass":"valine"},"algolia":{"appID":"U0HC0SK4N5","apiKey":"138bf6dd18601dab5008a291233d832a","indexName":"kexiaoxiaoxi_idx","hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"ketao1989.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"valine","storage":true,"lazyload":false,"nav":null,"activeClass":"valine"},"algolia":{"appID":"U0HC0SK4N5","apiKey":"138bf6dd18601dab5008a291233d832a","indexName":"kexiaoxiaoxi_idx","hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="问题想要借助 Redis的PUB&#x2F;SUB功能，使用node.js和Socket.io实现一个轻量级的实时聊天系统。 解决方法由于Redis 天生就支持发布订阅(pub&#x2F;sub)模式，所以我们可以很容易就使用Node.js 和 Socket.IO来快速创建一个实时的聊天系统。 发布订阅模式，其实就是接收者订阅某种特定模式的消息(比如，发送到某个指定channel的消息)，而发送者发送一个消息到消息云">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Redis Cookbook 之 基于Redis 实现一个聊天系统">
-<meta property="og:url" content="http://example.com/2014/12/20/2014-12-20-Redis-Cookbook-Chat-System/index.html">
+<meta property="og:url" content="https://ketao1989.github.io/2014/12/20/2014-12-20-Redis-Cookbook-Chat-System/index.html">
 <meta property="og:site_name" content="没有期望的分布">
 <meta property="og:description" content="问题想要借助 Redis的PUB&#x2F;SUB功能，使用node.js和Socket.io实现一个轻量级的实时聊天系统。 解决方法由于Redis 天生就支持发布订阅(pub&#x2F;sub)模式，所以我们可以很容易就使用Node.js 和 Socket.IO来快速创建一个实时的聊天系统。 发布订阅模式，其实就是接收者订阅某种特定模式的消息(比如，发送到某个指定channel的消息)，而发送者发送一个消息到消息云">
 <meta property="og:locale" content="zh_CN">
@@ -32,7 +32,7 @@
 <meta property="article:author" content="柯小小西">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="http://example.com/2014/12/20/2014-12-20-Redis-Cookbook-Chat-System/">
+<link rel="canonical" href="https://ketao1989.github.io/2014/12/20/2014-12-20-Redis-Cookbook-Chat-System/">
 
 
 <script id="page-configurations">
@@ -187,7 +187,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2014/12/20/2014-12-20-Redis-Cookbook-Chat-System/">
+    <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2014/12/20/2014-12-20-Redis-Cookbook-Chat-System/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/ava.gif">
@@ -335,7 +335,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="http://example.com/2014/12/20/2014-12-20-Redis-Cookbook-Chat-System/" title="Redis Cookbook 之 基于Redis 实现一个聊天系统">http://example.com/2014/12/20/2014-12-20-Redis-Cookbook-Chat-System/</a>
+    <a href="https://ketao1989.github.io/2014/12/20/2014-12-20-Redis-Cookbook-Chat-System/" title="Redis Cookbook 之 基于Redis 实现一个聊天系统">https://ketao1989.github.io/2014/12/20/2014-12-20-Redis-Cookbook-Chat-System/</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
