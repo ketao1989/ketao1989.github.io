@@ -17,7 +17,7 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"ketao1989.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"valine","storage":true,"lazyload":false,"nav":null,"activeClass":"valine"},"algolia":{"appID":"U0HC0SK4N5","apiKey":"138bf6dd18601dab5008a291233d832a","indexName":"kexiaoxiaoxi_idx","hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"ketao1989.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"valine","storage":true,"lazyload":false,"nav":null,"activeClass":"valine"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta property="og:type" content="website">
@@ -178,6 +178,122 @@
 
           <div class="content index posts-expand">
             
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2015/02/07/2015-02-07-Jackson-Serialize-Java-Object-Implementation/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ava.gif">
+      <meta itemprop="name" content="柯小小西">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="没有期望的分布">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/02/07/2015-02-07-Jackson-Serialize-Java-Object-Implementation/" class="post-title-link" itemprop="url">Jackson 自定义序列化Java对象实现</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2015-02-07 22:21:35" itemprop="dateCreated datePublished" datetime="2015-02-07T22:21:35+08:00">2015-02-07</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-05-17 22:57:11" itemprop="dateModified" datetime="2021-05-17T22:57:11+08:00">2021-05-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/Json/" itemprop="url" rel="index"><span itemprop="name">Json</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2015/02/07/2015-02-07-Jackson-Serialize-Java-Object-Implementation/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2015/02/07/2015-02-07-Jackson-Serialize-Java-Object-Implementation/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>12k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>11 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a><a id="Intro">前言</a></h2><p>关于Jackson工具类的相关学习和研究,先前已经写过一篇博文;但是,后来由于工作事情就草草结尾.此外,虽然对Jackson序列化和反序列化的实现机制进行了初步学习,但是现在看看,那时候的博客经验和技术水平决定了整篇博文结构并不是清晰明了,并且反序列化的整个简单的解析,对日常开发并没有直接帮助.对于Jackson这种模块化设计,轻巧灵活的扩展方法,多维度的性能效率优化,导致了最后博文的质量非常不好.因此,接下来几篇博文,将会以日常开发使用的一些API为入口,来分别介绍其使用方式和内部实现,然后在此基础上,对此博文进行分拆.</p>
+<p>在开发中，前后端交互的项目，现在一般都是基于JSON文本格式给出API接口，因此对于java对象的序列化就是十分重要的了。基于Spring MVC的配置中，我们配置<code>org.springframework.http.converter.json.MappingJacksonHttpMessageConverter</code> bean时，就是需要配置<code>messageConverters</code>转换器。而针对json的转换器，就可以使用Jackson的<code>objectMapper</code>对象了。</p>
+<p>返回给前端的<code>Response Body</code>一般需要良好的可读性，不能因为后端处理方便，就直接破坏前端展示。比如，我们后端使用枚举处理一些情况，但是如果把枚举英文或者数字返回给前端页面，对用户来说是非常不友好的。因此，这里就是涉及到了java对象自定义序列化的问题了。Jackson工具为我们提供了非常多的常见默认的序列化方法，以及一些扩展的接口；参考系统的序列化方法，我们就可以实现自定义的了。</p>
+<h2 id="Jackson自定义序列化方法"><a href="#Jackson自定义序列化方法" class="headerlink" title="Jackson自定义序列化方法"></a><a id="CustomizeSerialize">Jackson自定义序列化方法</a></h2><p>在Jackson中，提供了多种方式去实现自定义的序列化方法。例如，<code>org.codehaus.jackson.map.JsonSerializableWithType</code>接口以及<code>org.codehaus.jackson.map.JsonSerializer</code>接口。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2015/02/07/2015-02-07-Jackson-Serialize-Java-Object-Implementation/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
       
   
   
@@ -1261,125 +1377,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2014/10/09/2014-10-09-Mysql-Delete-Insert-Deadlock-Analyse/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/ava.gif">
-      <meta itemprop="name" content="柯小小西">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="没有期望的分布">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2014/10/09/2014-10-09-Mysql-Delete-Insert-Deadlock-Analyse/" class="post-title-link" itemprop="url">线上Mysql Delete 和 Insert 操作导致死锁问题分析</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2014-10-09 22:21:35" itemprop="dateCreated datePublished" datetime="2014-10-09T22:21:35+08:00">2014-10-09</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-05-17 22:57:11" itemprop="dateModified" datetime="2021-05-17T22:57:11+08:00">2021-05-17</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a>
-                </span>
-            </span>
-
-          
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="far fa-comment"></i>
-      </span>
-      <span class="post-meta-item-text">Valine：</span>
-    
-    <a title="valine" href="/2014/10/09/2014-10-09-Mysql-Delete-Insert-Deadlock-Analyse/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2014/10/09/2014-10-09-Mysql-Delete-Insert-Deadlock-Analyse/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>4.6k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>4 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a><a id="Intro">前言</a></h2><p>今天项目发布，上线上跟日志的时候，发现一些死锁信息的出现，查询了一下，发现日志里面虽然死锁出现很少，但是都是同一个代码<code>sql</code>语句产生的，如下图所示：</p>
-<img src="/images/2014/10/deadlock-log.png" />
-
-<p>并且，一天产生死锁<code>31</code>次。</p>
-<p>从DBA那边拿到了对应死锁的<code>Mysql</code>日志信息：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">------------------------</span><br><span class="line">LATEST DETECTED DEADLOCK</span><br><span class="line">------------------------</span><br><span class="line">141009 12:54:59</span><br><span class="line">*** (1) TRANSACTION:</span><br><span class="line">TRANSACTION AEE50DCB, ACTIVE 0 sec starting index <span class="built_in">read</span></span><br><span class="line">mysql tables <span class="keyword">in</span> use 1, locked 1</span><br><span class="line">LOCK WAIT 2 lock struct(s), heap size 376, 1 row lock(s)</span><br><span class="line">MySQL thread id 6055694, OS thread handle 0x7f4345c8d700, query id 2443700084 192.168.249.154 crm_w updating</span><br><span class="line">DELETE FROM crm_business WHERE serial_number = <span class="string">&#x27;CH01313320&#x27;</span></span><br><span class="line">*** (1) WAITING FOR THIS LOCK TO BE GRANTED:</span><br><span class="line">RECORD LOCKS space id 244 page no 817 n bits 824 index `uniq_serial_number_business_type` of table `crm`.`crm_business` trx id AEE50DCB lock_mode X waiting</span><br><span class="line">*** (2) TRANSACTION:</span><br><span class="line">TRANSACTION AEE50DCA, ACTIVE 0 sec inserting, thread declared inside InnoDB 500</span><br><span class="line">mysql tables <span class="keyword">in</span> use 1, locked 1</span><br><span class="line">3 lock struct(s), heap size 1248, 3 row lock(s), undo <span class="built_in">log</span> entries 1</span><br><span class="line">MySQL thread id 6055696, OS thread handle 0x7f4344941700, query id 2443700084 192.168.249.154 crm_w update</span><br><span class="line">INSERT INTO crm_business(serial_number, business_type) values (<span class="string">&#x27;CH01313318&#x27;</span>, 2)</span><br><span class="line">*** (2) HOLDS THE LOCK(S):</span><br><span class="line">RECORD LOCKS space id 244 page no 817 n bits 824 index `uniq_serial_number_business_type` of table `crm`.`crm_business` trx id AEE50DCA lock mode S</span><br><span class="line">*** (2) WAITING FOR THIS LOCK TO BE GRANTED:</span><br><span class="line">RECORD LOCKS space id 244 page no 817 n bits 824 index `uniq_serial_number_business_type` of table `crm`.`crm_business` trx id AEE50DCA lock_mode X locks gap before rec insert intention waiting</span><br><span class="line">*** WE ROLL BACK TRANSACTION (1)</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p>Note: 数据库中，<code>CH01313318</code>和<code>CH01313320</code>序列号是连着的两个记录。</p>
-</blockquote>
-<h2 id="死锁问题定位"><a href="#死锁问题定位" class="headerlink" title="死锁问题定位"></a><a id="Problem">死锁问题定位</a></h2><p>之所以需要分析这个问题，主要原因是，这边代码并<em>没有</em>涉及到在一个事务内部sql操作导致死锁等常见的情况。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2014/10/09/2014-10-09-Mysql-Delete-Insert-Deadlock-Analyse/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1451,14 +1448,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-count">50</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">47</span>
+        <span class="site-state-item-count">48</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
   </nav>
@@ -1497,12 +1494,12 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">476k</span>
+    <span title="站点总字数">482k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">7:13</span>
+    <span title="站点阅读时长">7:18</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
   </div>
