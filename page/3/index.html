@@ -182,6 +182,129 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2015/02/10/2015-02-10-Jackson-Deserialize-Java-Object-Implementation/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ava.gif">
+      <meta itemprop="name" content="柯小小西">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="没有期望的分布">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/02/10/2015-02-10-Jackson-Deserialize-Java-Object-Implementation/" class="post-title-link" itemprop="url">Jackson 自定义反序列化Java对象实现</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2015-02-10 22:21:35" itemprop="dateCreated datePublished" datetime="2015-02-10T22:21:35+08:00">2015-02-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-05-17 22:57:11" itemprop="dateModified" datetime="2021-05-17T22:57:11+08:00">2021-05-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/Json/" itemprop="url" rel="index"><span itemprop="name">Json</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2015/02/10/2015-02-10-Jackson-Deserialize-Java-Object-Implementation/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2015/02/10/2015-02-10-Jackson-Deserialize-Java-Object-Implementation/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>5.8k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>5 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a><a id="Intro">前言</a></h2><p>上一篇博客，介绍了关于<a href="http://ketao1989.github.io/posts/Jackson-Serialize-Java-Object-Implementation.html">Jackson 自定义序列化</a>，本文将介绍关于 Jackson 自定义反序列化。</p>
+<p>反序列化，Jackson 工具包中已经支持了开发中常用的 Java 类型的解析功能；但是还是会遇到一些我们需要自定义的解析转换工作。比如外部的一些非主流时间格式转换，再比如说对于一些类型转换，做一些额外数据校验和默认容错处理工作，再比如说前端的某种格式的字符串，我们想直接使用自定义反序列化类来完成到 Java Object 的转换工作等等，都需要我们去自己实现 Jackson 反序列化类。</p>
+<p>和<code>Jackson 自定义序列化</code>相似，Jackson 为自定义的反序列化扩展，也提供了简单易用的接口。</p>
+<h2 id="Jackson-自定义反序列化方法"><a href="#Jackson-自定义反序列化方法" class="headerlink" title="Jackson 自定义反序列化方法"></a><a id="CustomizeDeserialize">Jackson 自定义反序列化方法</a></h2><p>在 Jackson 自定义序列化中提供了两种接口，但是在反序列的时候，只有一个接口使用。不过，和序列化一样，反序列化的扩展也很简单，接口为：<code>org.codehaus.jackson.map.JsonDeserializer</code>，Jackson还提供了一个通用的扩展子类<code>com.fasterxml.jackson.databind.deser.std.StdDeserializer</code>。</p>
+<p>一般，我们可以直接继承<code>JsonDeserializer</code>抽象类就已经足够满足我们的自定义反序列化需求了。</p>
+<h3 id="JsonDeserializer-接口"><a href="#JsonDeserializer-接口" class="headerlink" title="JsonDeserializer 接口"></a>JsonDeserializer 接口</h3><p>和序列化很像，这里我们也只需要实现一个反序列化方法<code>deserialize</code> 就足够了。当然，如果你有其他的更高的需求，可以进一步 override 其他的方法。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Abstract class that defines API used by &#123;<span class="doctag">@link</span> ObjectMapper&#125; (and</span></span><br><span class="line"><span class="comment"> * other chained &#123;<span class="doctag">@link</span> JsonDeserializer&#125;s too) to deserialize Objects of</span></span><br><span class="line"><span class="comment"> * arbitrary types from JSON, using provided &#123;<span class="doctag">@link</span> JsonParser&#125;.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">JsonDeserializer</span>&lt;<span class="title">T</span>&gt;</span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 当请求将JSON内容反序列成java类型对象的时候，该方法将会被调用。然后，会返回一个</span></span><br><span class="line"><span class="comment">     * 由方法自己构造的对象实例。</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * 需要注意的是，当JSON为null的时候，该方法该不会被调用，因此，方法不需要去</span></span><br><span class="line"><span class="comment">     * check 该值是否为null。</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">abstract</span> T <span class="title">deserialize</span><span class="params">(JsonParser jp, DeserializationContext ctxt)</span></span></span><br><span class="line"><span class="function">        <span class="keyword">throws</span> IOException, JsonProcessingException</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 和上面常用的方法不同，这个方法带有一个初始化的对象实例，该实例由反序列类配置的。</span></span><br><span class="line"><span class="comment">     * </span></span><br><span class="line"><span class="comment">     * 当然，这个方法是不必须实现的。一般的，我们转换一个JSON为集合或者Map的时候，可以把</span></span><br><span class="line"><span class="comment">     * 通用的元素put到集合中，这样返回的时候，就不需要再操作了。</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> T <span class="title">deserialize</span><span class="params">(JsonParser jp, DeserializationContext ctxt,</span></span></span><br><span class="line"><span class="params"><span class="function">                         T intoValue)</span></span></span><br><span class="line"><span class="function">        <span class="keyword">throws</span> IOException, JsonProcessingException</span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> UnsupportedOperationException(<span class="string">&quot;Can not update object of type &quot;</span></span><br><span class="line">                +intoValue.getClass().getName()+<span class="string">&quot; (by deserializer of type &quot;</span>+getClass().getName()+<span class="string">&quot;)&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 这个方法主要是用来支持兼容老的代码，编码编译错误。</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * 也就是说，当我们使用新的代码和反序列化工具的时候，可能还需要去兼容老的代码数据</span></span><br><span class="line"><span class="comment">     * 反序列化，这样子就可以尝试使用老的反序列化类进行解析工作。</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@SuppressWarnings(&quot;unchecked&quot;)</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">deserializeWithType</span><span class="params">(JsonParser jp, DeserializationContext ctxt,</span></span></span><br><span class="line"><span class="params"><span class="function">            TypeDeserializer typeDeserializer)</span></span></span><br><span class="line"><span class="function">        <span class="keyword">throws</span> IOException, JsonProcessingException</span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="comment">// We could try calling </span></span><br><span class="line">        <span class="keyword">return</span> (T) typeDeserializer.deserializeTypedFromAny(jp, ctxt);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">       <span class="comment">// ........</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>Tips：这个反序列化方法实现起来很简单，只需要实现核心的<code>deserialize</code>方法，使用<code>jp.getText</code>获取 value 然后对字符串进行我们需要的各种操作转换，赋值给创建的对象实例，就 OK 了。</p>
+</blockquote>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2015/02/10/2015-02-10-Jackson-Deserialize-Java-Object-Implementation/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2015/02/07/2015-02-07-Jackson-Serialize-Java-Object-Implementation/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1260,127 +1383,10 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2014/10/22/2014-10-22-Dubbo-Provider-Groups-Bug-Analyse/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/ava.gif">
-      <meta itemprop="name" content="柯小小西">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="没有期望的分布">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2014/10/22/2014-10-22-Dubbo-Provider-Groups-Bug-Analyse/" class="post-title-link" itemprop="url">Dubbo provider 多组名注册问题分析</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2014-10-22 22:21:35" itemprop="dateCreated datePublished" datetime="2014-10-22T22:21:35+08:00">2014-10-22</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-05-17 22:57:11" itemprop="dateModified" datetime="2021-05-17T22:57:11+08:00">2021-05-17</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/Dubbo/" itemprop="url" rel="index"><span itemprop="name">Dubbo</span></a>
-                </span>
-            </span>
-
-          
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="far fa-comment"></i>
-      </span>
-      <span class="post-meta-item-text">Valine：</span>
-    
-    <a title="valine" href="/2014/10/22/2014-10-22-Dubbo-Provider-Groups-Bug-Analyse/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2014/10/22/2014-10-22-Dubbo-Provider-Groups-Bug-Analyse/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>25k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>23 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a><a id="Intro">前言</a></h2><p>最近线上遇到一个很奇怪的现象，就是一个dubbo 服务被注册到了好几个<code>group</code>下面，并且这些<code>group</code>都是我们应用中，通过<code>dubbo:registry</code>来配置的。但是，显然这不是我们应用所期待的结果，因此，首先，我们需要修复这个问题；其次，我们需要找出原因。</p>
-<h3 id="1-1-问题定位"><a href="#1-1-问题定位" class="headerlink" title="1.1 问题定位"></a>1.1 问题定位</h3><p>首先看配置：</p>
-<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="meta">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">beans</span> <span class="attr">xmlns:xsi</span>=<span class="string">&quot;http://www.w3.org/2001/XMLSchema-instance&quot;</span></span></span><br><span class="line"><span class="tag">       <span class="attr">xmlns:dubbo</span>=<span class="string">&quot;http://code.alibabatech.com/schema/dubbo&quot;</span></span></span><br><span class="line"><span class="tag">       <span class="attr">xmlns</span>=<span class="string">&quot;http://www.springframework.org/schema/beans&quot;</span></span></span><br><span class="line"><span class="tag">       <span class="attr">xsi:schemaLocation</span>=<span class="string">&quot;http://www.springframework.org/schema/beans</span></span></span><br><span class="line"><span class="string"><span class="tag">           http://www.springframework.org/schema/beans/spring-beans-3.2.xsd</span></span></span><br><span class="line"><span class="string"><span class="tag">        http://code.alibabatech.com/schema/dubbo</span></span></span><br><span class="line"><span class="string"><span class="tag">        http://code.alibabatech.com/schema/dubbo/dubbo.xsd&quot;</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">dubbo:registry</span> <span class="attr">id</span>=<span class="string">&quot;crm-message-registry&quot;</span> <span class="attr">group</span>=<span class="string">&quot;crm-message&quot;</span></span></span><br><span class="line"><span class="tag">                    <span class="attr">address</span>=<span class="string">&quot;$&#123;qunar-public.zookeeper.address&#125;&quot;</span> <span class="attr">protocol</span>=<span class="string">&quot;zookeeper&quot;</span>/&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">dubbo:protocol</span> <span class="attr">name</span>=<span class="string">&quot;dubbo&quot;</span> <span class="attr">port</span>=<span class="string">&quot;$&#123;dubbo.protocol&#125; &quot;</span>/&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">dubbo:service</span> <span class="attr">interface</span>=<span class="string">&quot;com.qxx.scm.message.api.IPushMessageBiz&quot;</span></span></span><br><span class="line"><span class="tag">                   <span class="attr">ref</span>=<span class="string">&quot;pushMessageBiz&quot;</span> <span class="attr">timeout</span>=<span class="string">&quot;6000&quot;</span> <span class="attr">version</span>=<span class="string">&quot;1.0.1&quot;</span> /&gt;</span></span><br><span class="line">                   </span><br><span class="line">    <span class="tag">&lt;/<span class="name">beans</span>&gt;</span></span><br><span class="line">    </span><br></pre></td></tr></table></figure>
-
-<p>从上面的配置可以看到，我们实际上是有<code>dubbo:registry</code>，并且在其中也设置了<code>group</code>属性。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2014/10/22/2014-10-22-Dubbo-Provider-Groups-Bug-Analyse/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/2/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><a class="page-number" href="/page/5/">5</a><a class="extend next" rel="next" href="/page/4/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/page/2/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/4/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -1448,14 +1454,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">50</span>
+          <span class="site-state-item-count">51</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">48</span>
+        <span class="site-state-item-count">51</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
   </nav>
@@ -1494,12 +1500,12 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">482k</span>
+    <span title="站点总字数">489k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">7:18</span>
+    <span title="站点阅读时长">7:25</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
   </div>

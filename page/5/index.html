@@ -182,6 +182,118 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2014/06/10/2014-06-10-Ubuntu-Chrome-Start-Fail-Resolve/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ava.gif">
+      <meta itemprop="name" content="柯小小西">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="没有期望的分布">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2014/06/10/2014-06-10-Ubuntu-Chrome-Start-Fail-Resolve/" class="post-title-link" itemprop="url">Ubuntu Chrome启动失败解决方法</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2014-06-10 22:21:35" itemprop="dateCreated datePublished" datetime="2014-06-10T22:21:35+08:00">2014-06-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-05-17 22:57:11" itemprop="dateModified" datetime="2021-05-17T22:57:11+08:00">2021-05-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2014/06/10/2014-06-10-Ubuntu-Chrome-Start-Fail-Resolve/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2014/06/10/2014-06-10-Ubuntu-Chrome-Start-Fail-Resolve/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.6k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a><a id="Intro">前言</a></h2><p>使用<code>Ubuntu</code>系统时，由于系统是默认安装的，所以机器名没有修改成一个合适的名字。在<code>Ubuntu</code>下通过命令<code>sudo vim /etc/hostname</code>来修改成自己想要的命令，然后注销用户，重新进入系统。</p>
+<p>接着，就出现了一个很奇怪的问题，我的桌面上的chrome图标不能点击进入，一直都是无响应状态，但是其他浏览器，比如自带的<code>Firefox</code>就可以正常启动和使用。</p>
+<h2 id="Chrome启动失败解决方法"><a href="#Chrome启动失败解决方法" class="headerlink" title="Chrome启动失败解决方法"></a><a id="Chrome">Chrome启动失败解决方法</a></h2><p>点击<code>chrome</code>图标不管用，并且看不到任何出错信息，无法定位问题出在哪里。只好，从<code>终端</code>使用<code>google-chrome</code>命令来启动<code>chrome</code>浏览器客户端了。于是，出现以下错误信息：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">ketao@ketao-Latitude:~$ google-chrome</span><br><span class="line"></span><br><span class="line">[5901:5901:0610/183033:ERROR:process_singleton_linux.cc(309)] 其他计算机 (ketao-Latitude-E5430-non-vPro) 的另一个 Google Chrome 进程 (7578) 好像正在使用此个人资料。Chrome 已锁定此个人资料以防止其受损。如果您确定其他进程目前未使用此个人资料，请为其解锁并重新启动 Chrome。</span><br><span class="line"></span><br><span class="line">[5901:5901:0610/183033:ERROR:simple_message_box_views.cc(208)] Unable to show a dialog outside the UI thread message loop: Google Chrome - 其他计算机 (ketao-Latitude-E5430-non-vPro) 的另一个 Google Chrome 进程 (7578) 好像正在使用此个人资料。Chrome 已锁定此个人资料以防止其受损。如果您确定其他进程目前未使用此个人资料，请为其解锁并重新启动 Chrome。</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2014/06/10/2014-06-10-Ubuntu-Chrome-Start-Fail-Resolve/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2014/06/04/2014-06-04-Ubuntu-Software-Configure-and-Install/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1297,128 +1409,10 @@ pool-1-thread-1
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2014/04/16/2014-04-16-google-java-style/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/ava.gif">
-      <meta itemprop="name" content="柯小小西">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="没有期望的分布">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2014/04/16/2014-04-16-google-java-style/" class="post-title-link" itemprop="url">Google Java编程风格指南</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2014-04-16 22:21:35" itemprop="dateCreated datePublished" datetime="2014-04-16T22:21:35+08:00">2014-04-16</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-05-17 22:57:11" itemprop="dateModified" datetime="2021-05-17T22:57:11+08:00">2021-05-17</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="far fa-comment"></i>
-      </span>
-      <span class="post-meta-item-text">Valine：</span>
-    
-    <a title="valine" href="/2014/04/16/2014-04-16-google-java-style/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2014/04/16/2014-04-16-google-java-style/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>12k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>11 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>说明：来自互联网，如有版权问题，请告知本人将其撤下。</p>
-<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a><a id="Intro">前言</a></h2><p>这份文档是Google Java编程风格规范的完整定义。当且仅当一个Java源文件符合此文档中的规则，<br>我们才认为它符合Google的Java编程风格。</p>
-<p>与其它的编程风格指南一样，这里所讨论的不仅仅是编码格式美不美观的问题，<br>同时也讨论一些约定及编码标准。然而，这份文档主要侧重于我们所普遍遵循的规则，<br>对于那些不是明确强制要求的，我们尽量避免提供意见。</p>
-<h3 id="1-1-术语说明"><a href="#1-1-术语说明" class="headerlink" title="1.1 术语说明"></a>1.1 术语说明</h3><p>在本文档中，除非另有说明：</p>
-<ol>
-<li>术语class可表示一个普通类，枚举类，接口或是annotation类型(<code>@interface</code>)</li>
-<li>术语comment只用来指代实现的注释(implementation comments)，我们不使用“documentation comments”一词，而是用Javadoc。</li>
-</ol>
-<p>其他的术语说明会偶尔在后面的文档出现。</p>
-<h3 id="1-2-指南说明"><a href="#1-2-指南说明" class="headerlink" title="1.2 指南说明"></a>1.2 指南说明</h3><p>本文档中的示例代码并不作为规范。也就是说，虽然示例代码是遵循Google编程风格，但并不意味着这是展现这些代码的唯一方式。<br>示例中的格式选择不应该被强制定为规则。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2014/04/16/2014-04-16-google-java-style/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/4/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><span class="page-number current">5</span>
+    <a class="extend prev" rel="prev" href="/page/4/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><span class="page-number current">5</span><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/6/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -1486,14 +1480,14 @@ pool-1-thread-1
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">50</span>
+          <span class="site-state-item-count">51</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">48</span>
+        <span class="site-state-item-count">51</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
   </nav>
@@ -1532,12 +1526,12 @@ pool-1-thread-1
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">482k</span>
+    <span title="站点总字数">489k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">7:18</span>
+    <span title="站点阅读时长">7:25</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
   </div>
