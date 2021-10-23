@@ -182,6 +182,126 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2014/05/02/2014-05-02-Java-slf4j-Introduce/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ava.gif">
+      <meta itemprop="name" content="柯小小西">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="没有期望的分布">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2014/05/02/2014-05-02-Java-slf4j-Introduce/" class="post-title-link" itemprop="url">Java日志框架slf4j API介绍及异常接口实现分析</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2014-05-02 22:21:35" itemprop="dateCreated datePublished" datetime="2014-05-02T22:21:35+08:00">2014-05-02</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-05-17 22:57:11" itemprop="dateModified" datetime="2021-05-17T22:57:11+08:00">2021-05-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/Log/" itemprop="url" rel="index"><span itemprop="name">Log</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2014/05/02/2014-05-02-Java-slf4j-Introduce/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2014/05/02/2014-05-02-Java-slf4j-Introduce/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>16k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>15 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a><a id="Intro">前言</a></h2><p>slf4j:简洁的java日志统一接口(Simple Logging Facade for Java),顾名思义,就是一个使用Facade设计模式实现的面向java Logging框架的接口开源包.<br>其和java数据库连接工具包JDBC很像, 在JDBC框架中, 各个不同数据库连接器分别针对不同数据库系统来实现对应的连接操作, 而普通程序员只需要使用统一的JDBC接口而不需要关注具体底层使用的数据库类型, 或者针对不同的数据库系统写各种兼容代码.</p>
+<blockquote>
+<p>Note: slf4j其实类似于适配器,但是这里不称呼适配器,是因为当底层log日志系统不支持slf4j扩展时,比如log4j,就需要在两者中间增加一个适配器层来完成slf4j调用相关日志系统的操作接口动作.例如,slf4j为log4j提高的slf4j-log412.jar类库,但是logback支持slf4J扩展,所以其不需适配层转换.</p>
+</blockquote>
+<p>同样，slf4j 不参与具体的日志代码实现，它只是在代码编译的时候根据程序的配置来绑定具体的日志系统。这样，使用slf4j类库就可以让你的代码独立于任意一个特定的日志API。因此，如果编写一个对外开发的API活着一个同样的类库，那么为了不限制使用你类库的代码必须使用指定的日志系统，你应该使用slf4j。</p>
+<p>相对于其他日志框架，slf4j日志类库的优点和推荐使用的缘由，可以参见 ImportNew 的译文【 <a href="#http://www.importnew.com/7450.html">为什么要使用SLF4J而不是Log4J</a> 】</p>
+<h2 id="Facade设计模式简介"><a href="#Facade设计模式简介" class="headerlink" title="Facade设计模式简介"></a><a id="Facade">Facade设计模式简介</a></h2><p>Facade模式，或者叫做外观模式，顾名思义就是封装各个底层子系统的提供的同一类功能接口，统一成一个更易操作使用的上层接口进而对外提供交互。有了这个上层封装的接口，接口调用方只需要调用这个接口，而不需要关于各个子系统的具体逻辑实现。</p>
+<p>Facade设计模式的官方定义是：Facade模式定义了一个更高层的接口，使子系统更加容易使用。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2014/05/02/2014-05-02-Java-slf4j-Introduce/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2014/04/29/2014-04-29-Intelij-IDEA-Remote-Debug-Tomcat-App/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -487,14 +607,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">52</span>
+          <span class="site-state-item-count">53</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">52</span>
+        <span class="site-state-item-count">54</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
   </nav>
@@ -533,12 +653,12 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">498k</span>
+    <span title="站点总字数">506k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">7:33</span>
+    <span title="站点阅读时长">7:40</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
   </div>

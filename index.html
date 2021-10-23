@@ -182,6 +182,119 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2021/10/23/2021-10-23-nsq-consume-code-analyse-and-rate-limit-componet-implement/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ava.gif">
+      <meta itemprop="name" content="柯小小西">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="没有期望的分布">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2021/10/23/2021-10-23-nsq-consume-code-analyse-and-rate-limit-componet-implement/" class="post-title-link" itemprop="url">nsq消息消费原理分析&消费限流实现</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2021-10-23 18:00:00 / 修改时间：20:16:41" itemprop="dateCreated datePublished" datetime="2021-10-23T18:00:00+08:00">2021-10-23</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/mq/" itemprop="url" rel="index"><span itemprop="name">mq</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/mq/nsq/" itemprop="url" rel="index"><span itemprop="name">nsq</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2021/10/23/2021-10-23-nsq-consume-code-analyse-and-rate-limit-componet-implement/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2021/10/23/2021-10-23-nsq-consume-code-analyse-and-rate-limit-componet-implement/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>7.9k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>7 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="一、背景"><a href="#一、背景" class="headerlink" title="一、背景"></a>一、背景</h1><p>由于nsq消息队列，使用push模式进行消息分发。众所周知，push模式消费消息带来的一个难点，就是消费速率的控制。和pull模式通过consumer端自己主动拉消息来按需消费不同，push模式需要broker端根据对应consumer的消息处理能力来决定控制消息推送速率。如果控制的不当，就会导致consumer机器出现消息阻塞，最终导致业务系统出现非预期故障。</p>
+<p>nsq本身提供RDY机制来控制推送速率，consumer客户端有自己的策略（默认策略见后面章节分析）来更新RDY值，然后定时任务，每隔1s将最新的RDY值告诉broker端，此时broker端按照新的RDY值来推送消息。</p>
+<p>生产环境遇到的一个case，业务流程如下：</p>
+<p><img src="/images/2021/case_nsq.png" alt="线上case流程"></p>
+<p>出现的问题，不是由于consumer客户端本身的处理能力，而是由于外部服务进行了限流，导致超过指定阈值之后，会直接返回错误，这样consumer端就会有大量的消息处理失败，从而出现非预期失败报警。</p>
+<p>但是，我们的预期，是希望消息可以按照我们期望的速率进行消费，因此，抛开nsq自身的RDY机制，需要主动控制推送速率，也就是我们需要对消息施加主动限流。</p>
+<p>在对nsq 消息消费进行限流之前，先对nsq consumer client端代码进行分析。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2021/10/23/2021-10-23-nsq-consume-code-analyse-and-rate-limit-componet-implement/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2021/09/10/2021-09-10-how-to-code-review-for-dev/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1246,127 +1359,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2016/12/10/2016-12-10-rpc-theory-in-action/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/ava.gif">
-      <meta itemprop="name" content="柯小小西">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="没有期望的分布">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2016/12/10/2016-12-10-rpc-theory-in-action/" class="post-title-link" itemprop="url">深入浅出RPC原理</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2016-12-10 20:52:39" itemprop="dateCreated datePublished" datetime="2016-12-10T20:52:39+08:00">2016-12-10</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-05-17 22:57:11" itemprop="dateModified" datetime="2021-05-17T22:57:11+08:00">2021-05-17</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/rpc/" itemprop="url" rel="index"><span itemprop="name">rpc</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/rpc/dubbo/" itemprop="url" rel="index"><span itemprop="name">dubbo</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/rpc/dubbo/thrift/" itemprop="url" rel="index"><span itemprop="name">thrift</span></a>
-                </span>
-            </span>
-
-          
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="far fa-comment"></i>
-      </span>
-      <span class="post-meta-item-text">Valine：</span>
-    
-    <a title="valine" href="/2016/12/10/2016-12-10-rpc-theory-in-action/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2016/12/10/2016-12-10-rpc-theory-in-action/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>24k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>22 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <blockquote>
-<p>远程过程调用(Remote Procedure Call，简称RPC)，在微服务大行其道的今天，得到了广泛的应用。因此，在分布式系统服务群中开发应用，了解RPC一些原理和实现架构，还是很有必要的。本文，将从大的框架层面来聊聊RPC原理和实现。</p>
-</blockquote>
-<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>远程过程调用RPC，就是客户端基于某种传输协议通过网络向服务提供端请求服务处理，然后获取返回数据(对于ONE WAY模式则不返还响应结果)；而这种调用对于客户端而言，和调用本地服务一样方便，开发人员不需要了解具体底层网络传输协议。简单讲，就是本地调用的逻辑处理的过程放在的远程的机器上，而不是本地服务代理来处理。</p>
-<p>目前，Java界的RPC中间件百家争鸣，国内开源的就有阿里的Dubbo(当当二次开发的DubboX)，新浪Motan；国外跨语言的有Facebook的Thrift， Google的gRpc等。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2016/12/10/2016-12-10-rpc-theory-in-action/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1438,14 +1430,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">52</span>
+          <span class="site-state-item-count">53</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">52</span>
+        <span class="site-state-item-count">54</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
   </nav>
@@ -1484,12 +1476,12 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">498k</span>
+    <span title="站点总字数">506k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">7:33</span>
+    <span title="站点阅读时长">7:40</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
   </div>
