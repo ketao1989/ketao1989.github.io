@@ -182,6 +182,128 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2017/03/29/2017-03-29-java-server-in-action/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ava.gif">
+      <meta itemprop="name" content="柯小小西">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="没有期望的分布">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2017/03/29/2017-03-29-java-server-in-action/" class="post-title-link" itemprop="url">深入浅出Java服务端原理之基础篇</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2017-03-29 20:52:39" itemprop="dateCreated datePublished" datetime="2017-03-29T20:52:39+08:00">2017-03-29</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-05-17 22:57:11" itemprop="dateModified" datetime="2021-05-17T22:57:11+08:00">2021-05-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/java/socket/" itemprop="url" rel="index"><span itemprop="name">socket</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/java/socket/thrift/" itemprop="url" rel="index"><span itemprop="name">thrift</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2017/03/29/2017-03-29-java-server-in-action/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2017/03/29/2017-03-29-java-server-in-action/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>13k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>12 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <blockquote>
+<p>上篇文章介绍了<a href="http://ketao1989.github.io/2016/12/10/rpc-theory-in-action/">深入浅出RPC一些原理知识</a>，这里将继续深入讲讲关于RPC网络服务技术。本文的目标，是让对Java网络服务端开发感兴趣的新人，可以一步步深入了解一个高性能服务所需要的相关知识体系。</p>
+<p>当然，高性能高并发的服务端开发，涉及的知识点和手段众多，比如linux网络和内核参数调优等。本文只关注代码开发层级的介绍和深入。</p>
+</blockquote>
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>本文中，所谓 <code>服务端</code>指的是，基于client/server服务组件中的server端。在网络世界里，基本上任何一个用户交互都涉及客户端和服务器端网络通信；尤其是，当存在对服务端大量请求时，如果让服务器持续对外服务过程中，抗住更多的并发请求，是一个互联网开发同学十分关心和必备的技能。</p>
+<p>本文中，首先会基于Java网络API开发一个<code>HelloWorld</code>版本的server端版本。<br>接下来，会不断的在前一个server版本上进行优化和升级，使得其可以响应更多的网络连接请求。<br>在此期间，会引入一些概念，比如IO同步异步、阻塞非阻塞。<br>最后，我们要站在巨人的肩膀上，基于Netty来开发一个生产级别的server端应用。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2017/03/29/2017-03-29-java-server-in-action/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2016/12/10/2016-12-10-rpc-theory-in-action/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1310,121 +1432,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2015/02/17/2015-02-17-Python-Tutoril-Python-Functional-Programing/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/ava.gif">
-      <meta itemprop="name" content="柯小小西">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="没有期望的分布">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2015/02/17/2015-02-17-Python-Tutoril-Python-Functional-Programing/" class="post-title-link" itemprop="url">Python 教程学习之 Python 函数式编程</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2015-02-17 22:21:35" itemprop="dateCreated datePublished" datetime="2015-02-17T22:21:35+08:00">2015-02-17</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-05-17 22:57:11" itemprop="dateModified" datetime="2021-05-17T22:57:11+08:00">2021-05-17</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Python/" itemprop="url" rel="index"><span itemprop="name">Python</span></a>
-                </span>
-            </span>
-
-          
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="far fa-comment"></i>
-      </span>
-      <span class="post-meta-item-text">Valine：</span>
-    
-    <a title="valine" href="/2015/02/17/2015-02-17-Python-Tutoril-Python-Functional-Programing/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2015/02/17/2015-02-17-Python-Tutoril-Python-Functional-Programing/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>4.8k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>4 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a><a id="Intro">前言</a></h2><p>函数式编程是一种比较抽象的编程范式,其将各种指令计算运行作为数学中函数计算一样,尽量避免状态和变量的概念,因此函数式编程,一大特点就是无副作用,这对于并发编程大行其道的今天,是非常优良的特点.</p>
-<p>Python 作为一个动态脚本语言，其很早就支持了函数式编程范式。</p>
-<h2 id="Python-函数式编程"><a href="#Python-函数式编程" class="headerlink" title="Python 函数式编程"></a><a id="FunctionalProgram">Python 函数式编程</a></h2><p>Python 函数式编程，涉及太多的内容。简单介绍几个点。</p>
-<h3 id="高阶函数"><a href="#高阶函数" class="headerlink" title="高阶函数"></a>高阶函数</h3><p>所谓高阶函数，和数学上的高阶函数定义基本一样，就是对函数进行计算处理的函数。其处理对象是另一个函数。</p>
-<p><em>Map 和 Reduce 函数</em></p>
-<p>云计算中，关于 MapReduce 的并行计算框架，在其他很多编程语言中，都会提供 API 方法。即使在Java这种笨重的语言中，也已经提供了相关的方法给开发者使用。</p>
-<p>Python 的 map 方法，表示分别对列表中的元素独立处理；Reduce 方法，则表示对map处理完的结果，按照指定的方式进行聚合处理。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2015/02/17/2015-02-17-Python-Tutoril-Python-Functional-Programing/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1496,14 +1503,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">53</span>
+          <span class="site-state-item-count">54</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-count">56</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
   </nav>
@@ -1542,12 +1549,12 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">506k</span>
+    <span title="站点总字数">523k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">7:40</span>
+    <span title="站点阅读时长">7:55</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
   </div>

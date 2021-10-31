@@ -182,6 +182,118 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2021/10/31/2021-10-31-redis-arch-design-and-implement-analyse/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ava.gif">
+      <meta itemprop="name" content="柯小小西">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="没有期望的分布">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2021/10/31/2021-10-31-redis-arch-design-and-implement-analyse/" class="post-title-link" itemprop="url">redis的三高架构设计实现分析</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2021-10-31 22:42:00 / 修改时间：22:52:36" itemprop="dateCreated datePublished" datetime="2021-10-31T22:42:00+08:00">2021-10-31</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/redis/" itemprop="url" rel="index"><span itemprop="name">redis</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/redis/%E6%9E%B6%E6%9E%84/" itemprop="url" rel="index"><span itemprop="name">架构</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2021/10/31/2021-10-31-redis-arch-design-and-implement-analyse/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2021/10/31/2021-10-31-redis-arch-design-and-implement-analyse/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>17k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>15 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>一般，互联网系统软件设计上，会有三高的概念，即 高并发，高性能，高可用。对于高并发，主要是指，系统可以在大流量请求场景下，支撑业务正常响应，应用系统不出现宕机。</p>
+<p>业务应对高并发场景的常用手段，总结为三板斧：缓存，降级，和限流。在缓存方案集中，一般分为本地缓存，和 分布式缓存。而，针对分布式缓存，业务应用最多的技术组件，就是redis。因此，本文就来介绍redis如何以优秀的架构设计从众多开源缓存产品中脱颖而出，成为目前互联网公司缓存方案的技术组件的首选。</p>
+<p>首先，作为支持高并发解决方案的三板斧之一的缓存，其底层支持的组件必须本身能支持高并发请求，否则依赖的缓存组件都无法响应请求了，那应用系统肯定会无法支持高并发了。</p>
+<p>其次，缓存的价值，就是可以减少请求的处理时间，提供高性能的数据处理服务。对缓存组件的要求，就是需要用合适的资源来支持高并发请求下的快速响应。如果应用程序依赖的缓存，处理每一次请求的耗时都比较长，那么显然也没办法帮助应用程序来支持更高的并发请求了。</p>
+<p>最后，任何一个在线互联网软件系统本身，其必须要保证高可用性。如果不断出现各种问题，并且故障出现后恢复时间长，最终导致整体SLA很低，也会影响业务系统的SLA，显然是不可以的。</p>
+<p>因此，本文将从这三个方面来介绍 redis 是如何设计的。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2021/10/31/2021-10-31-redis-arch-design-and-implement-analyse/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2021/10/23/2021-10-23-nsq-consume-code-analyse-and-rate-limit-componet-implement/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1243,128 +1355,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2017/03/29/2017-03-29-java-server-in-action/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/ava.gif">
-      <meta itemprop="name" content="柯小小西">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="没有期望的分布">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2017/03/29/2017-03-29-java-server-in-action/" class="post-title-link" itemprop="url">深入浅出Java服务端原理之基础篇</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2017-03-29 20:52:39" itemprop="dateCreated datePublished" datetime="2017-03-29T20:52:39+08:00">2017-03-29</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-05-17 22:57:11" itemprop="dateModified" datetime="2021-05-17T22:57:11+08:00">2021-05-17</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/java/socket/" itemprop="url" rel="index"><span itemprop="name">socket</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/java/socket/thrift/" itemprop="url" rel="index"><span itemprop="name">thrift</span></a>
-                </span>
-            </span>
-
-          
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="far fa-comment"></i>
-      </span>
-      <span class="post-meta-item-text">Valine：</span>
-    
-    <a title="valine" href="/2017/03/29/2017-03-29-java-server-in-action/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2017/03/29/2017-03-29-java-server-in-action/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>13k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>12 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <blockquote>
-<p>上篇文章介绍了<a href="http://ketao1989.github.io/2016/12/10/rpc-theory-in-action/">深入浅出RPC一些原理知识</a>，这里将继续深入讲讲关于RPC网络服务技术。本文的目标，是让对Java网络服务端开发感兴趣的新人，可以一步步深入了解一个高性能服务所需要的相关知识体系。</p>
-<p>当然，高性能高并发的服务端开发，涉及的知识点和手段众多，比如linux网络和内核参数调优等。本文只关注代码开发层级的介绍和深入。</p>
-</blockquote>
-<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>本文中，所谓 <code>服务端</code>指的是，基于client/server服务组件中的server端。在网络世界里，基本上任何一个用户交互都涉及客户端和服务器端网络通信；尤其是，当存在对服务端大量请求时，如果让服务器持续对外服务过程中，抗住更多的并发请求，是一个互联网开发同学十分关心和必备的技能。</p>
-<p>本文中，首先会基于Java网络API开发一个<code>HelloWorld</code>版本的server端版本。<br>接下来，会不断的在前一个server版本上进行优化和升级，使得其可以响应更多的网络连接请求。<br>在此期间，会引入一些概念，比如IO同步异步、阻塞非阻塞。<br>最后，我们要站在巨人的肩膀上，基于Netty来开发一个生产级别的server端应用。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2017/03/29/2017-03-29-java-server-in-action/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1436,14 +1426,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">53</span>
+          <span class="site-state-item-count">54</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-count">56</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
   </nav>
@@ -1482,12 +1472,12 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">506k</span>
+    <span title="站点总字数">523k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">7:40</span>
+    <span title="站点阅读时长">7:55</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
   </div>

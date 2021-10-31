@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"ketao1989.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"valine","storage":true,"lazyload":false,"nav":null,"activeClass":"valine"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="一般，互联网系统软件设计上，会有三高的概念，即 高并发，高性能，高可用。对于高并发，主要是指，系统可以在大流量请求场景下，支撑业务正常响应，应用系统不出现宕机。 业务应对高并发场景的常用手段，总结为三板斧：缓存，降级，和限流。在缓存方案集中，一般分为本地缓存，和 分布式缓存。而，针对分布式缓存，业务应用最多的技术组件，就是redis。因此，本文就来介绍redis如何以优秀的架构设计从众多开源缓存产">
+<meta property="og:type" content="article">
+<meta property="og:title" content="redis的三高架构设计实现分析">
+<meta property="og:url" content="https://ketao1989.github.io/2021/10/31/2021-10-31-redis-arch-design-and-implement-analyse/index.html">
+<meta property="og:site_name" content="没有期望的分布">
+<meta property="og:description" content="一般，互联网系统软件设计上，会有三高的概念，即 高并发，高性能，高可用。对于高并发，主要是指，系统可以在大流量请求场景下，支撑业务正常响应，应用系统不出现宕机。 业务应对高并发场景的常用手段，总结为三板斧：缓存，降级，和限流。在缓存方案集中，一般分为本地缓存，和 分布式缓存。而，针对分布式缓存，业务应用最多的技术组件，就是redis。因此，本文就来介绍redis如何以优秀的架构设计从众多开源缓存产">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://ketao1989.github.io/images/2021/20211030183645.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2021/20211030225207.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2021/20211030234720.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2021/20211031151852.png">
+<meta property="article:published_time" content="2021-10-31T14:42:00.000Z">
+<meta property="article:modified_time" content="2021-10-31T14:52:36.927Z">
+<meta property="article:author" content="柯小小西">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://ketao1989.github.io/images/2021/20211030183645.png">
+
+<link rel="canonical" href="https://ketao1989.github.io/2021/10/31/2021-10-31-redis-arch-design-and-implement-analyse/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>redis的三高架构设计实现分析 | 没有期望的分布</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">没有期望的分布</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">柯小西-技术博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container"></div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="algolia-results">
+  <div id="algolia-stats"></div>
+  <div id="algolia-hits"></div>
+  <div id="algolia-pagination" class="algolia-pagination"></div>
+</div>
+
+      
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2021/10/31/2021-10-31-redis-arch-design-and-implement-analyse/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ava.gif">
+      <meta itemprop="name" content="柯小小西">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="没有期望的分布">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          redis的三高架构设计实现分析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2021-10-31 22:42:00 / 修改时间：22:52:36" itemprop="dateCreated datePublished" datetime="2021-10-31T22:42:00+08:00">2021-10-31</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/redis/" itemprop="url" rel="index"><span itemprop="name">redis</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/redis/%E6%9E%B6%E6%9E%84/" itemprop="url" rel="index"><span itemprop="name">架构</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2021/10/31/2021-10-31-redis-arch-design-and-implement-analyse/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2021/10/31/2021-10-31-redis-arch-design-and-implement-analyse/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>17k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>15 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>一般，互联网系统软件设计上，会有三高的概念，即 高并发，高性能，高可用。对于高并发，主要是指，系统可以在大流量请求场景下，支撑业务正常响应，应用系统不出现宕机。</p>
+<p>业务应对高并发场景的常用手段，总结为三板斧：缓存，降级，和限流。在缓存方案集中，一般分为本地缓存，和 分布式缓存。而，针对分布式缓存，业务应用最多的技术组件，就是redis。因此，本文就来介绍redis如何以优秀的架构设计从众多开源缓存产品中脱颖而出，成为目前互联网公司缓存方案的技术组件的首选。</p>
+<p>首先，作为支持高并发解决方案的三板斧之一的缓存，其底层支持的组件必须本身能支持高并发请求，否则依赖的缓存组件都无法响应请求了，那应用系统肯定会无法支持高并发了。</p>
+<p>其次，缓存的价值，就是可以减少请求的处理时间，提供高性能的数据处理服务。对缓存组件的要求，就是需要用合适的资源来支持高并发请求下的快速响应。如果应用程序依赖的缓存，处理每一次请求的耗时都比较长，那么显然也没办法帮助应用程序来支持更高的并发请求了。</p>
+<p>最后，任何一个在线互联网软件系统本身，其必须要保证高可用性。如果不断出现各种问题，并且故障出现后恢复时间长，最终导致整体SLA很低，也会影响业务系统的SLA，显然是不可以的。</p>
+<p>因此，本文将从这三个方面来介绍 redis 是如何设计的。</p>
+<span id="more"></span>
+
+<h1 id="一、redis高性能"><a href="#一、redis高性能" class="headerlink" title="一、redis高性能"></a>一、redis高性能</h1><p>首先，本文简单介绍下这里高性能和高并发的区分。高性能和高并发，在很多问题和目标上是一致的，尤其是高并发下，一般要求系统的性能也需要非常高，当然这不是一定的。因此，<strong>本文为了方便</strong>，对redis高性能和高并发的分类，主要是按照单机性能提升的优化，归为高性能；分布式的优化方案，归为高并发。</p>
+<p>然后，我们再来说高性能。在网络通信场景下的组件，在高性能方便的支持，主要从以下几个方面来优化：</p>
+<ol>
+<li>客户端：主要是建立TCP长连接，批量请求，数据压缩，本地缓存等</li>
+<li>网络通信：epoll多路复用</li>
+<li>线程模型：线程池，reactor模型，</li>
+<li>数据处理：数据持久化，数据读取，数据结构</li>
+<li>内存管理：内存池分配管理，堆外内存，内存回收</li>
+</ol>
+<p>当然，还会有其他的一些特定优化。不过，一般软件的高性能优化，从这几个方面去分析，基本上就差不多了。</p>
+<h2 id="1-1-数据结构"><a href="#1-1-数据结构" class="headerlink" title="1.1 数据结构"></a>1.1 数据结构</h2><p>首先，来了解redis的数据结构。redis支持的多个数据类型，其对应的底层数据结构的设计，一直被津津乐道，所以，这里先来看，redis在支持多种常用数据类型对象的场景下，做了哪些高性能的设计。</p>
+<p>reids 对象的类型主要分5种：</p>
+<ol>
+<li>字符串对象：string</li>
+<li>列表对象：list</li>
+<li>哈希对象：hash</li>
+<li>集合对象：set</li>
+<li>有序集合对象：zset</li>
+</ol>
+<p>为了利用更少的内存空间，或者更快的查找效率，redis对每种对象对象，在对象大小和类型不同的情况下，底层选择的数据结构，可能会存在不同。</p>
+<p>redis底层的数据结构，主要分为8种：</p>
+<ol>
+<li>long类型的整数：INT</li>
+<li>embstr编码的简单动态字符串：EMBSTR</li>
+<li>简单动态字符：RAW</li>
+<li>字典：HT</li>
+<li> 整数集合：INTSET</li>
+<li> 跳跃表和字段：SKIPLIST</li>
+<li> 快速列表：QUICKLIST</li>
+<li> 压缩列表：ZIPLIST</li>
+<li> 紧凑列表：LISTPACK</li>
+</ol>
+<h3 id="1-1-1-全局数据结构"><a href="#1-1-1-全局数据结构" class="headerlink" title="1.1.1 全局数据结构"></a>1.1.1 全局数据结构</h3><p>首先，我们了解下redis server整体的数据结构是什么样子的。</p>
+<p><img src="/images/2021/20211030183645.png" alt="server数据结构"></p>
+<p>从上图可以知道，对于redis内部的数据，最终都是由<code>redisObject</code>数据结构来安排。其中里面的<code>type</code>就是我们说的对象，<code>encoding</code>就是我们说的底层数据结构。</p>
+<p>redis为了更低的内存存储空间，或者更高的数据查询效率，设计了很多数据结构，来支持上层的不同使用场景。</p>
+<h3 id="1-1-1-字符串对象类型支持"><a href="#1-1-1-字符串对象类型支持" class="headerlink" title="1.1.1 字符串对象类型支持"></a>1.1.1 字符串对象类型支持</h3><p>在redis中，字符串的优化算是最多的，毕竟redis作为缓存组件，最常用的方式还是将对象序列化成字符串，然后存储。</p>
+<p><code>stringObject</code>字符串对象，在底层主要有三种编码方式，分别是：<code>INT</code>，<code>EMBSTR</code>和<code>RAW</code>。其中EMBSTR和RAW数据结构都是用的redis自己实现的<code>SDSHDR</code>数据结构。</p>
+<p>首先说明INT编码。INT编码下的redis对象，就是上图的<code>redisObject</code>对象中<code>ptr</code>直接转为long类型，存储一个数字。在对字符串进行编码时，如果<code>value &lt; 10000</code>，则可以直接从共享内存中拿到对应构造好的<code>stringObject</code>，提高构造字符串对象速度，并且如果整个内存空间存在大量10000以内的字符串时，也会同时降低内存空间使用。</p>
+<p>然后说下RAW编码。RAW编码将对象数据结构中 <code>ptr</code>指向sdshdr数据结构对象的内存地址位置。按照正常的内存分配逻辑，其首先创建一个<code>redisObject</code>对象，申请一个内存分配，然后在把字符串构造成<code>sdshdr</code>对象，申请一次内存分配；将redisObject的ptr指向sdshdr对象地址。</p>
+<p>上面RAW编码是个通用的解决方案，但是对于一些小的字符串，为了减少内存分配次数，并且充分利用缓存局部性原理，就有了针对性的优化方案：EMBSTR编码。EMBSTR 和 RAW，都是基于 SDSHDR 数据结构，但是当字符串长度小于<code>OBJ_ENCODING_EMBSTR_SIZE_LIMIT=44</code>时，则直接一次分配内存构造 stringObject。也就是，在createObject的时候，直接按照字符串长度，构造了包含buf在内的内存空间，然后将字符串直接<code>memcpy</code>过去。在<code>redisObject</code>对象中的ptr指针，指向sdshdr的buf地址，</p>
+<p>最后来说下SDSHDR数据结构。这是redis专门为字符串设计的数据结构。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> __<span class="title">attribute__</span> ((__<span class="title">packed__</span>)) <span class="title">sdshdr8</span> &#123;</span></span><br><span class="line">    <span class="keyword">uint8_t</span> len; <span class="comment">/* used */</span></span><br><span class="line">    <span class="keyword">uint8_t</span> alloc; <span class="comment">/* excluding the header and null terminator */</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">char</span> flags; <span class="comment">/* 3 lsb of type, 5 unused bits */</span></span><br><span class="line">    <span class="keyword">char</span> buf[];</span><br><span class="line">&#125;;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>和老版本的有些不同，增加了flags标识，对len和alloc进行了更省内存的整数类型。<br><strong>和C语言的字符串相比，其主要是可以快速获取字符串长度，剩余空间，同时其增加了预分配空间和惰性释放空间的策略，避免频繁内存分配和回收。此外，在C语言中使用<code>\0</code>表示字符串结束，但是在sds中，使用长度来判断，避免非预期的字符影响字符串结束判断。</strong></p>
+<h3 id="1-1-2-列表对象类型支持"><a href="#1-1-2-列表对象类型支持" class="headerlink" title="1.1.2 列表对象类型支持"></a>1.1.2 列表对象类型支持</h3><p>list列表，在3.2之前底层基于ziplist和linkedlist两种数据结构来完成列表对象功能，但是到3.2之后，则使用<code>QUICKLIST</code>数据结构来完成列表所有场景的功能。</p>
+<p>linkedlist双向链表，除了数据本身之外，还会有前后两个指针，内存消耗比较大，另外由于链表各个节点不要求内存连续，所以会存在比较多的内存碎片问题。<br>ziplist为了解决上面两个问题，使用了连续的内存空间来存储列表数据，但是因为其是连续空间，因此对于列表元素的增删插入性能很不好，类似数组，因此在3.2之前，当数据量小的时候，使用ziplist，大于512时，使用linkedlist数据结构。</p>
+<p>我们发现ziplist和linkedlist优缺点挺互补，因此在3.2之后，数据结构统一为quicklist；而quicklist，其本质上就是混合ziplist和linkedlist特点的数据结构。</p>
+<p><img src="/images/2021/20211030225207.png" alt="quicklist数据结构"></p>
+<p>从上图的结构，可以清晰看出quicklist就是整体结构是一个linkedlist，然后每个linkedlist节点，是一个ziplist。<br><strong>插入</strong>的时候，会找到对应的ziplist插入，如果没有位置，则在上下的quicklistNode的zl中找插入位置，如果还没有，则新建一个quicklistNode节点，然后插入到quicklist链表中。<br><strong>查找</strong>的时候，由于主要是基于index查询，所以基于quicklistNode的count数，可以快速找到对应的quicklistNode的ziplist内部，然后遍历entry数组找到对应的index元素。</p>
+<h3 id="1-1-3-哈希对象类型支持"><a href="#1-1-3-哈希对象类型支持" class="headerlink" title="1.1.3 哈希对象类型支持"></a>1.1.3 哈希对象类型支持</h3><p>hash对象，在最新的<a target="_blank" rel="noopener" href="https://github.com/redis/redis/pull/8887">非稳定版本</a>中，hash对象已经从之前的<code>ziplist</code>+<code>dict</code>组合，变更为<code>listpack</code>+<code>dict</code>组合，也就是用<code>listpack</code>替换了<code>ziplist</code>数据结构。</p>
+<p>老版本的<code>ziplist</code>的数据结构，上面已经介绍。<code>ziplist</code>有一个级联更新的问题：ziplist会存储上一个节点的长度，但是其长度字段，在上个节点长度小于254时，<code>prevrawlensize=1</code>，否则<code>prevrawlensize=5</code>，因此影响prevrawlen所用字节数，最后，当某个前面节点长度发生变化，导致prevrawlensize的值1-&gt;5，然后影响当前长度，如果当前节点长度刚好处于临界点，又会影响后面长度，最终导致级联更新的情况。</p>
+<p>因此，<code>listpack</code>数据结构的目标，就是解决这个问题。简单结构如下：</p>
+<p><img src="/images/2021/20211030234720.png" alt="listpack数据结构"></p>
+<p>相对于ziplist，其数据更少，并且对于element只存储当前节点相关信息，因此不会受到级联更新问题的困扰。此外，为了更节省内存空间，编码字段<code>enctype</code>和数据字段<code>ele-data</code>，会混在一起编码，比较复杂，具体可以参考<a target="_blank" rel="noopener" href="https://www.dazhuanlan.com/zws0932/topics/1132686">[DevOps] Redis listpack</a>。</p>
+<p>当元素梳理少于512时，使用listpack数据结构存储，对于列表元素，结对表示哈希对象的key-value对，因此listpack本身元素个数高于1024时，则使用另一种数据结构：<code>hashtable</code>。</p>
+<p>hashtable，也就是dict，是一种经典的数据结构，在redis中，针对hash值冲突，使用链表法，新元素拆入链表头部，解决。</p>
+<p>对于哈希表，最经典的问题，就是扩容和缩容的场景。</p>
+<p>redis中，针对dict数据结构，当redis服务正在执行bgsave或者bgwriteaof时，负载因子为5，否则为1时，执行扩容操作。当负载因此为0.1时，执行缩容操作。</p>
+<p>在dict中，存在两个ht_table对象：ht[0]和ht[1]。所谓的缩容或者扩容操作，就是将元素从ht[0]逐步拷贝到ht[1]中。redis在扩容后新申请的内存空间为大于需要空间的最接近2^n。</p>
+<p>此外，为了在rehash阶段，可以持续提供高可用性服务，redis使用渐进式rehash。</p>
+<ol>
+<li>首先，将dict对象的<code>rehashidx</code>设置为1，表示开始rehash。</li>
+<li>rehash期间，对字典的写操作，除了完成本身操作之外，还需要将dict对应的rehashidx索引对应的数据迁移到ht[1]上面；对一个元素迁移完成之后，将<code>rehashidx</code> + 1。</li>
+<li>对字典的写操作，会在两个ht上面进行，例如发现未迁移，则ht[0]上，否则ht[1]，新添加的，都在ht[1]上进行；对字典的读操作，则需要先在ht[0]上面查询，如果查不到，则去ht[1]上面查。</li>
+<li>当某个时间点rehash操作完成，则将<code>rehashidx</code> = -1，此时恢复正常。</li>
+</ol>
+<h3 id="1-1-4-集合对象类型支持"><a href="#1-1-4-集合对象类型支持" class="headerlink" title="1.1.4 集合对象类型支持"></a>1.1.4 集合对象类型支持</h3><p>set集合对象，主要基于intset和dict两种数据结构来实现。</p>
+<p>inset顾名思义，就是基于类型为整形的集合对象优化。dict是字典，针对集合而言，将value对象设置为null即可。</p>
+<p>此外，需要说明，只有在集合元素类型是整数，并且集合长度小于512的时候，才会使用intset。</p>
+<p>intset数据结构如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">intset</span> &#123;</span></span><br><span class="line">    <span class="keyword">uint32_t</span> encoding;</span><br><span class="line">    <span class="keyword">uint32_t</span> length;</span><br><span class="line">    <span class="keyword">int8_t</span> contents[];</span><br><span class="line">&#125; intset;</span><br></pre></td></tr></table></figure>
+
+<p>这种数据结构，从代码上可以看到，<code>ineset</code>其内存占用明显比<code>dict</code>要低很多。</p>
+<h3 id="1-1-5-有序集合对象类型支持"><a href="#1-1-5-有序集合对象类型支持" class="headerlink" title="1.1.5 有序集合对象类型支持"></a>1.1.5 有序集合对象类型支持</h3><p>zset有序集合，在之前的版本中同样使用的是<code>ziplist</code>+<code>skiplist</code>，在最新的非稳定版本中，已经变更为<code>listpack</code>+<code>skiplist</code>。</p>
+<p>和集合对象不太一样，使用<code>listpack</code>列表存储有序集合对象时，其虽然一样使用两个元素作为一对键值对，但是其对应的值，是score值。当元素个数小于128的时候，并且其中元素长度都小于64，就使用listpack；否则使用跳跃表skiplist。</p>
+<p>在redis的有序集合中，基于skiplist实现的zset，其数据结构如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">zskiplistNode</span> &#123;</span></span><br><span class="line">    sds ele;</span><br><span class="line">    <span class="keyword">double</span> score;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">zskiplistNode</span> *<span class="title">backward</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">zskiplistLevel</span> &#123;</span></span><br><span class="line">        <span class="class"><span class="keyword">struct</span> <span class="title">zskiplistNode</span> *<span class="title">forward</span>;</span></span><br><span class="line">        <span class="keyword">unsigned</span> <span class="keyword">long</span> span;</span><br><span class="line">    &#125; level[];</span><br><span class="line">&#125; zskiplistNode;</span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">zskiplist</span> &#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">zskiplistNode</span> *<span class="title">header</span>, *<span class="title">tail</span>;</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> length;</span><br><span class="line">    <span class="keyword">int</span> level;</span><br><span class="line">&#125; zskiplist;</span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">zset</span> &#123;</span></span><br><span class="line">    dict *dict;</span><br><span class="line">    zskiplist *zsl;</span><br><span class="line">&#125; zset;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>也就是 zset是结合<code>skiplist</code>和<code>dict</code>两种数据结构来完成有序集合对象的实现的。</p>
+<p><code>skiplist</code>按照score分值对集合元素进行排序，<code>dict</code>保证集合属性，此外，当需要直接获取元素分值时，可以dict通过key获取。两种结合，保证了O(lgN)按照score有序查找，此外，还可以O(1)查找对应key的信息。 </p>
+<p>为了节省空间，虽然<code>skiplist</code>和<code>dict</code>是两个数据结构，并且都会存储元素和score，但是这些数据其实是被共享的，也就是实际上内存中只会有一份数据，避免不必要的内存浪费。</p>
+<h3 id="1-1-6-总结"><a href="#1-1-6-总结" class="headerlink" title="1.1.6 总结"></a>1.1.6 总结</h3><p>redis是一个内存数据库，因此 redis 需要设计良好的数据结构来支撑更多数据的存储。同时，作为缓存组件，对于数据的读写，尤其是查询性能，也需要放在非常高的优先级去考虑。</p>
+<p>因此，我们在redis 数据结构设计实现中，可以发现非常多的优化点。比如使用sds数据结构来减少字符串的扩容成本，为了更少的内存分配，还是要emb内嵌数据编码模式等；比如使用quicklist来优化linkedlist的内存问题，同时又解决ziplist插入删除效率问题；比如使用listpack来进一步压缩ziplist的内存使用，同时解决极端更新情况下的<code>级联更新</code>效率问题等等。</p>
+<p>此外，针对集合列表成员的数量，使用不同底层数据结构，来压缩内存使用，同时保证效率不受影响。</p>
+<h2 id="1-2-网络模型"><a href="#1-2-网络模型" class="headerlink" title="1.2 网络模型"></a>1.2 网络模型</h2><p>redis是一个独立的远程字典服务，client-server模式，基于网络通信提供服务，就需要考虑网络通信以及对应的网络处理模型。</p>
+<p>一下基于linux服务器环境下的redis。</p>
+<p>一般我们说，redis高性能的原因，其中必然会提到：单线程模式 + reactor模型。</p>
+<p>在redis 6.0 以前，redis的网络模型，使用的是单线程模式，主要原因有以下几点：</p>
+<ol>
+<li>redis作为内存数据库，主要的操作是数据的读写，因此认为其主要是IO密集型，由于CPU一般不会成为瓶颈，所以使用单线程；</li>
+<li>众所周知，多线程执行任务，最大的一个问题点，就是多线程导致的上下文切换。上下文切换导致CPU的上下文环境变量和缓存需要切换，影响效率，因此redis的单线程模式，可以避免这种情况的频繁发生。</li>
+<li>此外，redis支持很多数据结构，这些数据结构在多线程环境下需要考虑并发操作的正确性问题，为了解决问题，必然需要使用锁或者其他同步工具来实现，这样就会导致可观的同步开销，从而影响性能。</li>
+<li>最后，我觉得也是最重要的一点，redis作者本身期望redis的代码实现保持简洁性，从其网络编程库和数据结构的使用，就能看出。此外，多线程情况下操作当前redis的数据结构对象，未必会有性能上的提升，但是复杂度和bug数，肯定会大幅提高。性价比不高。</li>
+</ol>
+<p>针对以上原因，redis在6.0以前，对于网络模型一直都是使用单线程模式来搞定数据读取。</p>
+<h3 id="1-2-1-redis-4-0-多线程优化"><a href="#1-2-1-redis-4-0-多线程优化" class="headerlink" title="1.2.1 redis 4.0 多线程优化"></a>1.2.1 redis 4.0 多线程优化</h3><p>既然有以上原因，来解释redis的网络模型使用多线程没有单线程好，那么非网络模型链路的任务处理呢？可不可以使用多线程来优化效率。因此，redis 4.0 引入了 多线程来处理一些可以异步化的操作任务，减少同步指令执行时候的耗时。</p>
+<p>在redis 4.0之后，对于redis中大key删除DEL指令，则可以改用<code>UNLINK</code>指令。redis在接收到unlink删除指令之后，会判断删除的key对于包含的元素比较多时，大于<code>LAZYFREE_THRESHOLD=64</code>，则交给多线程后台去异步删除。如果是少量的，则直接同步删除，比较异步里面，还需要获取<code>lock</code>+<code>cond_signal</code>来提交任务，等待执行。</p>
+<p>同样，针对redis中<code>flushDb</code>和<code>flushAll</code>清空指令，也是通过多线程异步任务的方式来执行。</p>
+<p>4.0之后的redis版本，将阻塞单线程的耗时很大，并且其对实时要求也不高的任务，提交给后台多线程，这种方式很好的提升了redis处理线上指令的性能。</p>
+<p>那么，对于最核心的网络模型，能不能也进行多线程化的改造，从而提升性能呢？</p>
+<h3 id="1-2-2-redis-6-0-多线程优化"><a href="#1-2-2-redis-6-0-多线程优化" class="headerlink" title="1.2.2 redis 6.0 多线程优化"></a>1.2.2 redis 6.0 多线程优化</h3><p>还是基于以上基于单线程执行原因。我们知道对于网络IO的操作，多线程reactor模型是非常通用的优化方案。在java域中基于netty网络框架实现的中间件，基本上都是基于该模型；之前分析的nsq实现，也是使用协程+reactor模型。</p>
+<p>因此，我们可不可以将网络IO操作进行多线程异步化。同时，基于上面的原因，考虑当前redis数据结构在多线程下的同步成本和复杂度，在redis 命令执行时，使用同步方式进行。这样可以很好的综合两者的优势，提升redis整体性能。</p>
+<p>基于以上，在 redis 6.0以后版本，redis 对核心的网络模型进行了多线程化的改造。基于网络IO的异步化改造，是充分利用服务器多核性能；另一种经常提及的零拷贝Zero-Copy技术，由于redis服务在指令执行时，还会对数据进行过滤、查询计算、编解码处理等，因此零拷贝技术不太适合。</p>
+<h3 id="1-2-3-redis-6-0-网络模型"><a href="#1-2-3-redis-6-0-网络模型" class="headerlink" title="1.2.3 redis 6.0 网络模型"></a>1.2.3 redis 6.0 网络模型</h3><p>上节介绍了，redis 6.0 开始采用多线程来处理网络IO，但是它不是标准的多线程reactor网络模型。</p>
+<p>通常，我们对于网络通信处理模型的流程，是<code>读请求 -&gt; 解析请求 -&gt; 执行业务逻辑 -&gt; 编码返回信息 -&gt; 写响应数据</code>，简化一下，就是<code>请求读取解析 --&gt; 业务处理请求 --&gt; 写回处理结果</code>。对于标准的多线程reactor模型，其会有一个主reactor主线程，主要负责接收连接请求accept，然后多个subReactor线程负责数据读取，解析等，然后交给业务处理器（业务处理器本身也可能会有业务线程池）处理，业务处理完成之后，同一个subReactor线程会将结果进行编码序列化，最后写到网络连接通道中。</p>
+<p>但是，redis本身会有些不同，上面说的，为了保证数据结构的执行在单线程中，redis的数据模型，只是在网络IO数据的读取和写入，使用了多线程，在指令执行的时候，还是只有主线程来处理。借用<a target="_blank" rel="noopener" href="https://segmentfault.com/a/1190000040376111">Redis 6.0 新特性：带你 100% 掌握多线程模型</a>的图：</p>
+<p><img src="/images/2021/20211031151852.png" alt="多线程模型"></p>
+<p>在处理请求时，其维护了<code>clients_pending_read</code>和<code>clients_pending_write</code>，多线程IO操作，实际上技术处理这两个链表，处理完成，则会交给主线程处理。具体实现，可以参考<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/144805500">Redis 6.0 多线程IO处理过程详解</a></p>
+<p>此外，和其他所有远程服务组件一样，redis在linux上也是基于epoll IO多路复用，来提交网络请求处理性能。</p>
+<h2 id="1-3-内存管理"><a href="#1-3-内存管理" class="headerlink" title="1.3 内存管理"></a>1.3 内存管理</h2><p>一般，我们介绍内存管理，主要涉及两方面：内存分配和内存回收。</p>
+<h3 id="1-3-1-redis内存分配"><a href="#1-3-1-redis内存分配" class="headerlink" title="1.3.1 redis内存分配"></a>1.3.1 redis内存分配</h3><p>redis内存分配主要伴随着各种数据结构的构造而发生的。因此，redis内存分配优化，主要发生在数据结构优化中。</p>
+<h4 id="1-3-1-1-INT编码的字符串对象"><a href="#1-3-1-1-INT编码的字符串对象" class="headerlink" title="1.3.1.1 INT编码的字符串对象"></a>1.3.1.1 INT编码的字符串对象</h4><p>在redis启动的时候，默认会构造0-9999数字对应的字符串对象，这些整数字符串，被存放在共享对象池中。这些字符串对象，可以被string对象，hash对象，list对象，set对象和zset对象共享使用，因此构造对象的时候，直接去共享内存池拿对象实例，无需申请内存分配再赋值；并且也节省了内存占用。</p>
+<h4 id="1-3-1-2-EMBSTR字符串对象"><a href="#1-3-1-2-EMBSTR字符串对象" class="headerlink" title="1.3.1.2 EMBSTR字符串对象"></a>1.3.1.2 EMBSTR字符串对象</h4><p>正常的基于sds构造的字符串对象，需要两次内存分配，第一次申请RedisObject对象，第二次申请sds对象，而embstr直接将2次内存分配合成1次，提升内存分配速率。</p>
+<p>此外，sds本身数据结构的内存预分配和惰性回收机制，也减少了内存操作（内存分配+数据拷贝），从而提升效率。</p>
+<h4 id="1-3-1-3-intset集合对象"><a href="#1-3-1-3-intset集合对象" class="headerlink" title="1.3.1.3 intset集合对象"></a>1.3.1.3 intset集合对象</h4><p>intset只是针对<code>int8_t</code>的整数数组，组成的集合。这种只有小整数的集合，redis 都会专门为其定义一个数据结构，可见redis的内存优化工作不一般。</p>
+<blockquote>
+<p>此外，在redis自定义的数据结构中，在内存利用率和分配速率方面，都有着或多或少的优化。</p>
+</blockquote>
+<h3 id="1-3-2-redis内存回收"><a href="#1-3-2-redis内存回收" class="headerlink" title="1.3.2 redis内存回收"></a>1.3.2 redis内存回收</h3><p>有了内存分配，就会有内存回收。内存回收的时机和策略，同样对redis性能有着很大的影响。<br>对于redis而言，其主要是针对过期数据的内存回收。</p>
+<p>过期数据回收，最直接精确的一种方式，就是当redis键对象有效期到期，立马删除，从而完成内存的回收。这就是所谓的定时删除。定时删除成本比较高，如果某一时刻存在大量key过期时间到期，则会大量占用CPU时间来完成过期对象删除和内存回收。</p>
+<p>为了避免这种情况，redis提供了另一种策略，惰性删除。惰性删除，则是key对象过期时，并不会去删除数据，而是当有执行需要访问过期数据时，执行删除对象和回收内存的操作。惰性删除成本很低，但是如果存在大量过期对象一直没有被访问，则这些内存会一直在内存空间中占用，而不会被回收，对于内存数据库，这是相当致命的。</p>
+<p>上面两种策略都比较极端，因此，redis还提供了一种折中策略，就是定期删除。定期删除，每隔一段时间执行一次删除过期对象回收内存的操作，并且通过限制一次任务执行的时长，最终来限制CPU的使用。</p>
+<p>一般而言，我们的内存回收，会综合使用惰性删除+定期删除策略。定期删除策略，用来弥补惰性删除对一些长时间不操作的过期对象不能进行内存回收的问题。</p>
+<h2 id="1-4-客户端缓存"><a href="#1-4-客户端缓存" class="headerlink" title="1.4 客户端缓存"></a>1.4 客户端缓存</h2><p>客户端缓存，是redis 6.0之后提供的一种客户端优化方式。</p>
+<p>一般而言，我们使用redis作为分布式缓存，数据持久化在mysql/hbase中。客户端首先会去redis查询数据，如果不存在，则去mysql/hbase查询。虽然redis的数据查询qps 能到10w，但是对于某些热key而言，redis的性能，不一定能够支撑的住。</p>
+<p>针对热key，一般为了使用redis，我们都会拆分成多个key，放在不同的redis实例中，从而来支撑这种场景。或者，在客户端使用本地缓存localcache，将压力分解、转移到客户端。但是，不过使用上面的哪种方案，都会大大提高缓存使用成本。例如，使用本地缓存localcache，需要考虑缓存数据更新后，客户端如何能快速变更（缓存时间短？开发其他工具来通知客户端更新），是需要解决的难点。</p>
+<p>因此，redis 6.0 推出的客户端缓存，将redis内部的部分数据，上浮到客户端侧，从而大大降低redis服务端对某些key的响应压力，并且客户端缓存数据的查询响应时间，也大大降低。</p>
+<p>redis在服务端记录访问的连接和相关的key， 当key有变化时，通知相应的连接(应用)。应用收到请求后自行处理有变化的key, 进而实现客户端缓存与redis内对应数据的一致。</p>
+<p>redis对客户端缓存的支持方式被称为Tracking，分为两种模式：默认模式，广播模式。</p>
+<p><strong>默认模式</strong><br>redis 会记录每个客户端连接访问的Key数据，当发生变更时，向客户端推送数据过期消息。</p>
+<ul>
+<li>  优点：只对客户端发送其访问过的被修改的数据</li>
+<li>  缺点：redis需要额外存储较大的数据量，耗内存。</li>
+</ul>
+<p><strong>广播模式</strong><br>客户端订阅key前缀的广播（空串表示订阅所有失效广播），redis记录key前缀与客户端的对应关系。当相匹配的key发生变化时，通知客户端。</p>
+<ul>
+<li>  优点：服务端记录信息比较少</li>
+<li>  缺点：客户端会收到自己未访问过的key的失效通知。</li>
+</ul>
+<h2 id="1-5-总结"><a href="#1-5-总结" class="headerlink" title="1.5 总结"></a>1.5 总结</h2><p>redis高性能，关注于单redis实例，如何支持更多请求，降低请求响应时间，提升处理效率。同时，作为内存数据库，内存占用，也是高性能的一个重要指标。</p>
+<p>通过自定义的数据结构，以及在对象构建中，基于不同数据使用不同数据结构的设计方案，使得在内存利用，数据查询上面，有着显著的提升。</p>
+<p>通过不断将单线程模型，逐步逐场景升级为多线程模型，并且采用经典的epoll多路复用模型，能够支撑更多的客户端接入请求，同时多线程处理IO读写数据，也能平均响应时间缩短，吞吐量提升。</p>
+<p>此外，为了提升服务能力，在一些内存回收，大key删除等长耗时任务，使用异步方式或者惰性方式，避免阻塞redis指令执行，影响服务质量和服务响应。</p>
+<p>最后，从客户端角度，通过客户端缓存，来降低redis服务压力，从而支持更大的吞吐能力。并且，通过减少网络通信，从而提升响应时间。</p>
+<h1 id="二、redis高可用"><a href="#二、redis高可用" class="headerlink" title="二、redis高可用"></a>二、redis高可用</h1><p>redis单机处理能力已经很优秀了，但是作为互联网产品，需要持续提供在线服务。因此，关注高性能的同时，我们还需要格外关注高可用，也就是SLA水平。</p>
+<p>数据服务的高可用架构，最核心的技术点，就是 复制。通过集群方式，机器冗余，多数据副本，最终完成高可用系统的支撑。</p>
+<p>redis的高可用，同样和其他存储组件一样，采用多副本机制，通过主从复制，来完成服务的高可用要求，最终提升redis 字典服务的SLA水平。</p>
+<p>redis服务的高可用，主要使用主从复制机制，主redis对外提供服务；当主redis不能继续对外服务的时候，通过哨兵机制来选择从redis晋升为主redis。</p>
+<h2 id="2-1-redis主从复制"><a href="#2-1-redis主从复制" class="headerlink" title="2.1 redis主从复制"></a>2.1 redis主从复制</h2><h3 id="2-1-1-持久化"><a href="#2-1-1-持久化" class="headerlink" title="2.1.1 持久化"></a>2.1.1 持久化</h3><p>因为redis是内存数据库，所以如果服务器进行重启或者其他异常导致redis进程退出，则redis内的数据都会消失。因此，redis提供了持久化功能。</p>
+<p>redis提供两种持久化机制：RDB快照和AOF日志。</p>
+<p>所谓RDB快照，就是对当前redis的内存数据进行压缩，然后落盘持久化为一个二进制文件。通过这个RDB文件，redis可以还原到RDB快照时内存的状态。</p>
+<p>在使用<code>bgsave</code>命令保存RDB快照时，redis会单独启动一个子进程，由于子进程在由父进程fork出来之后，其内存数据是共享的，因此，子进程可以在自己的独立进程中，读取父进程的数据，写入RDB文件中，从而落盘数据，完成持久化。</p>
+<p>但是，使用RDB持久化全量数据，实际上是很耗资源的。如果避免资源消耗过大，降低RDB快照频率，则又会让redis宕机下大量最新数据丢失，因此我们需要save rdb快照之后的数据，以增量日志的方式落盘。这样就能基本消除redis恢复时最近数据丢失的问题。</p>
+<p>增量日志持久化机制，就是AOF。</p>
+<p>AOF日志，在redis执行完写/更新指令之后，向AOF添加一条redis命令的日志。AOF首先以<code>aof_buf</code>缓存，然后按照具体flush策略，将要求持久化到aof文件内。redis aof flush策略，主要有三种：</p>
+<ul>
+<li>always：同步flush到文件中，这种方式会降低数据写入效率，最终影响redis性能；</li>
+<li>everysec：定期每隔1s，将buf数据flush到磁盘文件内。如果redis进程出现问题，则最多会导致1s的变更数据丢失。</li>
+<li>no：redis不主动flush buf 数据到持久化日志文件中，而是靠操作系统控制。此时，因此redis进程不会等待flush操作结束再返回响应，所以其效率最高。同时，数据丢失也是最严重。</li>
+</ul>
+<h3 id="2-1-2-复制"><a href="#2-1-2-复制" class="headerlink" title="2.1.2 复制"></a>2.1.2 复制</h3><p>对于redis持久化使用RDB快照文件和AOF日志文件，来保证redis进程退出后重启能恢复内存状态。我们也可以将这两个持久化机制，拿来做主从复制，从而保证从redis服务器保持了主redis服务器保持内存数据一致。</p>
+<p>主从复制，一般存在三个阶段：</p>
+<ol>
+<li>首次主redis数据全量复制；</li>
+<li>正常运行期间的增量数据同步；</li>
+<li>异常情况下恢复同步。</li>
+</ol>
+<p><strong>首次全量复制</strong><br>首次全量复制，此时从redis内存不存在主redis的数据。</p>
+<ol>
+<li><code>从redis</code>首先需要向<code>主redis</code>建立连接，然后<code>从redis</code>执行replicaof指令，并且向<code>主redis</code>发送同步指令psync，<code>主redis</code>回复确认后，主从redis开始同步。</li>
+<li>然后，<code>主redis</code>会通过bgsave生成RDB文件，并且将生成完的RDB文件同步给<code>从redis</code>，同时，<code>主redis</code>也会给对应的<code>从redis</code>构建一个client buf缓冲区，同aof一样，存放RDB生成之后的所有写命令。</li>
+<li><code>从redis</code>拿到RDB文件之后持久到本地硬盘上，然后情况内存数据，像redis进程退出恢复一样，将RDB文件加载进内存中。</li>
+</ol>
+<p>以上，首次全量数据复制，就完成了。这个时候，<code>从redis</code>服务器内存数据，和<code>主redis</code>生成RDB文件时的内存状态，保持一致。</p>
+<p><strong>增量数据同步</strong><br>正常运营期间的增量数据同步，和，异常情况下的恢复同步，都使用同样的方式做数据同步。这里统称为，增量数据同步。</p>
+<p>在首次全量复制的时候，提到<code>主redis</code>在发送RDB文件的同时，会把后面的所有写指令，写入client buf缓存中，并且针对每个<code>从redis</code>都会维护一个buf。</p>
+<p>增量数据同步，就是<code>主redis</code>将buf数据不断的写给<code>从redis</code>，但是，这里涉及一个问题，就是<code>主redis</code>如何知道<code>从redis</code>当前的内存数据状态，也就是<code>主redis</code>如何知道接下来要push什么数据给到<code>从redis</code>，让其继续主从同步，尤其是<code>从redis</code>如果进程退出恢复重启之后，如果同步复制。</p>
+<p>这里就涉及到两个offset，一个是<code>主redis</code>维护的<code>master_repl_offset</code>，表示自己写buf的数据偏移量；一个是<code>从redis</code>维护的<code>slave_repl_offset</code>，记录自己读取到数据的偏移量。因此，当<code>主redis</code>和<code>从redis</code>断开增量数据同步之后，<code>从redis</code>会发送psync同步指令给<code>主redis</code>，并且在指令中，还会带上<code>slave_repl_offset</code>偏移量值，这样<code>主redis</code>就从指定的偏移量继续推送增量写指令。</p>
+<h3 id="2-1-3-主从复制的问题"><a href="#2-1-3-主从复制的问题" class="headerlink" title="2.1.3 主从复制的问题"></a>2.1.3 主从复制的问题</h3><p>主从复制，解决了高可用最核心的问题之一，多副本。当主redis出现故障无法恢复时，从redis可以升级为主redis，继续对外提供服务。</p>
+<p>但是，主从复制只是简单的解决了数据多副本问题，对于主redis的故障检测，集群故障自动恢复这两个高可用中同样核心的问题，并没有解决。</p>
+<p>因此，就有了redis哨兵模式。</p>
+<h2 id="2-2-redis-哨兵模式"><a href="#2-2-redis-哨兵模式" class="headerlink" title="2.2 redis 哨兵模式"></a>2.2 redis 哨兵模式</h2><p>redis哨兵模式的出现，主要是为了解决上面主从复制遗留的两个高可用问题：故障检测和故障自动恢复。</p>
+<p>redis sentinel 哨兵，顾名思义，就是由一组机器实例组成的redis sentinel系统，用来监控redis服务器的状态，包括主redis服务器和从redis服务器。当sentinel系统判断主redis服务器处于下线状态，则选出一个从redis服务器作为新的主redis服务器，对外继续提供读写服务。</p>
+<p>因此，sentinel需要解决三个核心问题：</p>
+<ol>
+<li>如何发现和判断主redis下线；</li>
+<li>如何选出新的主redis服务器；</li>
+<li>如何通知所有相关方，新主redis服务器上线。</li>
+</ol>
+<h3 id="2-2-1-sentinel监控"><a href="#2-2-1-sentinel监控" class="headerlink" title="2.2.1 sentinel监控"></a>2.2.1 sentinel监控</h3><p>在讨论sentinel如何解决上面三个问题之前，首先来简单看下sentinel如何完成最基础的监控工作。</p>
+<p>sentinel系统，一般会有一组机器组成一个sentinel集群。</p>
+<p>sentinel服务器会监控，主redis服务器，从redis服务器，sentinel集群其他服务器的状态。整个监控，是通过3个定时任务完成的：</p>
+<ol>
+<li>监控redis服务的主从信息：每隔10s，sentinel服务器会向所有redis服务器发送<code>INFO</code>指令，获取redis主从拓扑信息。尤其是INFO里面的副本信息：<figure class="highlight properties"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"> </span></span><br><span class="line"><span class="comment"> </span></span><br><span class="line"><span class="comment"> # Replication</span></span><br><span class="line"><span class="attr">role</span>:<span class="string">master //角色（master、slave），一个从服务器也可能是另一个服务器的主服务器</span></span><br><span class="line"><span class="attr">connected_slaves</span>:<span class="string">1                  //连接slave实例的个数</span></span><br><span class="line"><span class="attr">slave0</span>:<span class="string">ip=192.168.163.132,port=6382,state=online,offset=64547142,lag=1 //连接的slave的信息</span></span><br><span class="line"><span class="attr">master_replid</span>:<span class="string">1726c598c37f039c4b69db7a4281392a650eb88b                 //服务器的复制ID</span></span><br><span class="line"><span class="attr">master_replid2</span>:<span class="string">0000000000000000000000000000000000000000                //第二服务器复制ID，用于故障转移后的PSYNC，用于集群等高可用之后主从节点的互换</span></span><br><span class="line"><span class="attr">master_repl_offset</span>:<span class="string">64547142                                            //复制偏移量1</span></span><br><span class="line"><span class="attr">second_repl_offset</span>:<span class="string">-1                                                  //第二服务器复制偏移量2</span></span><br><span class="line"><span class="attr">repl_backlog_active</span>:<span class="string">1                                                  //复制缓冲区状态</span></span><br><span class="line"><span class="attr">repl_backlog_size</span>:<span class="string">1048576                                              //复制缓冲区的大小（以字节为单位）</span></span><br><span class="line"><span class="attr">repl_backlog_first_byte_offset</span>:<span class="string">63498567                                //复制缓冲区的偏移量，标识当前缓冲区可用范围</span></span><br><span class="line"><span class="attr">repl_backlog_histlen</span>:<span class="string">1048576                                           //复制缓冲区中数据的大小（以字节为单位）</span></span><br><span class="line"><span class="comment"> #如果是从节点，会有以下状态：</span></span><br><span class="line"><span class="attr">master_host</span>:<span class="string">192.168.163.132                                      //Master IP</span></span><br><span class="line"><span class="attr">master_port</span>:<span class="string">6379                                                 //Master Port</span></span><br><span class="line"><span class="attr">master_link_status</span>:<span class="string">up                                            //Master的连接状态（up/down）</span></span><br><span class="line"><span class="attr">master_last_io_seconds_ago</span>:<span class="string">8                                     //最近一次主从交互之后的秒数</span></span><br><span class="line"><span class="attr">master_sync_in_progress</span>:<span class="string">0                                        //表示从服务器是否一直在与主服务器进行同步</span></span><br><span class="line"><span class="attr">slave_repl_offset</span>:<span class="string">64547142                                       //复制偏移量</span></span><br><span class="line"><span class="attr">slave_priority</span>:<span class="string">100                                               //从服务器的优先级</span></span><br><span class="line"><span class="attr">slave_read_only</span>:<span class="string">1                                                //从服务是否只读</span></span><br></pre></td></tr></table></figure></li>
+<li>sentinel集群信息交换：每隔2秒，sentinel服务器，会向redis数据节点的<code>__sentinel__:hello</code>频道上，发送自身的信息，以及对主节点的判断信息。这样，sentinel集群中各个节点之间就可以交换信息；</li>
+<li>redis服务器状态监控：每隔1秒，sentinel服务器，会向所有redis服务器、其余sentinel服务器发送<code>PING</code>命令做心跳检测，来确认这些节点当前是否可达。</li>
+</ol>
+<h3 id="2-2-2-发现和判断主redis下线"><a href="#2-2-2-发现和判断主redis下线" class="headerlink" title="2.2.2 发现和判断主redis下线"></a>2.2.2 发现和判断主redis下线</h3><p>基于以上sentinel服务器的监控数据，我们就可以判断主redis是否是下线状态了。</p>
+<p>在sentinel监控中，会每1s会去<code>ping</code>redis服务器，如果<code>down-after-milliseconds</code>时间内，redis服务器没有响应，则该sentinel服务器会将对应的redis服务器标记为<code>主观下线</code>状态，主观下线，对于redis而言并没有什么影响。</p>
+<p>但是，sentinel发现主redis服务被标记为<code>主观下线</code>之后，它会向sentinel用户交换信息的频道<code>__sentinel__:hello</code>发送<code>is-master-down-by-addr</code>指令，询问其他sentinel对该主redis确认状态，如果其他sentinel也发现该主redis下线，则恢复Y，这样，当sentinel服务器得到超过<code>quorum</code>数量的同意回复之后，则将主redis标记为<code>客观下线</code>状态。</p>
+<p>这个时候，主redis确定下线状态了，也就是故障检测发现主redis服务已不可用。</p>
+<h3 id="2-2-3-选出新的主redis服务器"><a href="#2-2-3-选出新的主redis服务器" class="headerlink" title="2.2.3 选出新的主redis服务器"></a>2.2.3 选出新的主redis服务器</h3><p>上面检测到主redis发生故障之后，此时就需要做故障恢复/转移。因此，对于主从模式，我们就需要从 从redis服务器集群中，选出一台作为新的主redis，继续对外提供redis服务。</p>
+<p>选择主redis的工作，同样交给sentinel完成。但是sentinel是一个集群，因此首先需要确认哪个sentinel服务器作为leader，来操作redis的故障恢复。</p>
+<p>sentinel使用raft算法来完成集群leader选举。</p>
+<p>在判断客观下线的过程中，sentinel会向指定频道发送指令<code>is-master-down-by-addr</code>，确认redis下线状态，同时，也尝试获取sentinel集群 leader角色，来主导本次故障转移。</p>
+<p>sentinel集群其他节点，并不是确认redis下线就回复Y，而是在判断主redis下线之后，还会判断是否之前已经回复过Y，如果回复过，则本次响应N。</p>
+<p>发送指令的sentinel节点，统计回复Y的数量，如果超过<code>quorum</code>，则除了表明主redis客观下线，同时也表明该sentinel获取了本次故障转移的leader角色。</p>
+<p>接下来，sentinel leader 就可以选出一个redis作为主redis了。基于以下几点来选择主redis：</p>
+<ol>
+<li>redis节点和前主redis节点的断开连接时长。如果断开时间比较长，则认为该redis节点不适合作为主redis。</li>
+<li>从redis的优先级。</li>
+<li>主从同步的进度，通过<code>master_repl_offset</code>来比较。</li>
+<li>run id。如果以上都一样，则最后看从redis的run id，小的被选上。</li>
+</ol>
+<p>基于以上4点策略，来选择新的主redis。</p>
+<blockquote>
+<p>Leader Sentinel节点，会从新的master节点那里得到一个config_epoch，本质是个version版本号，每次主从切换的version号都必须是唯一的。其他的哨兵都是根据vetsion来更新自己的master配置。</p>
+</blockquote>
+<h3 id="2-2-4-对外通知，新主redis上线"><a href="#2-2-4-对外通知，新主redis上线" class="headerlink" title="2.2.4 对外通知，新主redis上线"></a>2.2.4 对外通知，新主redis上线</h3><p>首先，对新的主redis，发送<code>slaveof no one</code>命令，告知其升级为主redis节点。<br>然后，对剩余其他从redis，发送<code>slaveof 新主redis</code>命令，让他们成为新主redis的从redis，后续的主从复制，将copy 该redis节点。<br>接下来，故障转移完成之后，sentinel leader 发送 <code>+switch-master</code>消息，客户端订阅<code>+switch-master</code>消息，当存在消息事件之后，客户端就可以知道发送了故障转移，并且拿到新的主redis地址信息，然后客户端就可以去和新的redis建立连接。</p>
+<p>此外，sentinel会持续监控已经标记为下线的原主redis节点，一旦其上线，立马对它切换为从redis角色操作。</p>
+<h3 id="2-2-5-redis哨兵模式的问题"><a href="#2-2-5-redis哨兵模式的问题" class="headerlink" title="2.2.5 redis哨兵模式的问题"></a>2.2.5 redis哨兵模式的问题</h3><p>redis sentinel模式 解决了主从复制的故障发现和故障转移的问题。因此，从高可用的角度而言，redis 主从复制+redis sentinel模式，已经完成的高可用架构设计。</p>
+<p>但是，redis主从复制+哨兵模式，有一个问题，就是其是基于单实例的，也就是其数据库数据收到单机内存大小的限制。这就导致一个问题，主从复制的主redis和从redis必须要一样的配置，否则在同步的时候，会因为内存不够报错，或者内存多余而浪费。</p>
+<p>此外，当前互联网存有大量的数据，如果不使用集群模型分片来搞，而是使用多实例部署，成本太大，使用也非常不便。</p>
+<h1 id="三、redis-高并发【待更新】"><a href="#三、redis-高并发【待更新】" class="headerlink" title="三、redis 高并发【待更新】"></a>三、redis 高并发【待更新】</h1><p>最后，我们来看redis 高并发，单机的高性能某种程度上，可以提升redis的并发处理能力。此外，高并发，很多时候我们可以通过分布式集群来支持。</p>
+<p>高并发的架构方案，一般通过<strong>水平扩展</strong>和<strong>垂直扩展</strong>来优化。而，水平扩展，就是通过数据分片的方式来完成。</p>
+<p>对于redis，其本身是基于内存的数据库，通过副本+多分片的方式，分散单实例的压力，可以更好的支撑高并发场景，从而提升redis集群的qps/tps。</p>
+<p>因此，在redis高并发设计中，重点去介绍redis集群机制。</p>
+<h2 id="一致性hash原理和实现"><a href="#一致性hash原理和实现" class="headerlink" title="一致性hash原理和实现"></a>一致性hash原理和实现</h2><p>在介绍redis cluster集群方案之前，首先介绍一致性hash。</p>
+<p><a target="_blank" rel="noopener" href="https://www.cnblogs.com/xrq730/p/5186728.html">https://www.cnblogs.com/xrq730/p/5186728.html</a></p>
+<h2 id="redis-集群（分片）"><a href="#redis-集群（分片）" class="headerlink" title="redis 集群（分片）"></a>redis 集群（分片）</h2><p><a target="_blank" rel="noopener" href="https://segmentfault.com/a/1190000039995230">https://segmentfault.com/a/1190000039995230</a><br><a target="_blank" rel="noopener" href="https://www.cnblogs.com/detectiveHLH/p/14154665.html">https://www.cnblogs.com/detectiveHLH/p/14154665.html</a></p>
+<h1 id="四、参考资料"><a href="#四、参考资料" class="headerlink" title="四、参考资料"></a>四、参考资料</h1><ul>
+<li><a target="_blank" rel="noopener" href="https://weread.qq.com/web/reader/d35323e0597db0d35bd957b">redis 设计与实现-黄健宏</a></li>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/356059845">Redis 多线程网络模型全面揭秘</a></li>
+<li><a target="_blank" rel="noopener" href="https://segmentfault.com/a/1190000039670541">Redis 高可用篇：你管这叫主从架构数据同步原理？</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>柯小小西
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://ketao1989.github.io/2021/10/31/2021-10-31-redis-arch-design-and-implement-analyse/" title="redis的三高架构设计实现分析">https://ketao1989.github.io/2021/10/31/2021-10-31-redis-arch-design-and-implement-analyse/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/10/23/2021-10-23-nsq-consume-code-analyse-and-rate-limit-componet-implement/" rel="prev" title="nsq消息消费原理分析&消费限流实现">
+      <i class="fa fa-chevron-left"></i> nsq消息消费原理分析&消费限流实现
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80%E3%80%81redis%E9%AB%98%E6%80%A7%E8%83%BD"><span class="nav-number">1.</span> <span class="nav-text">一、redis高性能</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-1-%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">1.1.</span> <span class="nav-text">1.1 数据结构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-1-%E5%85%A8%E5%B1%80%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">1.1.1.</span> <span class="nav-text">1.1.1 全局数据结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-1-%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%AF%B9%E8%B1%A1%E7%B1%BB%E5%9E%8B%E6%94%AF%E6%8C%81"><span class="nav-number">1.1.2.</span> <span class="nav-text">1.1.1 字符串对象类型支持</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-2-%E5%88%97%E8%A1%A8%E5%AF%B9%E8%B1%A1%E7%B1%BB%E5%9E%8B%E6%94%AF%E6%8C%81"><span class="nav-number">1.1.3.</span> <span class="nav-text">1.1.2 列表对象类型支持</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-3-%E5%93%88%E5%B8%8C%E5%AF%B9%E8%B1%A1%E7%B1%BB%E5%9E%8B%E6%94%AF%E6%8C%81"><span class="nav-number">1.1.4.</span> <span class="nav-text">1.1.3 哈希对象类型支持</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-4-%E9%9B%86%E5%90%88%E5%AF%B9%E8%B1%A1%E7%B1%BB%E5%9E%8B%E6%94%AF%E6%8C%81"><span class="nav-number">1.1.5.</span> <span class="nav-text">1.1.4 集合对象类型支持</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-5-%E6%9C%89%E5%BA%8F%E9%9B%86%E5%90%88%E5%AF%B9%E8%B1%A1%E7%B1%BB%E5%9E%8B%E6%94%AF%E6%8C%81"><span class="nav-number">1.1.6.</span> <span class="nav-text">1.1.5 有序集合对象类型支持</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-6-%E6%80%BB%E7%BB%93"><span class="nav-number">1.1.7.</span> <span class="nav-text">1.1.6 总结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1-2-%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.2.</span> <span class="nav-text">1.2 网络模型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-1-redis-4-0-%E5%A4%9A%E7%BA%BF%E7%A8%8B%E4%BC%98%E5%8C%96"><span class="nav-number">1.2.1.</span> <span class="nav-text">1.2.1 redis 4.0 多线程优化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-2-redis-6-0-%E5%A4%9A%E7%BA%BF%E7%A8%8B%E4%BC%98%E5%8C%96"><span class="nav-number">1.2.2.</span> <span class="nav-text">1.2.2 redis 6.0 多线程优化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-3-redis-6-0-%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.2.3.</span> <span class="nav-text">1.2.3 redis 6.0 网络模型</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1-3-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86"><span class="nav-number">1.3.</span> <span class="nav-text">1.3 内存管理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-3-1-redis%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D"><span class="nav-number">1.3.1.</span> <span class="nav-text">1.3.1 redis内存分配</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-3-1-1-INT%E7%BC%96%E7%A0%81%E7%9A%84%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%AF%B9%E8%B1%A1"><span class="nav-number">1.3.1.1.</span> <span class="nav-text">1.3.1.1 INT编码的字符串对象</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-3-1-2-EMBSTR%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%AF%B9%E8%B1%A1"><span class="nav-number">1.3.1.2.</span> <span class="nav-text">1.3.1.2 EMBSTR字符串对象</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-3-1-3-intset%E9%9B%86%E5%90%88%E5%AF%B9%E8%B1%A1"><span class="nav-number">1.3.1.3.</span> <span class="nav-text">1.3.1.3 intset集合对象</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-3-2-redis%E5%86%85%E5%AD%98%E5%9B%9E%E6%94%B6"><span class="nav-number">1.3.2.</span> <span class="nav-text">1.3.2 redis内存回收</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1-4-%E5%AE%A2%E6%88%B7%E7%AB%AF%E7%BC%93%E5%AD%98"><span class="nav-number">1.4.</span> <span class="nav-text">1.4 客户端缓存</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1-5-%E6%80%BB%E7%BB%93"><span class="nav-number">1.5.</span> <span class="nav-text">1.5 总结</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8C%E3%80%81redis%E9%AB%98%E5%8F%AF%E7%94%A8"><span class="nav-number">2.</span> <span class="nav-text">二、redis高可用</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#2-1-redis%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6"><span class="nav-number">2.1.</span> <span class="nav-text">2.1 redis主从复制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-1-%E6%8C%81%E4%B9%85%E5%8C%96"><span class="nav-number">2.1.1.</span> <span class="nav-text">2.1.1 持久化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-2-%E5%A4%8D%E5%88%B6"><span class="nav-number">2.1.2.</span> <span class="nav-text">2.1.2 复制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-3-%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">2.1.3.</span> <span class="nav-text">2.1.3 主从复制的问题</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-2-redis-%E5%93%A8%E5%85%B5%E6%A8%A1%E5%BC%8F"><span class="nav-number">2.2.</span> <span class="nav-text">2.2 redis 哨兵模式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-1-sentinel%E7%9B%91%E6%8E%A7"><span class="nav-number">2.2.1.</span> <span class="nav-text">2.2.1 sentinel监控</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-2-%E5%8F%91%E7%8E%B0%E5%92%8C%E5%88%A4%E6%96%AD%E4%B8%BBredis%E4%B8%8B%E7%BA%BF"><span class="nav-number">2.2.2.</span> <span class="nav-text">2.2.2 发现和判断主redis下线</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-3-%E9%80%89%E5%87%BA%E6%96%B0%E7%9A%84%E4%B8%BBredis%E6%9C%8D%E5%8A%A1%E5%99%A8"><span class="nav-number">2.2.3.</span> <span class="nav-text">2.2.3 选出新的主redis服务器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-4-%E5%AF%B9%E5%A4%96%E9%80%9A%E7%9F%A5%EF%BC%8C%E6%96%B0%E4%B8%BBredis%E4%B8%8A%E7%BA%BF"><span class="nav-number">2.2.4.</span> <span class="nav-text">2.2.4 对外通知，新主redis上线</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-5-redis%E5%93%A8%E5%85%B5%E6%A8%A1%E5%BC%8F%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">2.2.5.</span> <span class="nav-text">2.2.5 redis哨兵模式的问题</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%89%E3%80%81redis-%E9%AB%98%E5%B9%B6%E5%8F%91%E3%80%90%E5%BE%85%E6%9B%B4%E6%96%B0%E3%80%91"><span class="nav-number">3.</span> <span class="nav-text">三、redis 高并发【待更新】</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E8%87%B4%E6%80%A7hash%E5%8E%9F%E7%90%86%E5%92%8C%E5%AE%9E%E7%8E%B0"><span class="nav-number">3.1.</span> <span class="nav-text">一致性hash原理和实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#redis-%E9%9B%86%E7%BE%A4%EF%BC%88%E5%88%86%E7%89%87%EF%BC%89"><span class="nav-number">3.2.</span> <span class="nav-text">redis 集群（分片）</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">4.</span> <span class="nav-text">四、参考资料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="柯小小西"
+      src="/images/ava.gif">
+  <p class="site-author-name" itemprop="name">柯小小西</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">54</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-CN" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">柯小小西</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">523k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">7:55</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="//cdn.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js"></script>
+<script src="//cdn.jsdelivr.net/npm/instantsearch.js@4/dist/instantsearch.production.min.js"></script>
+<script src="/js/algolia-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'JHHXvxc1poIUYczSRlzKC3hQ-MdYXbMMI',
+      appKey     : 'yV8QHmFeQEBNceFuU9tKH3cl',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : true,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
