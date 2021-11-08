@@ -182,6 +182,130 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2021/11/08/2021-11-08-mysql-innodb-design-for-query-part/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ava.gif">
+      <meta itemprop="name" content="柯小小西">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="没有期望的分布">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2021/11/08/2021-11-08-mysql-innodb-design-for-query-part/" class="post-title-link" itemprop="url">MySQL InnoDB 查询部分核心设计和原理</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2021-11-08 22:07:00 / 修改时间：22:15:22" itemprop="dateCreated datePublished" datetime="2021-11-08T22:07:00+08:00">2021-11-08</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/mysql/" itemprop="url" rel="index"><span itemprop="name">mysql</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/mysql/innodb/" itemprop="url" rel="index"><span itemprop="name">innodb</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/mysql/innodb/%E6%9E%B6%E6%9E%84/" itemprop="url" rel="index"><span itemprop="name">架构</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2021/11/08/2021-11-08-mysql-innodb-design-for-query-part/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2021/11/08/2021-11-08-mysql-innodb-design-for-query-part/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>8.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>7 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>之前有介绍过redis相关知识：<a href="https://ketao1989.github.io/2021/10/31/2021-10-31-redis-arch-design-and-implement-analyse/">redis的三高架构设计实现分析</a>，不过redis主要是内存数据库，所以redis的优化方向主要是内存数据结构，对于磁盘持久化部分而言，不管redis 采用RDB 还是 AOF方式，对于磁盘的写，都是以顺序写的方式，基本上不存在数据更新的随机写操作，因此很多写磁盘文件的常用设计方案都不会涉及。</p>
+<p>因此，为了想了解文件操作的一些优化思路，顺便对我们日常开发中经常使用的数据库更深入一点的了解，本文将对基于InnoDB引擎的MySQL数据库做一个稍微深一点的介绍。</p>
+<p><code>MySQL InnoDB</code> 介绍主要分为两部分：</p>
+<ol>
+<li>数据查询部分，主要是索引相关介绍；</li>
+<li><code>MySQL InnoDB</code> 关于 <code>ACID</code>部分的实现设计。</li>
+</ol>
+<p>本文主要介绍 <code>MySQL InnoDB</code>关于数据查询部分的设计。本文主要的脉络，主要是：</p>
+<ol>
+<li>首先介绍一个查询请求，从客户端到 <code>MySQL Server</code> 端的处理，以及被存储引擎的处理主流程；</li>
+<li>然后在从<code>InnoDB</code>存储引擎的层面，探讨支持查询所采取的数据结构和处理流程；</li>
+<li>接着，看<code>MySQL Server</code> 端对查询请求做的一些优化，来加快查询效率。</li>
+</ol>
+<p>在开始深入了解MySQL查询设计之前，先整体了解下MySQL架构，以及常用的InnoDB存储引擎架构。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2021/11/08/2021-11-08-mysql-innodb-design-for-query-part/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2021/10/31/2021-10-31-redis-arch-design-and-implement-analyse/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1242,125 +1366,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2018/01/04/2018-01-03-dubbo-generic-serial-process/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/ava.gif">
-      <meta itemprop="name" content="柯小小西">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="没有期望的分布">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2018/01/04/2018-01-03-dubbo-generic-serial-process/" class="post-title-link" itemprop="url">dubbo序列化机制处理-泛化&普通RPC</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2018-01-04 01:18:00" itemprop="dateCreated datePublished" datetime="2018-01-04T01:18:00+08:00">2018-01-04</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-05-17 22:57:11" itemprop="dateModified" datetime="2021-05-17T22:57:11+08:00">2021-05-17</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/java/dubbo/" itemprop="url" rel="index"><span itemprop="name">dubbo</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/java/dubbo/hessian/" itemprop="url" rel="index"><span itemprop="name">hessian</span></a>
-                </span>
-            </span>
-
-          
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="far fa-comment"></i>
-      </span>
-      <span class="post-meta-item-text">Valine：</span>
-    
-    <a title="valine" href="/2018/01/04/2018-01-03-dubbo-generic-serial-process/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2018/01/04/2018-01-03-dubbo-generic-serial-process/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>19k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>17 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="1-背景"><a href="#1-背景" class="headerlink" title="1. 背景"></a>1. 背景</h2><p>当前，存在各种API网关，这些网关的定位之一就是管理域内各个服务需要对外的接口，统一做降级限流，权限控制，安全校验等工作。内部一般使用各种RPC服务，因此，基于微服务的不断扩展和升级，一般网关都是使用RPC 泛化机制来完成对内部服务的调用。</p>
-<p>泛化机制，和普通的rpc调用有一些不同，它不需要引入各个依赖服务的jar包，调用方如果知道接口方法的具体信息：名称，版本，参数类型等，就可以完成rpc调用。</p>
-<p>在开发过程中，使用泛化机制，发现一个”问题”，就是业务方调用我们内部的一个接口，接口中有一个参数是long类型，但是业务方使用string类型的参数(数字字符串，例如”12345678”)请求过来，但是并没有出现错误。这个问题，在于后面另一个业务方，也按照string类型请求(非纯数字，例如”E12345678”)，这个时候报错了。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2018/01/04/2018-01-03-dubbo-generic-serial-process/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1432,14 +1437,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">54</span>
+          <span class="site-state-item-count">55</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-count">59</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
   </nav>
@@ -1478,12 +1483,12 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">526k</span>
+    <span title="站点总字数">534k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">7:58</span>
+    <span title="站点阅读时长">8:06</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
   </div>

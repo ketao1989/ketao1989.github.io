@@ -182,6 +182,119 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2015/02/26/2015-02-26-Python-Tutoril-Python-Object-Oriented-Programming/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ava.gif">
+      <meta itemprop="name" content="柯小小西">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="没有期望的分布">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/02/26/2015-02-26-Python-Tutoril-Python-Object-Oriented-Programming/" class="post-title-link" itemprop="url">Python 教程学习之 Python 面向对象编程</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2015-02-26 22:21:35" itemprop="dateCreated datePublished" datetime="2015-02-26T22:21:35+08:00">2015-02-26</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-05-17 22:57:11" itemprop="dateModified" datetime="2021-05-17T22:57:11+08:00">2021-05-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Python/" itemprop="url" rel="index"><span itemprop="name">Python</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2015/02/26/2015-02-26-Python-Tutoril-Python-Object-Oriented-Programming/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2015/02/26/2015-02-26-Python-Tutoril-Python-Object-Oriented-Programming/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>5.6k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>5 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a><a id="Intro">前言</a></h2><p>在之前的学习中,基本上都是使用类似于面对过程的方式来写代码,学习各种 Python 的基础知识，接下来，我们需要继续学习面向对象的Python，也就是类对象继承等概念。</p>
+<p>对象和属性，这些概念在任务编程语言中，其定义都是一致的。我们通过一个对象来表示一个物体，而这个物体的一些特征，就是对象中的属性。比如，一个人，作为一个对象 Person，则会有<code>姓名，身高，体重，性别，出生日期</code>等属性，这些属性就是这个人的对外特性了。</p>
+<h2 id="Python-面向对象编程介绍"><a href="#Python-面向对象编程介绍" class="headerlink" title="Python 面向对象编程介绍"></a><a id="BasicGuide">Python 面向对象编程介绍</a></h2><p>类，就是对一类物体进行抽象的表示，比如上面的 Person；而实例，则是具体化了每一个类的属性值，其可以决定某一个物体特征的对象。</p>
+<p>在 Python 中，可以如下来定义一个类：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Person</span>(<span class="params"><span class="built_in">object</span></span>):</span></span><br><span class="line"></span><br><span class="line">    <span class="string">&quot;&quot;&quot;docstring for Person&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">self, name</span>):</span></span><br><span class="line">        <span class="built_in">super</span>(Person, self).__init__()</span><br><span class="line">        self.__name = name</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2015/02/26/2015-02-26-Python-Tutoril-Python-Object-Oriented-Programming/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2015/02/17/2015-02-17-Python-Tutoril-Python-Functional-Programing/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1258,133 +1371,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2014/12/19/2014-12-19-Guava-Cache-Guide-And-Implement-Analyse/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/ava.gif">
-      <meta itemprop="name" content="柯小小西">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="没有期望的分布">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2014/12/19/2014-12-19-Guava-Cache-Guide-And-Implement-Analyse/" class="post-title-link" itemprop="url">Guava LocalCache 缓存介绍及实现源码深入剖析</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2014-12-19 22:21:35" itemprop="dateCreated datePublished" datetime="2014-12-19T22:21:35+08:00">2014-12-19</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-05-17 22:57:11" itemprop="dateModified" datetime="2021-05-17T22:57:11+08:00">2021-05-17</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="far fa-comment"></i>
-      </span>
-      <span class="post-meta-item-text">Valine：</span>
-    
-    <a title="valine" href="/2014/12/19/2014-12-19-Guava-Cache-Guide-And-Implement-Analyse/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2014/12/19/2014-12-19-Guava-Cache-Guide-And-Implement-Analyse/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>49k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>45 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a><a id="Intro">前言</a></h2><p>Guava是Google开源出来的Java常用工具集库,包括集合|缓存|并发|字符串|IO操作等在Java开发过程中经常需要去实现的工具类.</p>
-<p>显然,对于这种十分常见的需求,Guava提供了自己的工具类实现.GuavaCache 提供了一般我们使用缓存所需要的几乎所有的功能,主要有:</p>
-<ul>
-<li><p>自动将entry节点加载进缓存结构中;</p>
-</li>
-<li><p>当缓存的数据已经超过预先设置的最大值时，使用LRU算法移除一些数据；</p>
-</li>
-<li><p>具备根据entry节点上次被访问或者写入的时间来计算过期机制；</p>
-</li>
-<li><p>缓存的key被封装在<code>WeakReference</code>引用内;</p>
-</li>
-<li><p>缓存的value被封装在<code>WeakReference</code>或者<code>SoftReference</code>引用内；</p>
-</li>
-<li><p>移除entry节点，可以触发监听器通知事件；</p>
-</li>
-<li><p>统计缓存使用过程中命中率/异常率/未命中率等数据。</p>
-</li>
-</ul>
-<p>此外，<code>Guava Cache</code>其核心数据结构大体上和<code>ConcurrentHashMap</code>一致，具体细节上会有些区别。功能上，ConcurrentMap会一直保存所有添加的元素，直到显式地移除.相对地,<code>Guava Cache</code>为了限制内存占用,通常都设定为自动回收元素.在某些场景下,尽管它不回收元素,也是很有用的,因为它会自动加载缓存.</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2014/12/19/2014-12-19-Guava-Cache-Guide-And-Implement-Analyse/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1456,14 +1442,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">54</span>
+          <span class="site-state-item-count">55</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-count">59</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
   </nav>
@@ -1502,12 +1488,12 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">526k</span>
+    <span title="站点总字数">534k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">7:58</span>
+    <span title="站点阅读时长">8:06</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
   </div>

@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"ketao1989.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"valine","storage":true,"lazyload":false,"nav":null,"activeClass":"valine"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="之前有介绍过redis相关知识：redis的三高架构设计实现分析，不过redis主要是内存数据库，所以redis的优化方向主要是内存数据结构，对于磁盘持久化部分而言，不管redis 采用RDB 还是 AOF方式，对于磁盘的写，都是以顺序写的方式，基本上不存在数据更新的随机写操作，因此很多写磁盘文件的常用设计方案都不会涉及。 因此，为了想了解文件操作的一些优化思路，顺便对我们日常开发中经常使用的数据">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL InnoDB 查询部分核心设计和原理">
+<meta property="og:url" content="https://ketao1989.github.io/2021/11/08/2021-11-08-mysql-innodb-design-for-query-part/index.html">
+<meta property="og:site_name" content="没有期望的分布">
+<meta property="og:description" content="之前有介绍过redis相关知识：redis的三高架构设计实现分析，不过redis主要是内存数据库，所以redis的优化方向主要是内存数据结构，对于磁盘持久化部分而言，不管redis 采用RDB 还是 AOF方式，对于磁盘的写，都是以顺序写的方式，基本上不存在数据更新的随机写操作，因此很多写磁盘文件的常用设计方案都不会涉及。 因此，为了想了解文件操作的一些优化思路，顺便对我们日常开发中经常使用的数据">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://ketao1989.github.io/images/2021/20211107154024.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2021/20211107163447.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2021/20211107185709.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2021/20211107191055.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2021/20211107195920.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2021/20211107213124.png">
+<meta property="article:published_time" content="2021-11-08T14:07:00.000Z">
+<meta property="article:modified_time" content="2021-11-08T14:15:22.278Z">
+<meta property="article:author" content="柯小小西">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://ketao1989.github.io/images/2021/20211107154024.png">
+
+<link rel="canonical" href="https://ketao1989.github.io/2021/11/08/2021-11-08-mysql-innodb-design-for-query-part/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>MySQL InnoDB 查询部分核心设计和原理 | 没有期望的分布</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">没有期望的分布</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">柯小西-技术博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container"></div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="algolia-results">
+  <div id="algolia-stats"></div>
+  <div id="algolia-hits"></div>
+  <div id="algolia-pagination" class="algolia-pagination"></div>
+</div>
+
+      
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2021/11/08/2021-11-08-mysql-innodb-design-for-query-part/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ava.gif">
+      <meta itemprop="name" content="柯小小西">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="没有期望的分布">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          MySQL InnoDB 查询部分核心设计和原理
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2021-11-08 22:07:00 / 修改时间：22:15:22" itemprop="dateCreated datePublished" datetime="2021-11-08T22:07:00+08:00">2021-11-08</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/mysql/" itemprop="url" rel="index"><span itemprop="name">mysql</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/mysql/innodb/" itemprop="url" rel="index"><span itemprop="name">innodb</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/mysql/innodb/%E6%9E%B6%E6%9E%84/" itemprop="url" rel="index"><span itemprop="name">架构</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2021/11/08/2021-11-08-mysql-innodb-design-for-query-part/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2021/11/08/2021-11-08-mysql-innodb-design-for-query-part/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>8.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>7 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>之前有介绍过redis相关知识：<a href="https://ketao1989.github.io/2021/10/31/2021-10-31-redis-arch-design-and-implement-analyse/">redis的三高架构设计实现分析</a>，不过redis主要是内存数据库，所以redis的优化方向主要是内存数据结构，对于磁盘持久化部分而言，不管redis 采用RDB 还是 AOF方式，对于磁盘的写，都是以顺序写的方式，基本上不存在数据更新的随机写操作，因此很多写磁盘文件的常用设计方案都不会涉及。</p>
+<p>因此，为了想了解文件操作的一些优化思路，顺便对我们日常开发中经常使用的数据库更深入一点的了解，本文将对基于InnoDB引擎的MySQL数据库做一个稍微深一点的介绍。</p>
+<p><code>MySQL InnoDB</code> 介绍主要分为两部分：</p>
+<ol>
+<li>数据查询部分，主要是索引相关介绍；</li>
+<li><code>MySQL InnoDB</code> 关于 <code>ACID</code>部分的实现设计。</li>
+</ol>
+<p>本文主要介绍 <code>MySQL InnoDB</code>关于数据查询部分的设计。本文主要的脉络，主要是：</p>
+<ol>
+<li>首先介绍一个查询请求，从客户端到 <code>MySQL Server</code> 端的处理，以及被存储引擎的处理主流程；</li>
+<li>然后在从<code>InnoDB</code>存储引擎的层面，探讨支持查询所采取的数据结构和处理流程；</li>
+<li>接着，看<code>MySQL Server</code> 端对查询请求做的一些优化，来加快查询效率。</li>
+</ol>
+<p>在开始深入了解MySQL查询设计之前，先整体了解下MySQL架构，以及常用的InnoDB存储引擎架构。</p>
+<span id="more"></span>
+
+<h1 id="一、MySQL-amp-InnoDB-总体架构"><a href="#一、MySQL-amp-InnoDB-总体架构" class="headerlink" title="一、MySQL &amp; InnoDB 总体架构"></a>一、MySQL &amp; InnoDB 总体架构</h1><p>从MySQL官网给出的<code>带有可插拔存储引擎的MySQL架构</code>图，来看一个MySQL的整体结构。</p>
+<p><img src="/images/2021/20211107154024.png" alt="MySQL架构图"></p>
+<p>整体看，MySQL架构图，主要包括两大部分：MySQL客户端和MySQL服务端。</p>
+<p>MySQL客户端，一个是我们常在<code>terminal控制台</code>通过命令方式连接，到MySQL服务端操作数据库相关数据和配置的端口；一个是在不同应用程序中，代码连接数据库操作数据的语言工具包，例如Java常用的JDBC。</p>
+<p>MySQL服务端，是整个MySQL架构的核心，其内部主要包括两大部分：一个是MySQL自身的通用处理功能；另一个就是可插拔的存储引擎，比如常用的InnoDB引擎。</p>
+<p>MySQL Server 自身主要处理 <code>SQL</code>命令的请求，词法和语法的解析，然后对生成执行计划，对于查询选择适合的索引，接下来就是执行器将执行语句交给存储引擎，返回最终执行结果。</p>
+<p>关于存储引擎，比较复杂，对于日常业务的使用，也是最重要的。需要了解对应的存储引擎细节，才能评估技术方案的可行性，同样，在业务出现数据库问题的时候，也能快速定位问题，找到解决思路。</p>
+<h2 id="1-1-可插拔存储引擎层"><a href="#1-1-可插拔存储引擎层" class="headerlink" title="1.1 可插拔存储引擎层"></a>1.1 可插拔存储引擎层</h2><p>MySQL 可插拔存储引擎是 MySQL 数据库服务器中的组件，负责为数据库执行实际的数据 I/O 操作，以及启用和执行针对特定应用程序需求的某些功能集。采用插件模式组装到<code>MySQL Server</code>中，可支持<code>InnoDB</code>、<code>MyISAM</code>、<code>NDB Cluster</code>等等，这些存储引擎插件，都实现了同一套标准的管理接口和服务。</p>
+<p>这带来了很多好处，首先就是，使用者可以基于不同的场景，使用不同的存储引擎。比如，<code>InnoDB</code>引擎可以很好地支持ACID和事务场景的诉求；<code>MyISAM</code>引擎如果业务没有事务的诉求，但是对全文检索有要求，可以尝试用这个引擎；如果你做一些简单的key查询，那么<code>MEMORY</code>引擎可以已内存模式通过hash索引来支持，等等。因为每个存储引擎只提供特定应用程序所需的功能，因此您在数据库中的系统开销更少，最终结果就是可以设计出更高效和更高性能的数据库。</p>
+<p>另外一个好处，就是应用程序开发的统一性，基于不同场景的引擎，在开发接口层面上都可以用一套编码解决。</p>
+<p>此外，当我们有全新的存储诉求，或者更优秀的引擎设计思路，可以基于MySQL提供的标准规范和接口，进行引擎组件的开发，成本非常低，开发效率最高。现在，互联网公司，在推行的中台，内部通过能力中心+业务流程编排来完成更多业务支撑，不同场景只是针对一些能力的替换即可完成新场景的开发上线。</p>
+<h2 id="1-2-InnoDB-引擎架构"><a href="#1-2-InnoDB-引擎架构" class="headerlink" title="1.2 InnoDB 引擎架构"></a>1.2 InnoDB 引擎架构</h2><p><img src="/images/2021/20211107163447.png" alt="InnoDB架构图"></p>
+<p><code>InnoDB</code>引擎，主要包括两部分，一部分是InnoDB内存结构，另一部分就是InnoDB磁盘结构。</p>
+<p>在内存结构里面，主要就是各种buffer缓冲区，这些缓冲区对于提升数据库性能上至关重要。</p>
+<ul>
+<li>Buffer Pool，缓冲池。缓冲池允许直接从内存中处理经常使用的数据，从而加快了处理速度。在专用服务器上，通常将多达 <code>80％</code>的物理内存分配给缓冲池。</li>
+<li>Change Buffer，更改缓冲区。这块缓冲区，是存放在<code>Buffer Pool</code>内部。更改缓冲区是一种特殊的数据结构，当这些页面不在<code>Buffer Pool</code>中时，该缓存可缓存对<code>二级索引</code>页的更改。可能由INSERT、UPDATE，或 DELETE操作(DML)导致的缓冲更改将在以后通过其他读取操作将页面加载到缓冲池中时合并。也就是说，其对应的数据不需要从磁盘加载到Buffer中，而是将变更存在在<code>Change Buffer</code>内，等待合适时机再merge 回去。</li>
+<li>Log Buffer，日志缓冲区。主要用来存放<code>redo log</code> 数据。</li>
+</ul>
+<p>在磁盘结构里面，就是各种类型的文件。所有的数据，最终都需要落到各种磁盘文件上来保证数据的持久性。核心的文件主要有：</p>
+<ul>
+<li>表和索引文件。</li>
+<li>double write buffer文件。</li>
+<li>undo log 文件。</li>
+<li>redo log 文件。</li>
+</ul>
+<p>表空间、表、索引这些文件，是真正数据文件。<code>double write buffer</code> 是由于linux页大小4K，MySQL页大小16K，直接将MySQL页写到磁盘，可能导致部分成功、部分失败导致后期数据恢复存在问题，因为增加了<code>double write buffer</code>做数据恢复的时候使用。<code>undo log</code>事务回滚和MVCC时需要找到历史快照数据。<code>redo log</code> 则是保证数据的持久和原子性而存在的。</p>
+<h1 id="二、数据查询主流程"><a href="#二、数据查询主流程" class="headerlink" title="二、数据查询主流程"></a>二、数据查询主流程</h1><p>从MySQL整体架构图，可以大概看得出来，一个SQL命令请求到达MySQL服务后的内部操作的处理过程，为了更清晰，这里给了一个流程图（来自 <a target="_blank" rel="noopener" href="https://www.cnblogs.com/hoxis/p/10006871.html">MySQL实战 | 01-当执行一条 select 语句时，MySQL 到底做了啥？</a>）：</p>
+<p><img src="/images/2021/20211107185709.png" alt="MySQL尝试下流程图"></p>
+<p>当有一个<code>select</code>查询请求过来，执行流程如下：</p>
+<ol>
+<li>建立client-server连接。TCP连接，通过三次握手协议建立。由于我们数据库都需要权限限制，因此，建立TCP连接请求之后，会进行权限验证，也就是确认用户名密码，验证完成之后，通过用户名，可以知道本次连接对应的用户权限，然后将用户权限信息缓存起来，后面的SQL操作的前置权限验证，就直接通过缓存来比较。额外说下，建立client-server连接，会提供给后面SQL复用，一般我们会对一个连接做超时时间限制，如果这个连接在指定的超时时间内没有请求过来，才会关闭连接。<code>show processlist</code> 可以看到连接的持续时间。</li>
+<li>分析SQL请求。MySQL Server 会对SQL进行词法分析、语法分析，验证SQL的合法性，然后就有了一个分析后的 SQL语法树。</li>
+<li>有了分析后的语法树，MySQL 会进行优化工作。例如，评估执行计划，选择合适的索引；通过提前计算，优化where子句 等等；</li>
+<li>经过优化器后，我们可以最终产生执行计划。在执行之前，做一次表操作权限的验证，然后调用具体的存储引擎来执行IO查询。</li>
+</ol>
+<h1 id="三、InnoDB引擎查询支持"><a href="#三、InnoDB引擎查询支持" class="headerlink" title="三、InnoDB引擎查询支持"></a>三、InnoDB引擎查询支持</h1><p>从上面的主流程，可以看到核心的查询，最终是 存储引擎 InnoDB来完成的。</p>
+<h2 id="3-1-InnoDB-存储结构"><a href="#3-1-InnoDB-存储结构" class="headerlink" title="3.1 InnoDB 存储结构"></a>3.1 InnoDB 存储结构</h2><p>在InnoDB的引擎架构图中，可以发现，核心的数据库业务数据和索引，都是存在各种表空间中，以<code>ibd</code>格式文件存储。表空间，也就是 ibd文件的逻辑存储结构，如下图所示：</p>
+<p><img src="/images/2021/20211107191055.png" alt="InnoDB 存储结构"></p>
+<p>如上图，表空间由 段segment、区 extent、页 page 、行row 四种结构组成。一个表空间由多个段组成，主要是数据段，索引段，回滚段等。数据段存储数据，也就是图中的叶子节点；索引段存储索引，也就是图中的非叶子节点；回滚段存储undo 日志。每个段，由多个区组成，MySQL中每个区大小是1M，每页的大小为16K，因此，每个区有64页。</p>
+<p>页，是InnoDB的最小存储单元。16K大小，一般linux页是4K，所以一个MySQL页相当于操作系统4个Page。<strong>每个页有文件头(<code>File Header</code>)、页头(<code>Page Header</code>)、页目录(<code>Page Directory</code>)等，在文件头字段中，有两个很重要的指针：FILE_PAGE_PREV 和 FILE_PAGE_NEXT，也就是InnoDB中叶子节点维护的连接是一个双向链表。此外，页目录中存放了记录的相对位置，但是多个记录按照顺序共享一个页目录内部的slot记录，方便利用二分搜索找到记录大概位置。</strong></p>
+<p>每个页里面有多个行记录，每页存储最多的行记录也是有硬性规定的最多<code>16KB/2-200</code>,即<code>7992</code>行。实际上，对我们的业务而言，这个数字并没有多大用处，一般我们采用<code>utf8mb4</code>编码，为了有业务含义，一行的平均大小不可能为<code>2</code>，所以这里只是讲讲而已。</p>
+<p>上图列出了一行的数据结构：事务id，回滚指针，rowid等隐藏列，列数据列表。下面具体说下行记录结构。</p>
+<p><img src="/images/2021/20211107195920.png" alt="页 结构"></p>
+<ul>
+<li>变长字段长度列表。此字段表示列字段的长度，与列字段顺序相反存放。<strong>如果长度小于255，则一个字节表示；否则，使用两个字节表示，也就是65535。因此，MySQL InnoDB中的varchar字段最大长度为：65535。</strong> 但是，这里的65535是字节长度，如果使用<code>utf8mb4</code>编码，则显然会比这个小很多，一般utf8mb4至少占2字节。</li>
+<li>NULL标志位。标识改列是否有空字段，有用1表示，否则为0。</li>
+<li>记录头信息。主要的几个字段：deleted_flag，删除标识；record_type，记录类型，0是普通记录，1是B+树非叶子节点记录；next_record，下一个行记录。</li>
+</ul>
+<p>以上，就是InnoDB 存储引擎的存储结构。因此，我们知道一个page的大小是16K，那么如果一行记录超过了一个page，数据怎么存储呢。在InnoDB中，有一种溢出页面类型，专门用来存储那边超长的列，这些页单独放在磁盘上。因此，我们在设计数据表的时候，尽量需要保证数据长度，否则在<code>select *</code>的时候，还需要单独去溢出页面所在的磁盘位置，获取具体列的数据，成本非常大。</p>
+<h2 id="3-2-InnoDB-索引数据结构"><a href="#3-2-InnoDB-索引数据结构" class="headerlink" title="3.2 InnoDB 索引数据结构"></a>3.2 InnoDB 索引数据结构</h2><p>众所周知，MySQL InnoDB 使用 B+树结构存储数据和索引。数据本质上也是索引，称为聚集索引，索引键为主键id，然后将行记录的数据带上。非聚集索引，也就是常说的，辅助索引，索引键带的数据是id，查询的时候，先找到id，然后通过id，找到对应的行数据。</p>
+<p>首先，给出B+树的数据结构图，然后我们再来说，使用B+树作为索引数据结构的优势。</p>
+<p><img src="/images/2021/20211107213124.png" alt="B+树 结构"></p>
+<p>以上就是B+树的数据结构图（来自<a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/B%2B_tree">维基百科</a>）。B+树的特点，就是非叶子节点存索引数据，不存具体数据，就是图中的d1，d2等；另一个特点，就是各个叶子节点通过指针进行连接，因此可以从头部往后遍历。</p>
+<h3 id="3-2-1-B-树的优势"><a href="#3-2-1-B-树的优势" class="headerlink" title="3.2.1 B+树的优势"></a>3.2.1 B+树的优势</h3><p>我们在做方案设计和技术选型的时候，最大的一点就是基于需求和场景思考，不存在一个万能的技术方案。因此，对于为啥InnoDB采用B+树数据结构作为最终的方案，需要首先来分析数据库的需求和场景。</p>
+<p>数据库的最基础最核心的功能，就是数据的持久化和数据的查询。数据的持久化，就是数据需要存储在磁盘设备上；因此，数据的查询，就是需要从磁盘设备上将数据读取出来，进行数据过滤加工等处理后，返回给客户端。此外，数据持久化和查询的业务，一般都是在线业务，需要做到实时返回。</p>
+<p>总结下来，对数据库的需求就是，需要支持实时响应客户端的数据磁盘存储，以及有条件的数据查询。那么，技术选型，就是在上面的需求背景下，如果选择一个可以提供更高性能的数据结构。</p>
+<p>可以选的数据结构虽然很多，比如hash结构，各种二叉树结构，B树结构，B+树结构 等等。B+树如何在种种数据结构中胜出？</p>
+<ul>
+<li>首先看各种二叉树。首先从数据的查询而言，二叉树是2分支，B/B+树是N分支，显然B/B+树的查询效率，高于二叉树。对于B/B+树，每个节点块内部二分查找。</li>
+<li>然后再来看hash结构。虽然说，hash结构的查询复杂度是O(1)，但是对于范围查询而言，就无法适用。但是range查询，在日常数据库查询中是非常常见的，所以通常场景下不会考虑hash结构。</li>
+<li>最后看看B树结构。B树和B+树的区别，是B树的数据存储在各个节点中，而不仅仅只有叶子节点有；此外，B树的叶子节点间没有指针连接。叶子节点没有指针连接，范围查询非常不便，此外树上所有节点都有数据，会导致各种数据局部性很差。</li>
+</ul>
+<p>基于以上，发现B+才是最适合通用业务场景下的数据结构选型。</p>
+<h3 id="3-2-2-聚集索引特别说明"><a href="#3-2-2-聚集索引特别说明" class="headerlink" title="3.2.2 聚集索引特别说明"></a>3.2.2 聚集索引特别说明</h3><p>从B+树的数据结构来设计 InnoDB 存储数据结构。InnoDB是操作磁盘，结合InnoDB存储结构，最终的InnoDB数据结构实现中，所有B+树的非叶子节点，使用索引页；而最下面的叶子节点，使用数据页。页大小为16K，数据页最后一个记录next_record指针，指向下一页的第一个记录。</p>
+<p>B+树插入数据的过程中，会有一个现象称为<code>分裂</code>，因为B+树每个节点能存放的数据量是有限制的，超过了就需要分裂，小于某个值就需要合并。映射到InnoDB实现上，就称之为<code>页分裂</code>。由于我们说每个节点是存在数据量的大小范围的，因为分裂创建新节点之后，还需要copy一部分数据到新的节点，这种操作其实很消耗性能。</p>
+<p>所以，这就是为什么我们说，在业务表设计中，没有特殊诉求下，尽量使用自增主键id作为聚集索引。由于id是自增的，后插入的肯定在先插入数据的后面，所以不会涉及页分裂，因此就不会有数据的copy操作，性能上会最优。</p>
+<p><strong>一颗聚集索引B+树可以放多少行数据？</strong></p>
+<p>这里我们先假设B+树高为2，即存在一个根节点和若干个叶子节点，那么这棵B+树的存放总记录数为：根节点指针数 * 单个叶子节点记录行数。假设一行记录的数据大小为1k，那么单个叶子节点（页）中的记录数=16K/1K=16。</p>
+<p>那么现在我们需要计算出非叶子节点能存放多少指针，我们假设主键ID为bigint类型，长度为8字节，而指针大小在InnoDB源码中设置为6字节，这样一共 <code>14</code>字节，我们一个页中能存放多少这样的索引单元，其实就代表有多少指针，即16kb/14b=1170。那么可以算出一棵高度为2的B+树，大概能存放1170 * 16=18720条这样的数据记录。</p>
+<p>根据同样的原理我们可以算出一个高度为3的B+树大概可以存放：1170 * 1170 * 16=21902400行数据。所以在InnoDB中B+树高度一般为1-3层，它就能满足千万级的数据存储。在查找数据时一次页的查找代表一次IO，所以通过主键索引查询通常只需要1-3次逻辑IO操作即可查找到数据。</p>
+<h2 id="3-3-InnoDB-存储引擎的查询流程"><a href="#3-3-InnoDB-存储引擎的查询流程" class="headerlink" title="3.3 InnoDB 存储引擎的查询流程"></a>3.3 InnoDB 存储引擎的查询流程</h2><p>之前我们介绍过，<code>MySQL Server</code>内部的执行器在收到客户端的select 请求之后，是会调用 存储引擎的接口，获取最终数据的。</p>
+<p>我们说过，InnoDB内部使用的数B+树数据结构，并且B+树的叶子节点间保持一个双向链表。</p>
+<p>首先，在<code>MySQL Server</code>中经过分析器、优化器之后，已经有了一份执行计划，这份执行计划会告知需要使用哪个索引进行数据查询。</p>
+<p>接下来，从磁盘将对应索引的根节点Page读入内存中。然后按照标准的B+树查询方式进行数据查询。通过前面介绍知道，这里查询到的，只是数据所在的叶子节点的页表。</p>
+<p>接着，我们获取到数据页到内存之后，一般而言，由于页中的记录，是通过指针进行关联的，只能通过遍历来查找。为此，上面介绍 <code>InnoDB Page</code>结构的时候，里面的页目录(<code>Page Directory</code>)就有了用场。通过对页目录使用二分查找就可以定位出记录的大概位置，然后通过这个位置一个个遍历过去。</p>
+<p>最终，我们拿到了叶子节点的数据。此时，如果是聚集索引，就可以直接拿到最终记录数据返回；否则，则需要通过主键id，去聚集索引再回表查询一次。</p>
+<blockquote>
+<p>一般的，很多时候我们查询的数据，并不是最终客户端需要的数据，因为 MySQL Server 提供的执行计划使用的某个索引只能过滤掉一部分数据，这个时候就会把剩余的全量数据返回，然后由 MySQL Server 在内存中按照查询条件进行再一次的过滤，最后才返回给客户端。</p>
+</blockquote>
+<h2 id="3-4-覆盖索引"><a href="#3-4-覆盖索引" class="headerlink" title="3.4 覆盖索引"></a>3.4 覆盖索引</h2><p>在上面介绍辅助索引查询完成之后，还需要回聚集索引表再查下一次数据，这个成本也是非常高昂的，这个时候，就需要考虑看能不能进行一些优化。</p>
+<p>于是，基于一些特定查询场景，就有了优化方案：覆盖索引。</p>
+<p><strong>覆盖索引是指在普通索引树中可以得到查询的结果，不需要在回到主键索引树中再次搜索</strong>。</p>
+<p>覆盖索引，日常使用最多的时候，可能就是count(id)的时候，where命中索引，count 记录数，完全不需要回标。在业务过程中，一般不追求更极致性能情况下，很多时候，还是使用<code>select 全量字段</code>返回，便于sql复用。</p>
+<h2 id="3-5-索引下推ICP"><a href="#3-5-索引下推ICP" class="headerlink" title="3.5 索引下推ICP"></a>3.5 索引下推ICP</h2><p>在介绍ICP之前，先说一下InnoDB索引中众所周知的<code>最左前缀匹配</code>。所谓最左前缀，就是说我们查询数据的时候，where条件，和 联合索引的字段顺序，需要满足从左到右的顺序，也就是如果第一个字段没有where限制，而只有第二个字段有，则是不满足最左前缀，不能通过索引优化查询效率；此外，对于当个字段的字符串，如果使用like查询，也是按照最左前缀原则进行。</p>
+<p>此外，按照最左前缀，如果第一个字段使用的是范围查询，那么第二个字段无法使用上索引的过滤，按照MySQL 以往的规则，需要在Server中进行过滤。</p>
+<p>但是，如果使用了索引下推技术，则可以避免这些数据，回到Server中，进行内存过滤，尤其是当数据量大的时候，则会严重损害性能，并且占用内存。</p>
+<p>此外，需要说明ICP只适合，命中联合索引的 范围查询，非唯一的等值查询等。</p>
+<p>一般，我们通过<code>explain</code>查看执行计划的时候，可以看到extra中<code>Using index condition</code>信息，这个就是执行了索引下推。但是，并不代表最终执行了索引下推动作，比如， <a target="_blank" rel="noopener" href="https://segmentfault.com/a/1190000040592410">索引下推，这个点你肯定不知道</a>中介绍的一个表两个索引下，由于查询不可能同时走两个索引，所以也就不可能会有 ICP的出现，但是在<code>explain</code>的时候，还是发现了<code>Using index condition</code>。</p>
+<h1 id="四、MySQL-Server查询优化支持"><a href="#四、MySQL-Server查询优化支持" class="headerlink" title="四、MySQL Server查询优化支持"></a>四、MySQL Server查询优化支持</h1><h2 id="4-1-索引合并优化"><a href="#4-1-索引合并优化" class="headerlink" title="4.1 索引合并优化"></a>4.1 索引合并优化</h2><p>索引合并优化，其实蛮少见的，虽然其在MySQL 5.0就已经提供了。当我们只想<code>explain</code>查询执行计划的时候，type类型为<code>index_merge</code>时，就表明本次查询使用了索引合并优化。</p>
+<p>所谓的 索引合并优化，通常是将多个索引字段的范围扫描合并为一个。包括单表中多个索引的交集，并集以及交集之间的并集，但不包括跨多张表和全文索引。</p>
+<p>该优化特性主要应用于以下三种场景：  </p>
+<ol>
+<li> 对 OR 语句求并集，例如，查询 <code>SELECT * FROM TB1 WHERE c1=&quot;xxx&quot; OR c2=&quot;&quot;xxx&quot;</code>时，如果<code>c1</code>和<code>c2</code>列上分别有索引，可以按照<code>c1</code>和<code>c2</code>条件进行查询，再将查询结果合并<code>union</code>操作，得到最终结果 。</li>
+<li>对 AND 语句求交集，例如，查询<code>SELECT * FROM TB1 WHERE c1=&quot;xxx&quot; AND c2=&quot;&quot;xxx&quot;</code>时，如果<code>c1</code>和<code>c2</code>列上分别有索引，可以按照<code>c1</code>和<code>c2</code>条件进行查询，再将查询结果取交集<code>join</code>操作，得到最终结果 。 </li>
+<li>对 AND 和 OR 组合语句求结果。</li>
+</ol>
+<p>  该优化不一定会发生，MySQL会根据优化后的效率是否更优来决定优化器是否进行优化。同样，由于MySQL统计信息和预测效果并不好，导致优化后的效率非常差，最终导致严重的线上故障，因此，很多公司直接把这个优化给关闭。</p>
+<p>  关于索引合并优化，可以参考：<a target="_blank" rel="noopener" href="https://www.jianshu.com/p/67b39af2f851">索引合并优化(Index merge optimization)</a></p>
+<h1 id="五、结尾"><a href="#五、结尾" class="headerlink" title="五、结尾"></a>五、结尾</h1><p>本文主要介绍基于InnoDB存储引擎的MySQL查询工作原理。在实际工作中，数据库查询在业务开发过程中处于一个非常重要的地位，因此，对于数据库的查询底层工作原理的了解，可以有助于我们更好的设计查询方案，利用InnoDB索引的特点和优化，来得到最高效率的查询响应。</p>
+<p>由于，MySQL 处理查询SQL的时候，优化器的分析和最终索引选择，会直接导致查询效率，因此，在实际开发中，当出现和预期不一致的查询效率问题时，需要使用<code>explain</code>工具来协助定位。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>柯小小西
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://ketao1989.github.io/2021/11/08/2021-11-08-mysql-innodb-design-for-query-part/" title="MySQL InnoDB 查询部分核心设计和原理">https://ketao1989.github.io/2021/11/08/2021-11-08-mysql-innodb-design-for-query-part/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/10/31/2021-10-31-redis-arch-design-and-implement-analyse/" rel="prev" title="redis的三高架构设计实现分析">
+      <i class="fa fa-chevron-left"></i> redis的三高架构设计实现分析
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80%E3%80%81MySQL-amp-InnoDB-%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84"><span class="nav-number">1.</span> <span class="nav-text">一、MySQL &amp; InnoDB 总体架构</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-1-%E5%8F%AF%E6%8F%92%E6%8B%94%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%B1%82"><span class="nav-number">1.1.</span> <span class="nav-text">1.1 可插拔存储引擎层</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1-2-InnoDB-%E5%BC%95%E6%93%8E%E6%9E%B6%E6%9E%84"><span class="nav-number">1.2.</span> <span class="nav-text">1.2 InnoDB 引擎架构</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E6%95%B0%E6%8D%AE%E6%9F%A5%E8%AF%A2%E4%B8%BB%E6%B5%81%E7%A8%8B"><span class="nav-number">2.</span> <span class="nav-text">二、数据查询主流程</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%89%E3%80%81InnoDB%E5%BC%95%E6%93%8E%E6%9F%A5%E8%AF%A2%E6%94%AF%E6%8C%81"><span class="nav-number">3.</span> <span class="nav-text">三、InnoDB引擎查询支持</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#3-1-InnoDB-%E5%AD%98%E5%82%A8%E7%BB%93%E6%9E%84"><span class="nav-number">3.1.</span> <span class="nav-text">3.1 InnoDB 存储结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-2-InnoDB-%E7%B4%A2%E5%BC%95%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">3.2.</span> <span class="nav-text">3.2 InnoDB 索引数据结构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-1-B-%E6%A0%91%E7%9A%84%E4%BC%98%E5%8A%BF"><span class="nav-number">3.2.1.</span> <span class="nav-text">3.2.1 B+树的优势</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-2-%E8%81%9A%E9%9B%86%E7%B4%A2%E5%BC%95%E7%89%B9%E5%88%AB%E8%AF%B4%E6%98%8E"><span class="nav-number">3.2.2.</span> <span class="nav-text">3.2.2 聚集索引特别说明</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-3-InnoDB-%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E7%9A%84%E6%9F%A5%E8%AF%A2%E6%B5%81%E7%A8%8B"><span class="nav-number">3.3.</span> <span class="nav-text">3.3 InnoDB 存储引擎的查询流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-4-%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95"><span class="nav-number">3.4.</span> <span class="nav-text">3.4 覆盖索引</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-5-%E7%B4%A2%E5%BC%95%E4%B8%8B%E6%8E%A8ICP"><span class="nav-number">3.5.</span> <span class="nav-text">3.5 索引下推ICP</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9B%9B%E3%80%81MySQL-Server%E6%9F%A5%E8%AF%A2%E4%BC%98%E5%8C%96%E6%94%AF%E6%8C%81"><span class="nav-number">4.</span> <span class="nav-text">四、MySQL Server查询优化支持</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#4-1-%E7%B4%A2%E5%BC%95%E5%90%88%E5%B9%B6%E4%BC%98%E5%8C%96"><span class="nav-number">4.1.</span> <span class="nav-text">4.1 索引合并优化</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E7%BB%93%E5%B0%BE"><span class="nav-number">5.</span> <span class="nav-text">五、结尾</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="柯小小西"
+      src="/images/ava.gif">
+  <p class="site-author-name" itemprop="name">柯小小西</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">55</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">59</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-CN" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">柯小小西</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">534k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">8:06</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="//cdn.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js"></script>
+<script src="//cdn.jsdelivr.net/npm/instantsearch.js@4/dist/instantsearch.production.min.js"></script>
+<script src="/js/algolia-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'JHHXvxc1poIUYczSRlzKC3hQ-MdYXbMMI',
+      appKey     : 'yV8QHmFeQEBNceFuU9tKH3cl',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : true,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
