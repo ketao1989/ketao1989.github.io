@@ -22,13 +22,13 @@
 
   <meta property="og:type" content="website">
 <meta property="og:title" content="没有期望的分布">
-<meta property="og:url" content="https://ketao1989.github.io/categories/Mysql/index.html">
+<meta property="og:url" content="https://ketao1989.github.io/categories/mysql/index.html">
 <meta property="og:site_name" content="没有期望的分布">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:author" content="柯小小西">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="https://ketao1989.github.io/categories/Mysql/">
+<link rel="canonical" href="https://ketao1989.github.io/categories/mysql/">
 
 
 <script id="page-configurations">
@@ -41,7 +41,7 @@
   };
 </script>
 
-  <title>分类: Mysql | 没有期望的分布</title>
+  <title>分类: mysql | 没有期望的分布</title>
   
 
 
@@ -185,14 +185,14 @@
   <div class="post-block">
     <div class="posts-collapse">
       <div class="collection-title">
-        <h2 class="collection-header">Mysql
+        <h2 class="collection-header">mysql
           <small>分类</small>
         </h2>
       </div>
 
       
     <div class="collection-year">
-      <span class="collection-header">2014</span>
+      <span class="collection-header">2021</span>
     </div>
 
   <article itemscope itemtype="http://schema.org/Article">
@@ -200,35 +200,15 @@
 
       <div class="post-meta">
         <time itemprop="dateCreated"
-              datetime="2014-10-09T22:21:35+08:00"
-              content="2014-10-09">
-          10-09
+              datetime="2021-11-08T22:07:00+08:00"
+              content="2021-11-08">
+          11-08
         </time>
       </div>
 
       <div class="post-title">
-          <a class="post-title-link" href="/2014/10/09/2014-10-09-Mysql-Delete-Insert-Deadlock-Analyse/" itemprop="url">
-            <span itemprop="name">线上Mysql Delete 和 Insert 操作导致死锁问题分析</span>
-          </a>
-      </div>
-
-    </header>
-  </article>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <div class="post-meta">
-        <time itemprop="dateCreated"
-              datetime="2014-05-28T22:21:35+08:00"
-              content="2014-05-28">
-          05-28
-        </time>
-      </div>
-
-      <div class="post-title">
-          <a class="post-title-link" href="/2014/05/28/2014-05-28-Online-Mysql-Deadlock-Analyse/" itemprop="url">
-            <span itemprop="name">线上Mysql死锁问题分析</span>
+          <a class="post-title-link" href="/2021/11/08/2021-11-08-mysql-innodb-design-for-query-part/" itemprop="url">
+            <span itemprop="name">MySQL InnoDB 查询部分核心设计和原理</span>
           </a>
       </div>
 
@@ -308,14 +288,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">55</span>
+          <span class="site-state-item-count">56</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">59</span>
+        <span class="site-state-item-count">61</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
   </nav>
@@ -354,12 +334,12 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">534k</span>
+    <span title="站点总字数">548k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">8:06</span>
+    <span title="站点阅读时长">8:18</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
   </div>
@@ -429,6 +409,31 @@ NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
     var GUEST = ['nick', 'mail', 'link'];
     var guest = 'nick,mail,link';
     guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'JHHXvxc1poIUYczSRlzKC3hQ-MdYXbMMI',
+      appKey     : 'yV8QHmFeQEBNceFuU9tKH3cl',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : true,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
+em => {
       return GUEST.includes(item);
     });
     new Valine({

@@ -182,6 +182,132 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2015/04/29/2015-04-29-LogBack-Implemention-And-Slf4j-Mdc/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ava.gif">
+      <meta itemprop="name" content="柯小小西">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="没有期望的分布">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/04/29/2015-04-29-LogBack-Implemention-And-Slf4j-Mdc/" class="post-title-link" itemprop="url">Slf4j MDC 使用和 基于 Logback 的实现分析</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2015-04-29 22:21:35" itemprop="dateCreated datePublished" datetime="2015-04-29T22:21:35+08:00">2015-04-29</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-05-17 22:57:11" itemprop="dateModified" datetime="2021-05-17T22:57:11+08:00">2021-05-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Log/" itemprop="url" rel="index"><span itemprop="name">Log</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Log/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2015/04/29/2015-04-29-LogBack-Implemention-And-Slf4j-Mdc/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2015/04/29/2015-04-29-LogBack-Implemention-And-Slf4j-Mdc/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>27k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>24 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a><a id="Intro">前言</a></h2><p>如今,在 Java 开发中，日志的打印输出是必不可少的，<code>Slf4j + LogBack</code> 的组合是最通用的方式。</p>
+<p>关于 <code>Slf4j</code> 的介绍,请参考本博客<a href="http://ketao1989.github.io/posts/Java-slf4j-Introduce.html">http://ketao1989.github.io/posts/Java-slf4j-Introduce.html</a></p>
+<p>有了日志之后，我们就可以追踪各种线上问题。但是，在分布式系统中，各种无关日志穿行其中，导致我们可能无法直接定位整个操作流程。因此，我们可能需要对一个用户的操作流程进行归类标记，比如使用<code>线程+时间戳</code>，或者用户身份标识等；如此，我们可以从大量日志信息中grep出某个用户的操作流程，或者某个时间的流转记录。</p>
+<p>因此，这就有了 <code>Slf4j MDC</code> 方法。</p>
+<h2 id="Slf4j-MDC-介绍"><a href="#Slf4j-MDC-介绍" class="headerlink" title="Slf4j MDC 介绍"></a><a id="MdcIntroduce">Slf4j MDC 介绍</a></h2><p>MDC ( Mapped Diagnostic Contexts )，顾名思义，其目的是为了便于我们诊断线上问题而出现的方法工具类。虽然，Slf4j 是用来适配其他的日志具体实现包的，但是针对 MDC功能，目前只有logback 以及 log4j 支持，或者说由于该功能的重要性，slf4j 专门为logback系列包装接口提供外部调用(玩笑～：）)。</p>
+<blockquote>
+<p>logback 和 log4j 的作者为同一人，所以这里统称logback系列。</p>
+</blockquote>
+<p>先来看看 MDC 对外提高的接口：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MDC</span> </span>&#123;</span><br><span class="line">  <span class="comment">//Put a context value as identified by key</span></span><br><span class="line">  <span class="comment">//into the current thread&#x27;s context map.</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">put</span><span class="params">(String key, String val)</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//Get the context identified by the key parameter.</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> String <span class="title">get</span><span class="params">(String key)</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//Remove the context identified by the key parameter.</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">remove</span><span class="params">(String key)</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//Clear all entries in the MDC.</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">clear</span><span class="params">()</span></span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>接口定义非常简单，此外，其使用也非常简单。</p>
+</blockquote>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2015/04/29/2015-04-29-LogBack-Implemention-And-Slf4j-Mdc/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2015/02/26/2015-02-26-Python-Tutoril-Python-Object-Oriented-Programming/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1243,134 +1369,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2014/12/20/2014-12-20-Redis-Cookbook-Chat-System/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/ava.gif">
-      <meta itemprop="name" content="柯小小西">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="没有期望的分布">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2014/12/20/2014-12-20-Redis-Cookbook-Chat-System/" class="post-title-link" itemprop="url">Redis Cookbook 之 基于Redis 实现一个聊天系统</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2014-12-20 22:21:35" itemprop="dateCreated datePublished" datetime="2014-12-20T22:21:35+08:00">2014-12-20</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-05-17 22:57:11" itemprop="dateModified" datetime="2021-05-17T22:57:11+08:00">2021-05-17</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Redis/" itemprop="url" rel="index"><span itemprop="name">Redis</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Redis/Redis-Cookbook/" itemprop="url" rel="index"><span itemprop="name">Redis Cookbook</span></a>
-                </span>
-            </span>
-
-          
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="far fa-comment"></i>
-      </span>
-      <span class="post-meta-item-text">Valine：</span>
-    
-    <a title="valine" href="/2014/12/20/2014-12-20-Redis-Cookbook-Chat-System/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2014/12/20/2014-12-20-Redis-Cookbook-Chat-System/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>4k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>4 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a><a id="Problem">问题</a></h2><p>想要借助 <code>Redis</code>的<code>PUB/SUB</code>功能，使用node.js和Socket.io实现一个轻量级的实时聊天系统。</p>
-<h2 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a><a id="Solution">解决方法</a></h2><p>由于Redis 天生就支持发布订阅(pub/sub)模式，所以我们可以很容易就使用<code>Node.js</code> 和 <code>Socket.IO</code>来快速创建一个实时的聊天系统。</p>
-<p>发布订阅模式，其实就是接收者订阅某种特定模式的消息(比如，发送到某个指定channel的消息)，而发送者发送一个消息到消息云上。当一个消息到达云上的时候，订阅了这一种类的客户端就会获得消息。这中发布订阅模式，然后就可以允许发送者和接收客户端在不知道彼此的情况下，亲密结对交流。而他们仅仅需要以一种既定的模式发送消息和接收匹配类型的消息即可。</p>
-<p><code>Redis</code>直接支持<code>pub/sub</code>模式，意味着其可以让接收客户端订阅指定的匹配消息频道channel，以及发布消息到一个给定的频道channel。这意味着，我们可以很简单地创建像<code>chat:cars</code>的聊车频道；或者像<code>chat:sausage</code>这种关于食物的谈话。此外，频道channel的命名跟Redis 的keySpace无关，所以不用担心会存在某些冲突情况。下面给出，Redis支持的一些命令：</p>
-<pre><code>    * PUBLISH：发布消息到指定的频道；
-
-    * SUBSCRIBE：订阅一个指定频道的消息；
-
-    * UNSUBSCRIBE：取消订阅一个指定频道；
-
-    * PSUBSCRIBE：订阅一个满足给定模式的频道集；
-
-    * PUNSUBSCRIBE：取消订阅满足指定模式的频道集。
-</code></pre>
-<p>拥有上面这些知识，为在应用程序逻辑部分之间的终端用户或者流消息实现一个聊天和统计系统，其实还是很琐碎的。<br><code>pub/sub</code>甚至可以被用来作为一个内建的强壮阻塞队列系统。接下来看看，如何去实现这么一个消息聊天系统吧。</p>
-<p>在服务端，<code>Node.js</code> 和 <code>Socket.IO</code>将来实现网络层，然后Redis将作为一个在客户端之间递交消息的<code>pub/sub</code>功能的实现。在客户端，我们使用jQuery来处理消息，然后发送数据到服务器上。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2014/12/20/2014-12-20-Redis-Cookbook-Chat-System/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1442,14 +1440,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">55</span>
+          <span class="site-state-item-count">56</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">59</span>
+        <span class="site-state-item-count">61</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
   </nav>
@@ -1488,12 +1486,12 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">534k</span>
+    <span title="站点总字数">548k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">8:06</span>
+    <span title="站点阅读时长">8:18</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
   </div>

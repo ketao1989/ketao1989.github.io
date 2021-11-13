@@ -892,6 +892,129 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2021/05/28/2021-05-28-unit-test-experiencce/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ava.gif">
+      <meta itemprop="name" content="柯小小西">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="没有期望的分布">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2021/05/28/2021-05-28-unit-test-experiencce/" class="post-title-link" itemprop="url">单元测试的一点思考</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-05-28 21:37:00" itemprop="dateCreated datePublished" datetime="2021-05-28T21:37:00+08:00">2021-05-28</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-11-13 22:14:10" itemprop="dateModified" datetime="2021-11-13T22:14:10+08:00">2021-11-13</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/unit-test/" itemprop="url" rel="index"><span itemprop="name">unit test</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/unit-test/stability/" itemprop="url" rel="index"><span itemprop="name">stability</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2021/05/28/2021-05-28-unit-test-experiencce/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2021/05/28/2021-05-28-unit-test-experiencce/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>13k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>12 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>按照一贯风格，首先看单元测试这个词组的定义，然后根据定义，来看怎样写好单元测试，他的通用规范是什么用的。</p>
+<h1 id="一、单元测试定义"><a href="#一、单元测试定义" class="headerlink" title="一、单元测试定义"></a>一、单元测试定义</h1><p><a target="_blank" rel="noopener" href="https://baike.baidu.com/item/%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95">百度百科</a>官方定义：</p>
+<blockquote>
+<p>单元测试（unit testing），是指对软件中的最小可测试单元进行检查和验证。对于单元测试中单元的含义，一般来说，要根据实际情况去判定其具体含义，如C语言中单元指一个函数，Java里单元指一个类，图形化的软件中可以指一个窗口或一个菜单等。总的来说，单元就是人为规定的最小的被测功能模块。单元测试是在软件开发过程中要进行的最低级别的测试活动，软件的独立单元将在与程序的其他部分相隔离的情况下进行测试。</p>
+</blockquote>
+<p><a target="_blank" rel="noopener" href="https://zh.wikipedia.org/wiki/%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95">维基百科</a>官方定义：</p>
+<blockquote>
+<p>在计算机编程中，单元测试（英语：Unit Testing）又称为模块测试，是针对程序模块（软件设计的最小单位）来进行正确性检验的测试工作。程序单元是应用的最小可测试部件。在过程化编程中，一个单元就是单个程序、函数、过程等；对于面向对象编程，最小单元就是方法，包括基类（超类）、抽象类、或者派生类（子类）中的方法。</p>
+<p>每个理想的测试案例独立于其它案例；为测试时隔离模块，经常使用stubs、mock[1]或fake等测试马甲程序。单元测试通常由软件开发人员编写，用于确保他们所写的代码符合软件需求和遵循开发目标。它的实施方式可以是非常手动的（透过纸笔），或者是做成构建自动化的一部分。</p>
+</blockquote>
+<p> 从定义，可以很清楚知道，单元测试是针对方法写代码进行自动化测试，并且，我们在做单元测试的时候，针对的是所有单元的对外接⼝，对外⾏为（即public），⽽不是关注于⼀些内部的实现或者内部逻辑。此外，从维基定义中介绍，一个理想的测试case，是针对单个方法做测试，其依赖的其他外部方法和模块，都应该做隔离的，一般方法是使用mock。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2021/05/28/2021-05-28-unit-test-experiencce/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2020/11/26/2020-11-26-biz-monitor-experience/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1248,124 +1371,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2018/01/15/2018-01-15-design-principle-intro/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/ava.gif">
-      <meta itemprop="name" content="柯小小西">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="没有期望的分布">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2018/01/15/2018-01-15-design-principle-intro/" class="post-title-link" itemprop="url">设计原则讨论123</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2018-01-15 01:45:00" itemprop="dateCreated datePublished" datetime="2018-01-15T01:45:00+08:00">2018-01-15</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-05-17 22:57:11" itemprop="dateModified" datetime="2021-05-17T22:57:11+08:00">2021-05-17</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/java/design/" itemprop="url" rel="index"><span itemprop="name">design</span></a>
-                </span>
-            </span>
-
-          
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="far fa-comment"></i>
-      </span>
-      <span class="post-meta-item-text">Valine：</span>
-    
-    <a title="valine" href="/2018/01/15/2018-01-15-design-principle-intro/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2018/01/15/2018-01-15-design-principle-intro/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>5.2k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>5 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <blockquote>
-<p>本设计原则，基于dubbo.io页面上整理而来。原文地址：<a target="_blank" rel="noopener" href="http://dubbo.io/books/dubbo-dev-book/principals/introduction.html">http://dubbo.io/books/dubbo-dev-book/principals/introduction.html</a></p>
-</blockquote>
-<h2 id="1-代码基本要求"><a href="#1-代码基本要求" class="headerlink" title="1.代码基本要求"></a>1.代码基本要求</h2><h3 id="1-1-避免NPE和越界异常"><a href="#1-1-避免NPE和越界异常" class="headerlink" title="1.1 避免NPE和越界异常"></a>1.1 避免NPE和越界异常</h3><p>在java中，虽然可能出现各种异常，甚至我们使用异常来驱动非法业务逻辑执行流程，但是如果在执行过程中出现 空指针异常和越界异常，是非常不允许的。这说明代码不够健壮，开发同学意识不够严谨。推荐的做法，对数据进行判断，打印详细的错误信息，以及可能的告知上次参数不合法等。</p>
-<h3 id="1-2-尽早失败FailFast"><a href="#1-2-尽早失败FailFast" class="headerlink" title="1.2 尽早失败FailFast"></a>1.2 尽早失败FailFast</h3><p>系统设计中，有一个尽早失败说法，表示，比如我们请求失败了，不进行重试，直接返回错误。代码中，也存在尽早失败的原则。比如，一个不合法的参数值或者记录状态，在请求的时候，应该进行参数检查，然后报错。在，开发过程中，有些同学，喜欢在使用参数的时候，才进行判断和错误处理，这样会导致耗费不必要的执行时间，甚至导致需要回滚之前的操作。</p>
-<p>一般情况下，大家基本上会进行所有参数的前置校验；但是存在，一个请求，需要查询数据库判断是否状态合法时，可能有的时候，为了避免查表耗时，从而到用的时候才进行校验的情况。在正常业务下，为了这一点的RT提升，而可能让后续逻辑变得复杂，不太推荐。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2018/01/15/2018-01-15-design-principle-intro/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1437,14 +1442,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">55</span>
+          <span class="site-state-item-count">56</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">59</span>
+        <span class="site-state-item-count">61</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
   </nav>
@@ -1483,12 +1488,12 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">534k</span>
+    <span title="站点总字数">548k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">8:06</span>
+    <span title="站点阅读时长">8:18</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
   </div>
