@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"ketao1989.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"valine","storage":true,"lazyload":false,"nav":null,"activeClass":"valine"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="上文， MySQL InnoDB 查询部分核心设计和原理主要从数据查询部分简单介绍MySQL InnoDB引擎的设计和优化。另外，关于数据库同样非常核心的部分，就是关于数据写入的设计和实现。本文，将从数据变更写入角度，来看看MySQL InnoDB引擎的设计。  一、前言和redis内存数据库不同，MySQL是典型的关系型数据管理系统，一个数据的写入完成，需要保证持久化到硬盘上方可。 对于一些需">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL InnoDB 事务部分核心设计和原理">
+<meta property="og:url" content="https://ketao1989.github.io/2021/11/22/2021-11-22-mysql-innodb-design-for-write-part/index.html">
+<meta property="og:site_name" content="没有期望的分布">
+<meta property="og:description" content="上文， MySQL InnoDB 查询部分核心设计和原理主要从数据查询部分简单介绍MySQL InnoDB引擎的设计和优化。另外，关于数据库同样非常核心的部分，就是关于数据写入的设计和实现。本文，将从数据变更写入角度，来看看MySQL InnoDB引擎的设计。  一、前言和redis内存数据库不同，MySQL是典型的关系型数据管理系统，一个数据的写入完成，需要保证持久化到硬盘上方可。 对于一些需">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://ketao1989.github.io/images/2021/20211107154024.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2021/mysql/20211114204915.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2021/mysql/20211114210256.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2021/mysql/20211114222033.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2021/mysql/20211114233743.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2021/mysql/20211114231241.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2021/mysql/20211120230532.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2021/mysql/20211120230959.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2021/mysql/20211120232707.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2021/mysql/20211121125008.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2021/mysql/20211121114935.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2021/mysql/20211121222628.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2021/mysql/20211121233557.png">
+<meta property="og:image" content="https://ketao1989.github.io/images/2021/mysql/20211122000627.png">
+<meta property="article:published_time" content="2021-11-21T16:39:00.000Z">
+<meta property="article:modified_time" content="2021-11-21T16:55:38.446Z">
+<meta property="article:author" content="柯小小西">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://ketao1989.github.io/images/2021/20211107154024.png">
+
+<link rel="canonical" href="https://ketao1989.github.io/2021/11/22/2021-11-22-mysql-innodb-design-for-write-part/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>MySQL InnoDB 事务部分核心设计和原理 | 没有期望的分布</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">没有期望的分布</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">柯小西-技术博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container"></div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="algolia-results">
+  <div id="algolia-stats"></div>
+  <div id="algolia-hits"></div>
+  <div id="algolia-pagination" class="algolia-pagination"></div>
+</div>
+
+      
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://ketao1989.github.io/2021/11/22/2021-11-22-mysql-innodb-design-for-write-part/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ava.gif">
+      <meta itemprop="name" content="柯小小西">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="没有期望的分布">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          MySQL InnoDB 事务部分核心设计和原理
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2021-11-22 00:39:00 / 修改时间：00:55:38" itemprop="dateCreated datePublished" datetime="2021-11-22T00:39:00+08:00">2021-11-22</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/mysql/" itemprop="url" rel="index"><span itemprop="name">mysql</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/mysql/innodb/" itemprop="url" rel="index"><span itemprop="name">innodb</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/mysql/innodb/%E6%9E%B6%E6%9E%84/" itemprop="url" rel="index"><span itemprop="name">架构</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2021/11/22/2021-11-22-mysql-innodb-design-for-write-part/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2021/11/22/2021-11-22-mysql-innodb-design-for-write-part/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>18k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>17 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>上文，<a href="https://ketao1989.github.io/2021/11/08/2021-11-08-mysql-innodb-design-for-query-part/"> MySQL InnoDB 查询部分核心设计和原理</a>主要从数据查询部分简单介绍<code>MySQL InnoDB</code>引擎的设计和优化。另外，关于数据库同样非常核心的部分，就是关于数据写入的设计和实现。<br>本文，将从数据变更写入角度，来看看<code>MySQL InnoDB</code>引擎的设计。</p>
+</blockquote>
+<h1 id="一、前言"><a href="#一、前言" class="headerlink" title="一、前言"></a>一、前言</h1><p>和redis内存数据库不同，MySQL是典型的关系型数据管理系统，一个数据的写入完成，需要保证持久化到硬盘上方可。</p>
+<p>对于一些需要写入数据到磁盘文件的应用程序而已，其需要考虑各个方面的安全问题：</p>
+<ol>
+<li>如果在执行写指令的时候，数据库程序出现故障时，如何处理，保证数据正确性；</li>
+<li>多个客户端同时执行操作某个数据，导致冲突的时候，如何保证数据正确性；</li>
+<li>数据正在写入的时候，如果有查询该数据的请求过来，如何保证查询数据的正确性；</li>
+<li>此外，客户端本身在多并发情况下，数据查询后处理完再写入时，如何保证数据的最终正确性；</li>
+<li>等等。</li>
+</ol>
+<p>此外，还需要保证数据处理的高性能。我们知道简单的随机写磁盘文件，首先性能上就会非常糟糕，这对于提供最核心的数据读写的基础设施而言，是非常致命的问题。</p>
+<p>因此，我们需要好好研究MySQL InnoDB 存储引擎的设计方案。</p>
+<span id="more"></span>
+<h2 id="1-1-数据写入流程"><a href="#1-1-数据写入流程" class="headerlink" title="1.1 数据写入流程"></a>1.1 数据写入流程</h2><p>数据写入流程，和数据查询流程，在核心组件上的流程基本类似。我们可以从MySQL架构图上简单分析下：</p>
+<p><img src="/images/2021/20211107154024.png" alt="MySQL架构图"></p>
+<p>当有一个<code>update</code>查询请求过来，执行流程如下：</p>
+<ol>
+<li>建立client-server连接。TCP连接，通过三次握手协议建立。由于我们数据库都需要权限限制，因此，建立TCP连接请求之后，会进行权限验证，也就是确认用户名密码，验证完成之后，通过用户名，可以知道本次连接对应的用户权限，然后将用户权限信息缓存起来，后面的SQL操作的前置权限验证，就直接通过缓存来比较。额外说下，建立client-server连接，会提供给后面SQL复用，一般我们会对一个连接做超时时间限制，如果这个连接在指定的超时时间内没有请求过来，才会关闭连接。<code>show processlist</code> 可以看到连接的持续时间。</li>
+<li>分析SQL请求。MySQL Server 会对SQL进行词法分析、语法分析，验证SQL的合法性，然后就有了一个分析后的 SQL语法树。</li>
+<li>有了分析后的语法树，MySQL 会进行优化工作。例如，评估执行计划，选择合适的索引；通过提前计算，优化where子句 等等；</li>
+<li>经过优化器后，我们可以最终产生执行计划。在执行之前，做一次表操作权限的验证，然后调用具体的<code>存储引擎</code>来执行IO变更。</li>
+</ol>
+<p>和 数据查询流程一致，核心逻辑都在存储引擎来实现。因此，本文的重点，在 <code>MySQL InnoDB存储引擎</code>的设计实现分析。</p>
+<h2 id="1-2-引入事务概念"><a href="#1-2-引入事务概念" class="headerlink" title="1.2 引入事务概念"></a>1.2 引入事务概念</h2><p>数据库的操作，包括单个读写记录和多个读写操作组合一起的写，都一般统称为事务。如果只是读的，成为只读事务。这里，我们讲事务，指的是<code>读写事务</code>。我们首先看，百度百科关于事务的定义：<br><a target="_blank" rel="noopener" href="https://baike.baidu.com/item/%E4%BA%8B%E5%8A%A1/5945882">事务（Transaction）</a>，一般是指要做的或所做的事情。在计算机中是指访问并可能更新数据库中各种数据项的一个程序执行单元(unit)。</p>
+<p>需要提出的是，狭义上讲，一般我们认为如果不支持多个读写操作组成的整体单元，则说这个数据库不支持事务。</p>
+<p>事务的概念，在计算机领域，其实很简单，就是将一组操作作为一个执行整体，要么都做了，要么都没做，对外不存在中间的状态。但是，对于多并发的场景而言，实现起来，并不是很简单。</p>
+<p>一般，关系数据库支持事务处理，需要支持事务要求的安全保证。这就是，众所周知的ACID。</p>
+<h2 id="1-3-ACID-简介"><a href="#1-3-ACID-简介" class="headerlink" title="1.3 ACID 简介"></a>1.3 ACID 简介</h2><p>ACID 是Atomicity、Consistency、Isolation、Durability 4个单词缩写。</p>
+<p>原子性：原子是指不可分解为更小粒度的东西。当客户端发起一个包含多个写操作请求的时候，这多个写操作作为一个原子事务，要么成功，要么全部失败。对于InnoDB而言，当客户端收到 server端事务提交commit成功消息，则这个事务成功，所有写操作都执行完成；当server端事务回归rollback成功消息，则这个事务所有操作都会被回滚，就像从来没有被执行一样。</p>
+<p>一致性：一致性主要是指对数据有特定的预期状态，任何数据更改必须满足这些状态的约束。例如，账户的贷款余额和借款余额应该保持平衡。一般而言，这种一致性的约束，应该由应用层来维护和保证。所以，ACID的一致性，通常指的是，应用层系统通过数据库提供的原子性，隔离性，持久性三个最基本的特性，来保证业务状态的一致性。</p>
+<p>隔离性：前面说过，当多个客户端操作同一个数据导致冲突下，需要保证数据结果的正确性，这就是ACID的隔离性来保证的。隔离性，指的是多个事务可以同时对数据进行修改，但是相互不影响。在InnoDB中，提供了4中不同程度的隔离级别，默认为RR可重复读隔离级别。</p>
+<p>持久性：就是事务commit成功的数据应该保存起来，不会被丢失，即使硬件故障或者数据库系统崩溃。数据库系统本质上，就是提供一个安全的地方来存储数据，持久性就是提供这个最基础保障的特性。</p>
+<h1 id="二、InnoDB-引擎处理数据写流程"><a href="#二、InnoDB-引擎处理数据写流程" class="headerlink" title="二、InnoDB 引擎处理数据写流程"></a>二、InnoDB 引擎处理数据写流程</h1><p>在上文简单介绍了 MySQL 处理一个client端 数据写操作的主要处理流程，本质上和数据查询是一致的。但是，在<code>InnoDB</code>存储引擎内部，读写请求有着非常大的不同。因此，接下来，我们看对于一个数据写操作指令，<code>InnoDB</code>存储引擎是如何处理的。</p>
+<p>这里我们将按照正常数据写入文件来分析流程，然后就逐步优化来最终引出 InnoDB 存储引擎的版本。</p>
+<h2 id="2-1-一个简单的数据写入文件流程"><a href="#2-1-一个简单的数据写入文件流程" class="headerlink" title="2.1 一个简单的数据写入文件流程"></a>2.1 一个简单的数据写入文件流程</h2><p><img src="/images/2021/mysql/20211114204915.png" alt="MySQL写入流程初版"></p>
+<p>这里假设，我们处理数据更新操作。此外，由于对于数据库而言，我们还需要同时写入索引数据，因此写入文件格式，还是按照MySQL B+树的数据结构分析。</p>
+<p>首先，我们拿到数据之后，会首先从磁盘上将需要变更的数据文件F读取到内存中，然后在内存M中操作数据变更，最终将数据写入到磁盘文件F中。整个写入操作就结束了。</p>
+<p>在以上的最简单流程中，很明显看到一个问题是，数据的复用性。每次操作，都要从磁盘中读取数据，然后又写入进去，哪怕下一个更新操作针对是同一块数据，也需要同样的磁盘IO操作，性能是很糟糕的。</p>
+<p>因此，按照正常的优化思路，我们可以增加内存池，缓存之前的数据。</p>
+<h2 id="2-2-使用buffer-pool-优化的流程"><a href="#2-2-使用buffer-pool-优化的流程" class="headerlink" title="2.2 使用buffer pool 优化的流程"></a>2.2 使用buffer pool 优化的流程</h2><p><img src="/images/2021/mysql/20211114210256.png" alt="MySQL写入流程初版+buffer pool"></p>
+<p>针对上面的内存使用和磁盘IO问题，<code>InnoDB</code>中首先新增了缓存池，期待在数据操作的时候，需要操作的数据已经在内存中，不需要去磁盘上加载数据。</p>
+<p>针对<code>buffer pool</code>主要有以下几点.</p>
+<h3 id="2-2-1-数据加载"><a href="#2-2-1-数据加载" class="headerlink" title="2.2.1 数据加载"></a>2.2.1 数据加载</h3><p>数据库在关闭之前，会将<code>buffer pool</code>内的数据存储在磁盘上，当下次重启后，直接从磁盘加载这些数据完成数据预热。</p>
+<p>此外，在需要操作数据，但是数据不在buffer内的时候，InnoDB 会将加载文件请求会放入请求队列，在处理队列加载请求的时候，会进行分析后面连续的请求是否读取的数据也是相近的，从而完成数据的预加载和合并读取。当数据加载到 buffer之后，再继续后续操作。</p>
+<h3 id="2-2-2-数据回写"><a href="#2-2-2-数据回写" class="headerlink" title="2.2.2 数据回写"></a>2.2.2 数据回写</h3><p>数据库内存空间是有限的，并且变更内容在内存中，也完成不了持久化的特性要求，因此就涉及数据回写磁盘。<code>InnoDB</code>后台会有一个线程不断的将数据回写到磁盘上。当数据第一次被修改之后变成脏页后，flush列表会将这些页按照第一次变更时间进行排序，然后按照排序，由后台刷新线程依次刷新到磁盘，实现修改落地到磁盘。</p>
+<h3 id="2-2-3-数据块淘汰"><a href="#2-2-3-数据块淘汰" class="headerlink" title="2.2.3 数据块淘汰"></a>2.2.3 数据块淘汰</h3><p>作为缓存池，就意味着工作一段时间之后，需要考虑哪些数据继续保留在buffer中，哪些需要淘汰删掉。<code>InnoDB</code>使用经典的LRU算法进行数据页淘汰，提高缓存的命中率。由于数据库查询的特殊性，例如在InnoDB存储引擎查询完成的数据，还需要再MySQL Server中再进行一次过滤，如果这些数据刷新到buffer pool内，则会导致缓存命中大幅降低。</p>
+<p>因此，<code>InnoDB的LRU算法有一点点不同：内部划分两个区，大小5/8的young缓存池，和 大小3/8的old缓存池。新操作的数据，先写入old缓存池头部，如果重复访问old缓存池的某页数据后，才会升级到young缓存池头部。</code></p>
+<p>InnoDB的LRU算法，尽量保证young缓存池的数据，高命中率；减少由于一些临时的，一两次数据读取操作的数据，将真正高复用的数据汰换掉。</p>
+<h3 id="2-2-4-数据粒度"><a href="#2-2-4-数据粒度" class="headerlink" title="2.2.4 数据粒度"></a>2.2.4 数据粒度</h3><p>对于使用缓存池来优化读写，那么就需要考虑，内存中数据块粒度，毕竟数据有局部性特性，并且操作系统的磁盘文件操作，一般是按照4K大小的页读取的。在<code>InnoDB</code>中，按照<code>16K</code>作为数据页的大小。也就是在数据读写的时候，是按照16K进行的。</p>
+<blockquote>
+<p>至于为啥是16K，其实linux系统的页大小一般是4K，也可能是8K，一般设置在16K以内。因此，为了简单，设置16K是一个可以兼容所有linux操作系统的大小。此外，由于InnoDB 使用B+树来存储数据和缓存，如果太小，则需要加大层级，最终影响检索数据的IO次数；如果太大，则可能导致内存资源的浪费，因为如果一页数据中使用的只有1K,2K的，则会浪费大量内存空间。</p>
+</blockquote>
+<h3 id="2-2-5-更进一步的优化"><a href="#2-2-5-更进一步的优化" class="headerlink" title="2.2.5 更进一步的优化"></a>2.2.5 更进一步的优化</h3><p>我们做数据变更的时候，必须将数据从磁盘加载到内存中，那么有没有哪些场景下，其实数据加载的操作，其实也可以滞后，或者省略掉。</p>
+<p>InnoDB 引入了<code>change buffer</code>。如果数据页不在内存的情况下，如果操作的是非唯一索引的二级索引数据时，则<code>InnoDB</code>会直接将<code>INSERT</code>,<code>UPDATE</code>,<code>DELETE</code>操作的数据先缓存在<code>change buffer</code>缓冲区中，而不会先从磁盘上将文件加载到buffer pool内。</p>
+<p>当存在对该数据进行读操作的时候，则会去加载磁盘数据，然后将change buffer内的数据和磁盘数据进行merge操作，写入 buffer pool中，最终返回写客户端。此外，由于<code>change buffer</code>也是在 <code>buffer pool</code>中的，所以也会有线程将这些变更数据，定时写入到磁盘文件上。</p>
+<p>此外，除了<code>change buffer</code>上的数据对应原始数据被读取从而触发<code>merge</code>之外，还会有后台线程定时操作<code>merge</code>，此外在数据库关闭的时候，也会操作<code>merge</code>。</p>
+<blockquote>
+<p>需要说明下，为啥需要强调非唯一索引。因为，针对唯一索引，写入或者更新数据时，需要判断是否已存在该索引数据，避免唯一冲突。那么，我们就必须需要去磁盘上读取一次，这样就没有必要将变更数据放入<code> change buffer</code>中了。</p>
+</blockquote>
+<h2 id="2-3-数据持久性保证"><a href="#2-3-数据持久性保证" class="headerlink" title="2.3 数据持久性保证"></a>2.3 数据持久性保证</h2><p>通过上面的 <code>buffer pool</code> 优化，让CPU尽量和内存打交道，在同步操作中避免磁盘IO操作，这样，MySQL InnoDB 的写入性能得到了非常大的提高。</p>
+<p>但是，使用<code>buffer pool</code>方案，基于内存操作，带来一个最大的问题，就是数据持久性。当我们把数据变更操作完返回成功之后，数据库硬件故障或者系统宕机，则会导致已经提交的数据丢失。如果，我们选择每一次写完内存，再去写磁盘，则性能上又回到了最初的阶段。因此，我们就需要使用到存储系统最常用的WAL技术了。<code>WAL</code>技术能够得到应用，最主要的原因，就是磁盘追加写，比随机性要快太多。</p>
+<h3 id="2-3-1-引入redo-log-设计"><a href="#2-3-1-引入redo-log-设计" class="headerlink" title="2.3.1 引入redo log 设计"></a>2.3.1 引入redo log 设计</h3><p>在InnoDB中，我们使用<code>redo log</code>来实现<code>WAL</code>技术，如下图。</p>
+<p><img src="/images/2021/mysql/20211114222033.png" alt="MySQL写入流程初版+redolog"></p>
+<p>在上图中，内存中的数据结构称之为<code>log buffer</code>，在磁盘上，就是众所周知的<code>redo log</code>。</p>
+<p>在介绍InnoDB的<code>redo log</code>实现之前，我们首先需要想想需要<code>redo log</code>具备哪些特性？</p>
+<ol>
+<li>首先，我们需要对每次操作数据，都需要进行log 写盘操作，避免事务提交但是<code>redo log</code>还未写盘的现象，因此，我们需要写的快。磁盘写盘，一个是追加写，另一个就是数据尽量小。</li>
+<li>其次，数据恢复阶段，可能会存在数据重复恢复的问题，因此<code>redo log</code>可以重复执行，支持幂等操作。</li>
+<li>最后，<code>redo log</code>是基 <code>buffer pool</code>中数据的重做日志，而<code>buffer pool</code>数据是按照页维护的，因此<code>redo log</code>也应该按照页的粒度来维护比较好，也就是一个redo记录一个页的变化，不要涉及多个页的重做数据。</li>
+</ol>
+<p>为了特性1的数据量少，一般使用<code>Logical Logging</code>来记录sql变更字段；为了特性2的幂等和特性3的page特性，则需要使用<code>Physical Logging</code>来记录最终执行后的数据。<code>Logical Logging</code> 和<code>Physical Logging</code> 又是不同的两种日志方式，因此，<code>InnoDB</code>引擎，推出一种新的logging方式，结合两种logging的特点，称为<code>Physiological Logging</code>：以Page为单位，但在Page内以<code>逻辑</code>的方式记录。例如：</p>
+<p><code>Page ID，Record Offset，(Filed 1, Value 1) … (Filed i, Value i) … )</code></p>
+<p>PageID指定要操作的Page页，Record Offset记录了Record在Page内的偏移位置，后面的Field数组，记录了需要修改的Field以及修改后的Value。</p>
+<blockquote>
+<p>需要特别说明的是，基于<code>redo log</code> 恢复是基于Page的，因此Page状态必须是正确的，如果Page数据本身不是某个时刻的正确快照，那么<code>redo log</code>是无法基于错误的页数据来进行故障恢复的。后面会介绍InnoDB使用的double write buffer机制来保证页状态的正确性。</p>
+</blockquote>
+<p>接下来，可以看看InnoDB是如何让<code>redo log</code>实现幂等的。</p>
+<p>我们知道，实现幂等无非就是每个redo log都拥有一个<code>全局唯一序列号</code>。<code>InnoDB</code>引擎也不例外，其会给每一个redo log 分配一个<strong>全局唯一递增日志序列号</strong>：<code>LSN(Log Sequence Number)</code>。页修改时，会将对应的 redo log 记录的LSN记录在Page上（FIL_PAGE_LSN字段），这样恢复重放 redo log 时，就可以来判断跳过已经应用的 redo，从而实现重放的幂等。</p>
+<blockquote>
+<p>需要注意的是，InnoDB 实现的LSN，不是全局+1递增的。首先，在全局<code>_log_sys_</code>中维护当前SN的最大值，并在每次写入数据时将<code>_sn_</code>增加redo内容长度。然后，因为最终要落盘，磁盘块大小为512B，对<code>sn</code>进行了一些转换，生成最终的LSN序列号。</p>
+</blockquote>
+<p>最后，redo log 需要保证在buffer pool对应数据落盘之前，将log数据写入磁盘。因此，从redo生成到最终落盘的完整过程成为数据库写入的关键路径，其效率也直接决定了数据库的写入性能。这个过程包括redo内容的产生，redo写入<code>InnoDB Log Buffer</code>，从<code>InnoDB Log Buffer</code>写入操作系统<code>Page Cache</code>，以及redo刷盘，之后还需要唤醒等待的用户线程完成Commit。</p>
+<p><strong>几个有意思的点：</strong></p>
+<ul>
+<li>写 log buffer。前面说过，<code>redo log</code> 、<code>undo log</code>在内存中，都是写入<code>log buffer</code>数据结构中。因为我们数据库支持并发写入，那么<code>redo log</code> 写到 <code>log buffer</code>也是并发的，这就意味着存在并发冲突的情况。在InnoDB中，当redo log 需要写入 log buffer之前，会将自己写入redo log 内容的长度告诉 log buffer，然后其原子得基于当前位置去增长，拿到一块属于该redo log 的 <code>log buffer独享空间</code>。然后就可以线程安全的copy redo log 到该内存空间中。</li>
+<li>因为上面写入log buffer，是先预留空间，然后copy数据，这样写<code>Page Cache</code>时，就存在空洞。因此，在触发写文件的时候，就需要知道写到哪里结束，如果正在copy的数据，就不应该写入page cache了。在InnoDB中，使用一个循环数组，每个数组上是一个redo log 记录的长度，按照sn顺序。通过遍历数组，利用长度信息，可以去看log buffer中对应redo log记录数据是否copy完成，找到第一个没有完成的位置，把之前所有数据写入<code>page cache</code>中。</li>
+<li>最后，看下InnoDB刷盘机制：<ul>
+<li>InnoDB 每执行一次写操作指令，都会将操作记录写入<code>log buffer</code>中，主要记录：本次操作对哪个空间下的哪个数据页做了哪些具体的修改。然后根据<code>innodb_flush_log_at_trx_commit</code>配置，选择不同的时间点将buffer数据持久化到磁盘中。<ul>
+<li>0，延迟写。事务提交时不会将 <code>log buffer</code> 中日志写入到 <code>os buffer</code> ，而是每秒写入 <code>os buffer</code> 并调用 <code>fsync()</code> 写入到 <code>redo log</code> 文件中。也就是说设置为0时，是(大约)每秒刷新写入到磁盘中的，当系统崩溃，会丢失1秒钟的数据。</li>
+<li>1，实时写，实时刷。事务每次提交都会将 <code>log buffer</code> 中的日志写入 <code>os buffer</code> 并调用 <code>fsync()</code> 刷到 <code>redo log</code>文件中。这种方式即使系统崩溃也不会丢失任何数据，但是因为每次提交都写入磁盘，IO的性能较差。</li>
+<li>2，实时写，延迟刷。每次提交都仅写入到 <code>os buffer</code> ，然后是每秒调用 <code>fsync()</code> 将 <code>os buffer</code> 中的日志写入到 <code>redo log</code>文件中。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="2-3-2-double-write-buffer"><a href="#2-3-2-double-write-buffer" class="headerlink" title="2.3.2 double write buffer"></a>2.3.2 double write buffer</h3><p><code>redo log</code>可以解决数据持久性问题，但是不是所有情况下，如果 buffer pool 写到磁盘的数据出现问题了，也就是页状态不对，那么基于<code>Page</code>重放<code>redo log</code>恢复数据的机制，也无能为力了。那么，buffer pool数据写磁盘的时候，为什么会出现数据被破坏了呢？</p>
+<p>我们前面说过，InnoDB 页的大小是16K，操作系统linux一般是4K，而操作系统文件写入，只能保证4K的页数据要么写入成功，要么写入失败；它是无法保证16K的数据，一定都写成功，或者都没有写。如果存在8K写成功，8K写失败，那么基于这种中间状态的磁盘文件数据，<code>redo log</code>是没办法恢复的，毕竟可能数据的读取解析都存在问题。</p>
+<p><img src="/images/2021/mysql/20211114233743.png" alt="MySQL写入流程初版+dw"></p>
+<p>因此，InnoDB引入了一个新的数据结构，叫做<code>double write buffer</code>。InnoDB在将buffer pool的数据写入磁盘文件事情，写将这个16K页数据写入到<code>double write buffer</code>中，如果写入成功，再将数据写入到磁盘。写入 <code>double write buffer</code>失败，并不会影响磁盘真实的数据。</p>
+<p>关于<code>double write</code>工作流程，如下图：</p>
+<p><img src="/images/2021/mysql/20211114231241.png" alt="MySQL写入流程初版+dw"></p>
+<ol>
+<li>当一系列机制触发数据缓冲池中的脏页刷新时，并不直接写入磁盘数据文件中，而是先拷贝至内存中的<code>double write buffer</code>中；</li>
+<li>接着从两次写缓冲区分两次写入磁盘共享表空间中(连续存储，顺序写，性能很高)，每次写1MB；</li>
+<li>待第二步完成后，再将<code>double write buffer</code>中的脏页数据写入实际的各个表空间文件(离散写)；(脏页数据固化后，即进行标记对应<code>double write</code>数据可覆盖)</li>
+</ol>
+<blockquote>
+<p>redo log 不需要使用<code>double write</code>方式来保障写入磁盘的可靠性，是因为 redo log 是顺序写，每次写入是512B，磁盘的最小单位，不存在部分失败，从而导致数据损坏。</p>
+</blockquote>
+<p>关于<code>double write</code>相关更细致的知识点，可以参考： <a target="_blank" rel="noopener" href="https://www.cnblogs.com/geaozhang/p/7241744.html">InnoDB关键特性之double write</a></p>
+<h2 id="2-4-数据原子性保证"><a href="#2-4-数据原子性保证" class="headerlink" title="2.4 数据原子性保证"></a>2.4 数据原子性保证</h2><p>以上，为了性能，我们使用了buffer pool内存化数据操作，从而导致数据的持久性受到影响，因此，我们引入了<code>redo log</code>和<code>double write</code>两种设计，来保证数据的完整性。</p>
+<p>数据的原子性，在数据持久性之上，还需要增加，在一个包含多个写操作的事务中，数据的整体性。也就是我们需要保证，当我们一个事务执行过程中，一部分执行成功后，后面数据写入由于条件不满足等原因导致sql语句执行失败，这个时候，如何恢复到事务执行前的状态。</p>
+<p>在InnoDB中，我们使用<code>undo log</code>来完成数据原子性保证，确保在一个数据库事务中执行一系列sql的过程中出现异常或者手动rollback的时候，数据库可以利用<code>undo log</code>数据恢复到之前的状态。因此，<code>undo log</code> 其实简单说就是历史快照日志。顺便说下，<code>redo log</code> 就是数据库即将变更的状态日志数据。</p>
+<blockquote>
+<p>** 其实实现原子性或者MVCC机制，最本质的是多版本快照，InnoDB引擎使用原地更新，历史数据<code>undo log</code>维护；而其他数据库不一定这样实现，比如在<code>pg</code>中，就没有<code>undo log</code>，而是每次更新都新拉一个版本，这样子简单，但是结果就是浪费空间。**</p>
+<p>** 不管是<code>InnoDB undo log``，还是 PostgreSQL多版本管理</code>，都不希望存储长时间的事务执行，导致历史log或者版本数据必须一直维持，因为purge线程需要根据活跃最小事务id来删除历史数据，长事务导致事务id一直不增，最终历史数据/log链表太长，检索遍历耗时会增加不少。 **</p>
+</blockquote>
+<p>接下里，看看MySQL InnoDB 引擎是如何实现<code>undo log</code>的。</p>
+<p>在<code>redo log</code>中介绍过其采用<code>Physiological Logging</code>形式来记录日志，而<code>undo log</code>则不同，其主要伴随着事务记录变更而存在，也就是其粒度是事务级别，而不应该大到<code>Page</code>级别，因此也就不能使用 <code>Physical logging</code>，此外，采用逻辑日志，还可以节省内存空间。所谓采用<code>logical logging</code>方式，就是记录对应回滚sql，而不是记录物理页面上哪个偏移位上的哪个字段值。</p>
+<p>此外，需要注意的是，在InnoDB中，<code>undo log</code>是被当做数据来维护和使用的，因此，一个记录的修改，会同时产生分别对应<code>record data</code>和<code>undo log</code> 的<code>redo log</code>。从这种角度去考虑，<code>undo log</code>称为<code>undo data</code>更合适。</p>
+<p>具体看看一个<code>undo log</code> 的单个记录内容结构：</p>
+<p><img src="/images/2021/mysql/20211120230532.png" alt="undo log 记录结构"></p>
+<p><code>undo log</code>记录主要包括两种，一种是针对新增的insert数据产生的<code>insert undo</code>记录；一种是针对update/delete 数据产生的<code>update undo</code>记录。</p>
+<p><code>insert undo</code>由于插入之前不存在这条数据，所以在记录的时候，其update字段，回滚指针字段等，都不需要。此外，在整个事务提交的时候，对应的<code>insert undo</code>记录就可以删除了（具体删除时机，InnoDB会有具体策略来执行删除动作），因为不管是MVCC或者回滚，都不需要使用insert undo 数据。</p>
+<p>因此，核心的，主要是<code>update undo</code>记录。</p>
+<p>对上图结构中的一些字段进行说明：</p>
+<ol>
+<li> <code>Transaction Id</code>记录了产生这个历史版本事务Id，用作后续MVCC中的版本可见性判断；</li>
+<li> <code>Rollptr</code>指向的是该记录的上一个版本的位置，包括space number，page number和page内的offset。沿着Rollptr可以找到一个Record的所有历史版本；</li>
+<li>   <code>Update Fields</code>中记录的就是当前这个Record版本相对于其之后的一次修改的Delta信息，包括所有被修改的Field的编号，长度和历史值。</li>
+<li>   <code>Key Fields</code>是主键字段，主键是多个字段联合构成，则这里需要多个key field 字段。</li>
+</ol>
+<p>看完单个<code>undo log record</code>记录内容结构之后，然后，来看下<code>undo log</code>整体的结构：</p>
+<p><img src="/images/2021/mysql/20211120230959.png" alt="undo log 结构"></p>
+<blockquote>
+<p>需要说明，一个事务独占一个<code>undo log</code>，因此，一个<code>undo log</code>数据里面包含的<code>undo record</code>列表，实际上是一个事务中所有数据变更记录集对应的。</p>
+</blockquote>
+<p>最后，来看下<code>undo log</code>物理存储结构 <code>undo segment</code>图：</p>
+<p><img src="/images/2021/mysql/20211120232707.png" alt="undo segment 结构"></p>
+<p>从<code>undo log</code>结构图可以看出，一个事务最终会写多少个<code>undo record</code>是不可知的，因此，最终一个<code>undo log</code>有多大也是不可知的。但是，最为<code>undo data</code>而言，还是得按照一个page 16K大小来进行管理。</p>
+<p>从<code>undo segment</code>结构图可以看出，<code>undo segment</code>是按照页进行管理的，<code>undo log</code>多个小的凑成一个页，如果是大的，则单独再去申请一个page存放。<code>undo page</code>复用，只会针对第一个page，后面都是单独去申请释放。</p>
+<blockquote>
+<p>此外，额外说明下：在【 3.1 InnoDB 存储结构】中介绍过，InnoDB表空间有一种称为回滚段的结构，这个rollback segment，其实就是 undo log segment。每个表空间，最多有128个<code>rollback segment</code>，每个segment又被划分为1024个<code>undo log slot</code>。每个<code>undo log slot</code>实际上对应的是一个<code>undo segment</code>，而一个<code>undo segment</code> 只能被一个事务，独自占有，因此，这个算来，一个数据库实例，最多可以容纳<code>128 * 1024</code>个事务同时执行。</p>
+</blockquote>
+<h2 id="2-5-写入流程"><a href="#2-5-写入流程" class="headerlink" title="2.5 写入流程"></a>2.5 写入流程</h2><p>最后，结合记录写入，以及为了确保性能，原子性、持久性，对写入进行优化动作，给出整体InnoDB 更新记录的完成流程。</p>
+<p><img src="/images/2021/mysql/20211121125008.png" alt="MySQL写入流程终版"></p>
+<p>主要写入步骤如下：</p>
+<ol>
+<li><p>假设客户端告知执行器执行update操作，开启事务，事务prepare阶段；</p>
+</li>
+<li><p>MySQL Server的执行器发送update请求给到InnoDB存储引擎，等待InnoDB执行结果；</p>
+</li>
+<li><p>InnoDB引擎接收请求，首先查询在<code>buffer pool</code>中查找是否存在该记录数据在内存中，如果不存在，则检查该记录数据操作是否包含唯一索引，如果包含，则从磁盘上将该记录对应的page页加载到<code>buffer pool</code>中，如果内存不够，还需要将某些数据淘汰出pool；</p>
+</li>
+<li><p>根据本次要操作的记录，将会变更字段的写之前的数据状态，生成<code>undo log</code>，将undo log 对应的redo log写入到log buffer，然后将undo log 写入buffer pool；</p>
+</li>
+<li><p>判断数据是否使用<code>change buffer</code>，是，会生成针对<code>change buffer</code>的redo log，写入 log buffer中，然后直接将操作变更记录放入<code>change buffer</code>中；如果不是，则生成对应的<code>redo log</code>，写入log buffer中，然后更新<code>buffer pool</code>内的数据；</p>
+</li>
+<li><p>客户端事务prepare阶段执行完成，根据客户端要求，执行rollback或者commit操作。如果是rollback，则按照<code>undo log</code>进行回滚操作；如果是commit，则需要使用<code>redo log</code>来完成持久化。<code>Mysql Server</code> 的commit实现，使用了<code>二阶段提交</code>。</p>
+</li>
+<li><p>Mysql Server 首先对InnoDB引擎发送<code>prepare</code>请求，InnoDB会把该事务对应的redo log 数据，设置为<code>TRX_PREPARED</code>状态，然后写入磁盘，返回结果给 server；</p>
+</li>
+<li><p>然后，<code>Mysql Server</code> 执行器生成 服务层面的 binlog 数据，将其写入二进制文件中，使用<code>fsync</code>异步刷盘，调用完成之后，返回结果给 server；</p>
+</li>
+<li><p><code>Mysql Server</code>到此事务实际上提交完成，接下来，让InnoDB引擎执行commit操作，将redo log 数据状态设置为commit，写入磁盘；</p>
+</li>
+<li><p>执行commit操作后，对于一些insert的<code>undo log</code>会执行删除操作；</p>
+</li>
+<li><p>事务执行完成，将事务设置为<code>TRX_NOT_STARTED</code>状态，并且返回commit成功给客户端。</p>
+</li>
+<li><p>定时任务，会将buffer pool的数据，通过 <code>double write buffer</code> 的方式，写入到磁盘。在写入磁盘之前，会先将double write buffer数据，先写入磁盘的double write 文件中。</p>
+</li>
+</ol>
+<p>以上的步骤，对于 <code>redo log</code>和<code>binlog</code> 执行了两阶段操作。首先写入 状态为prepare的<code>redo log</code>到磁盘，然后将<code>binlog</code>写入磁盘，在执行commit操作的时候，再将状态为commit的<code>redo log</code>写入磁盘。</p>
+<h1 id="三、InnoDB-引擎故障恢复流程"><a href="#三、InnoDB-引擎故障恢复流程" class="headerlink" title="三、InnoDB 引擎故障恢复流程"></a>三、InnoDB 引擎故障恢复流程</h1><p>有了上面的操作，更新数据操作完成。但是，对于存储而言，为了确保在各种极端情况下数据不丢失，上面新增了各种log来保障安全性。</p>
+<p>那么，通过上面的log，InnoDB是如何完成故障恢复的。正常关闭数据库的情况下，会将所有buffer pool中的脏页都刷到磁盘上，然后才会关闭；但是在异常停止数据库下，则需要通过三大log：redo log ， binlog，undo log 来完成脏页数据的恢复和未提交数据的回滚。</p>
+<p>以下，通过网络上一张神图来介绍（之前只保存了图，文章地址现在打不开了）：</p>
+<p><img src="/images/2021/mysql/20211121114935.png" alt="MySQL故障恢复图"></p>
+<h2 id="3-1-redo-log-恢复"><a href="#3-1-redo-log-恢复" class="headerlink" title="3.1 redo log 恢复"></a>3.1 redo log 恢复</h2><p>首先，将数据存储的表空间ibd文件打开读取，从一个page读LSN(redo log 时候介绍过)，如果第一个page文件损坏，则说明<code>double write</code>写 ibd文件的时候发生了异常，则先通过<code>double write buffer file</code> dblwr文件 恢复损坏页，这样后面redo的时候才可以恢复。然后找到该page 对应的lsn，作为redo log 恢复起始的 checkpoint。</p>
+<p>然后，通过上面拿到的lsn checkpoint，去redo log 文件中找到对应的物理位置，开始扫描redo log 文件，操作恢复。</p>
+<p>扫描redo log的过程，InnoDB做了一些优化，具体可参考上面的图。具体，就是通过扫描redo log 文件，读取redo log 记录，放在一个hash表中，当hash表满了之后，将对应的记录数据放到buffer pool中，然后应用redo log到buffer pool对应的数据记录上。</p>
+<p>继续操作后面的redo log 到下一轮hash表中，直到最后恢复完成。</p>
+<h2 id="3-2-binlog-undo-log-恢复"><a href="#3-2-binlog-undo-log-恢复" class="headerlink" title="3.2 binlog + undo log 恢复"></a>3.2 binlog + undo log 恢复</h2><p>在上面【2.5 写入流程】中介绍了，redo log 写入是两阶段提交的，这就意味着，对于没有标记为commit标的redo log，也就是还处于<code>TRX_NOT_STARTED</code>状态的redo log，需要通过<code>binlog</code> + <code>undo log</code> 方式来恢复。</p>
+<p>首先，读取最新那个binlog文件，拿到所有可能没有被提交的事务id列表；</p>
+<p>然后，通过undo log 构建未提交事务id列表；</p>
+<p>最后，遍历匹配binlog中的事务id列表，如果在undo log的未提交事务id列表中，则可以操作提交。</p>
+<p>具体，可以参考上面的图。</p>
+<p>基于上面的图，由于找不到原文，可以参考另一篇文章： <a target="_blank" rel="noopener" href="https://www.cnblogs.com/xinysu/p/6586386.html">梳理下MySQL崩溃恢复过程</a></p>
+<h1 id="四、InnoDB-引擎数据隔离实现"><a href="#四、InnoDB-引擎数据隔离实现" class="headerlink" title="四、InnoDB 引擎数据隔离实现"></a>四、InnoDB 引擎数据隔离实现</h1><p>最后，数据库的ACID，还剩下I 隔离性，没有介绍。</p>
+<p>在数据库中，隔离其实包括写隔离和读隔离。一般而言，写隔离，使用锁；读隔离，使用MVCC，InnoDB引擎中，通过<code>undo log</code>来实现。</p>
+<h2 id="4-1-InnoDB隔离级别"><a href="#4-1-InnoDB隔离级别" class="headerlink" title="4.1 InnoDB隔离级别"></a>4.1 InnoDB隔离级别</h2><p>首先，为什么需要隔离级别。数据库为了支持并发读写，但是彼此之间的事务操作又不能互相影响，这就触发了隔离的诉求。最简单的隔离并发事务之间的操作，就是串行化，比如前面说的redis操作。但是，对于数据库而言，这种处理方式，性能太差；并且，不同的场景其实对隔离性要求也不一定，因此我们可以基于不同隔离诉求，使用不同策略来实现事务隔离性诉求。</p>
+<p>那么，最简单的方式，就是通过总结不隔离的情况下，事务并发操作可能会导致的问题出发，来对隔离进行分场景来满足即可。这也就是，<code>ANSI</code> 首先给出的SQL隔离级别定义时的方式，即基于<code>异象</code>。</p>
+<p>ANSI 主要针对的是下面三种异象：</p>
+<ul>
+<li>脏读（Dirty Read）: 读到了其他事务还未提交的数据；</li>
+<li>不可重复读（Non-Repeatable Read）：由于其他事务的修改或删除，对某数据的两次读取结果不同（主要针对的是当个记录数据而言）；</li>
+<li>幻读（Phantom Read）：由于其他事务的修改，增加或删除，导致Range的结果失效（如where 条件范围查询）。</li>
+</ul>
+<p>针对上面三种异象，就有了4中不同的隔离级别：</p>
+<ul>
+<li> 读未提交(Read Uncommitted)：RU，是最初始的隔离级别。其可以读到其他事务还没有提交的数据，也就是 其不能处理<code>ANSI</code>总结的任何一种异象。 </li>
+<li> 读提交(Read Committed, RC)：RC，可以解决脏读问题。该隔离级别，只能读到其他事务已经提交的数据。但是，RC隔离级别下，一个事务中不同时间段的查询，会随着其他事务分别提交事务，但是查询到不同的数据，哪怕相同的查询sql，也就是不能重复读。</li>
+<li> 可重复读(Repeated Read, RR)：RR，主要是解决不可重复读问题。对于幻读的问题，比较复杂，后面重点说明。RR，也是InnoDB默认的隔离级别。</li>
+<li> 串行化(Serializable)：顾名思义，就是全部串行执行（加个share mode锁），不存在并发读写，因此，也就不存在事务并发导致的异象问题。</li>
+</ul>
+<p>目前，我们介绍的都是基于ANSI 1992年定义的隔离级别，并且在MySQL 官网也是用这个来定义隔离。但是，通过列出所有异象，然后来定义隔离级别的做法，最大的问题是列举异象是否全部。</p>
+<p>在1995年，微软的研究员指出了其中的2个问题：</p>
+<ol>
+<li>异象总结不完整，缺少对脏写(Dirty Write)的引入。所谓脏写，就是两个未提交的事务先后对同一个对象进行了修改。假设两个事物分别对x,y修改，事务T1和事务T2操作顺序：<code>T1: write x=1; T2: write x=2; T2: write y=2; T2: read x,y; T1: write y=1; T1: read x,y</code>。在假设 x=y的约束下，最终T1和T2读出的数据，并不满足x=y约束。ANSI数据库隔离级别并没有针对这种异象进行描述。</li>
+<li>各种定义描述存在歧义。尤其是针对幻读的定义。所以针对幻读，MySQL官方说其使用<code>next-key lock</code>来防止幻读问题，但是实际上严格定义的幻读，其并没有解决。因此，由于ANSI对应定义存在歧义，导致各大数据库厂商对于隔离级别的解读和满足程度，也是不一样的。</li>
+</ol>
+<p>一般，大家对脏读和不可重复读理解级别一致，对于MySQL 的RR级别，是否能解决幻读问题时，则存在一些争执，后面具体聊聊。</p>
+<p>在介绍MySQL RR隔离级别解决幻读问题前，先看看隔离机制实现中，最重要的技术：MVCC。</p>
+<h2 id="4-2-MVCC机制"><a href="#4-2-MVCC机制" class="headerlink" title="4.2 MVCC机制"></a>4.2 MVCC机制</h2><p>MVCC：多版本并发控制，英文为：Multiversion concurrency control。通过名字，可以很快名单，其使用多个版本的历史快照数据，来支持多并发场景下的数据查询。</p>
+<p>InnoDB支持<code>MVCC</code>来提高系统读写并发性能。InnoDB MVCC的实现基于<code>undo log</code>，通过回滚段来构建需要的版本记录。通过<code>readview</code>来判断哪些版本的数据可见。同时<code>purge</code>线程是通过<code>readview</code>来清理旧版本数据。</p>
+<p>因此，对于MVCC实现而言，最重要的概念是 <code>undo log</code> 和<code>read view</code>。而<code>undo log</code>在之前介绍数据原子性的时候，详细描述过；这里，我们先介绍<code>read view</code>读视图。</p>
+<h3 id="4-2-1-read-view-视图"><a href="#4-2-1-read-view-视图" class="headerlink" title="4.2.1 read view 视图"></a>4.2.1 read view 视图</h3><p>read view 在 InnoDB 引擎中，是一个很重要的概念。InnoDB 引擎通过视图来判断应该读取哪个版本的数据，然后来做查询隔离。</p>
+<p>在InnoDB中的read view 数据结构核心字段如下：</p>
+<ul>
+<li>  <code>m_low_limit_id</code>： 事务ID大于等于该值的数据修改不可见。</li>
+<li>  <code>m_up_limit_id</code>：事务ID小于该值的数据修改可见。</li>
+<li>  <code>m_creator_trx_id</code>：创建该ReadView的事务，该事务ID的数据修改可见。</li>
+<li>  <code>m_ids</code>：当快照创建时的活跃读写事务列表。  </li>
+</ul>
+<p>基于上面read view 对象的数据，我们可以对查询的数据的版本可见性进行判断：</p>
+<ul>
+<li>  如果 记录trx_id 小于<code>m_up_limit_id</code>或者等于<code>m_creator_trx_id</code>，表明readview创建的时候该事务已经提交，记录可见。</li>
+<li>  如果 记录trx_id 大于等于 <code>m_low_limit_id</code>，表明事务是在readview创建后开启的，其修改，插入的记录不可见。</li>
+<li>  当 记录trx_id 在<code>m_up_limit_id</code>和<code>m_low_limit_id</code>之间的时候，如果 id在 <code>m_ids</code>数组中，表明readview创建时候，事务处于活跃状态，事务未提交，因此 记录不可见。</li>
+</ul>
+<p>如下图所示：</p>
+<p><img src="/images/2021/mysql/20211121222628.png" alt="read review 可见性"></p>
+<p>当，对我们找到不可见的记录，这个时候就需要去遍历这个记录对应的undo log列表，找到符合可见性的历史版本数据。</p>
+<h3 id="4-2-2-InnoDB-隔离级别中的read-view"><a href="#4-2-2-InnoDB-隔离级别中的read-view" class="headerlink" title="4.2.2 InnoDB 隔离级别中的read view"></a>4.2.2 InnoDB 隔离级别中的read view</h3><p>前面介绍隔离级别的时候说，RC是提交读，RR是可重复读。RC和RR都是基于mvcc来实现快照读，那么在使用read view 上，有什么区别呢？</p>
+<p>在RC隔离级别上，InnoDB对于事务中的每一次查询，都会开启一个新的read view视图，这样，当前面一个查询完成之后，如果有其他事务提交，那么再次查询开启新的视图的时候，对应上图中的各个变量都不同，则显然查询的数据会存在和上一次查询结果不同。因此，就造成了不可重复读问题。</p>
+<p>而，对于RR隔离级别，InnoDB只会在事务开启的时候，同时开始一个新的read view 视图，后面这个事务中所有的查询，都是基于该视图进行可见性分析，因此可以完美的解决不可重复读问题。</p>
+<p>此外，对于RU隔离级别，不会使用read view视窗，有查询需求时，直接去读对应记录，即使数据没有提交。</p>
+<h3 id="4-2-3-MVCC-和-幻读"><a href="#4-2-3-MVCC-和-幻读" class="headerlink" title="4.2.3 MVCC 和 幻读"></a>4.2.3 MVCC 和 幻读</h3><p>上面说过，innodb 可以通过 mvcc来解决不可重复读问题，那么针对幻读，mvcc可否解决？</p>
+<p>首先需要说明，在数据库读中，分为快照读和当前读，mvcc是用来处理快照读的。所谓当前读，就是读取当前最新数据，我们使用的数据库写操作都包含数据的当前读。</p>
+<p>幻读，包含快照幻读和当前幻读两种情况分析。所谓快照幻读，就是我们使用where范围查询的时候，前后保持一致。对于MVCC，我们说过RR隔离级别下的read view 只会有一个，因此，对于快照幻读而言，mvcc可以阻止。</p>
+<p>但是，我们还有当前幻读的case，因为当前读需要读取最新数据，没办法使用MVCC的快照，那么就会存在A事务第一次和第二次当前读中间，B事务insert一条数据，导致where 范围查询数据不一致，出现幻读情况。</p>
+<p>所以，RR下单靠MVCC是无法解决幻读问题的，需要使用锁。而，InnoDB 在RR隔离级别下，使用<code>next-key</code>锁，来避免大部分幻读问题。</p>
+<h2 id="4-3-InnoDB-锁"><a href="#4-3-InnoDB-锁" class="headerlink" title="4.3 InnoDB 锁"></a>4.3 InnoDB 锁</h2><p>上文介绍，InnoDB 在解决幻读问题时，使用了<code>next-key</code>锁。当然，对于数据写情况，为了避免并发情况下的冲突，肯定也是需要使用锁的。</p>
+<p>在InnoDB 中存在各种各样的锁，按照大类分行锁和表锁，一般而言，日常开发过程中接触比较多的都是行锁，所以这里是侧重介绍InnoDB的行锁。</p>
+<p>在InnoDB中的行锁，主要有两种类型的锁：共享锁S和互斥锁X。</p>
+<p>对于InnoDB的表锁，业务开发中，会有影响的，是意向锁。所谓意向锁，就是事务稍后对 table 中的行需要哪种类型的锁(共享锁或排他锁)。<br>由于意向锁的存在，经常会导致死锁出现，所以要尤其注意，关于意向锁加锁协议如下：</p>
+<ul>
+<li>  在事务可以获取 table 中某行的共享锁之前，它必须首先获取该 table 中的<code>IS</code>锁或更强的锁。</li>
+<li>  在事务可以获取 table 中某行的排它锁之前，它必须首先获取该 table 中的<code>IX</code>锁。</li>
+</ul>
+<p>最后，关于锁的兼容如下：</p>
+<p><img src="/images/2021/mysql/20211121233557.png" alt="锁兼容"></p>
+<h3 id="4-3-1-细分行锁"><a href="#4-3-1-细分行锁" class="headerlink" title="4.3.1 细分行锁"></a>4.3.1 细分行锁</h3><h4 id="4-3-1-1-LOCK-REC-NOT-GAP"><a href="#4-3-1-1-LOCK-REC-NOT-GAP" class="headerlink" title="4.3.1.1 LOCK_REC_NOT_GAP"></a>4.3.1.1 LOCK_REC_NOT_GAP</h4><p>LOCK_REC_NOT_GAP，也就是我们常说的record记录锁。锁带上这个 <code>LOCK_REC_NOT_GAP</code> 标识时，表示这个锁对象只是单纯的锁在记录上，不会锁记录之前的 GAP。在 RC 隔离级别下一般加的都是该类型的记录锁（但唯一二级索引上的 duplicate key 检查除外，总是加 <code>next key</code> 类型的锁）。</p>
+<h4 id="4-3-1-2-LOCK-GAP"><a href="#4-3-1-2-LOCK-GAP" class="headerlink" title="4.3.1.2 LOCK_GAP"></a>4.3.1.2 LOCK_GAP</h4><p>LOCK_GAP，也就是我们常说的间隙锁。表示只锁住一段范围，不锁记录本身，通常表示两个索引记录之间，或者索引上的第一条记录之前，或者最后一条记录之后的锁。</p>
+<p>可以理解为一种区间锁，一般在RR隔离级别下会使用到GAP锁。RC隔离级别下，基本上不会使用gap级别的锁。</p>
+<h4 id="4-3-1-3-Next-Key-Lock"><a href="#4-3-1-3-Next-Key-Lock" class="headerlink" title="4.3.1.3 Next-Key Lock"></a>4.3.1.3 Next-Key Lock</h4><p> NEXT-KEY 锁，包含记录本身及记录之前的GAP，相当于是<code>record锁 + gap锁</code>。当前 MySQL 默认情况下使用RR的隔离级别，而<code>NEXT-KEY LOCK</code>正是为了解决RR隔离级别下的幻读问题。</p>
+<p> 对于 next-key 锁的加锁，使用<code>前开后闭</code>范围。</p>
+<p>假设索引上有记录1, 4, 5, 8，12 我们执行类似语句：<code>SELECT… WHERE col &gt; 10 FOR UPDATE</code>。如果我们不在(8, 12)之间加上Gap锁，另外一个 Session 就可能向其中插入一条记录，例如9，再执行一次相同的 <code>SELECT ... FOR UPDATE</code>，就会看到新插入的记录。</p>
+<h3 id="4-3-2-意向锁"><a href="#4-3-2-意向锁" class="headerlink" title="4.3.2 意向锁"></a>4.3.2 意向锁</h3><p>对于意向锁，我们关注的就是插入意向锁。</p>
+<p><code>INSERT INTENTION</code>锁是意向锁+GAP锁的组合，如果有多个session插入同一个GAP时，在行锁下面是需要等待，锁之间是互斥冲突的。但是，对于意向锁而言，他们无需互相等待，例如当前索引上有记录4和8，两个并发session同时插入记录6，7。他们会分别为(4,8)加上GAP锁，但相互之间并不冲突（因为插入的记录不冲突）。</p>
+<blockquote>
+<p>当向某个数据页中插入一条记录时，总是会调用函数<code>lock_rec_insert_check_and_lock</code>进行锁检查（构建索引时的数据插入除外），会去检查当前插入位置的下一条记录上是否存在锁对象。 如果下一条记录上不存在锁对象：若记录是二级索引上的，先更新二级索引页上的最大事务ID为当前事务的ID；直接返回成功。</p>
+<p>如果下一条记录上存在锁对象，就需要判断该锁对象是否锁住了GAP。如果GAP被锁住了，并判定和插入意向GAP锁冲突，当前操作就需要等待，加的锁类型为<code>LOCK_X | LOCK_GAP | LOCK_INSERT_INTENTION</code>，并进入等待状态。但是插入意向锁之间并不互斥。这意味着在同一个GAP里可能有多个申请插入意向锁的会话。</p>
+</blockquote>
+<p>InnoDB 通常对插入操作无需加锁，而是通过一种<code>“隐式锁”</code>的方式来解决冲突。聚集索引 记录中存储了事务id，如果另外有个session查询到了这条记录，会去判断该记录对应的事务id是否属于一个活跃的事务，并协助这个事务创建一个<code>记录锁</code>，然后将自己置于等待队列中。<br>该设计的思路是基于大多数情况下新插入的记录不会立刻被别的线程并发修改，而创建锁的开销是比较昂贵的，涉及到全局资源的竞争。</p>
+<h3 id="4-3-3-InnoDB锁管理"><a href="#4-3-3-InnoDB锁管理" class="headerlink" title="4.3.3 InnoDB锁管理"></a>4.3.3 InnoDB锁管理</h3><p>InnoDB 所有的事务锁对象都是挂在全局对象<code>lock_sys</code>上，同时每个事务对象上也维持了其拥有的事务锁，每个表对象(<code>dict_table_t</code>)上维持了构建在其上的表级锁对象。</p>
+<p>其加锁规则如下 <a target="_blank" rel="noopener" href="https://www.cnblogs.com/michael9/p/12443975.html">关于 InnoDB 锁的超全总结</a>：两个“原则”、两个“优化”和一个“bug”。</p>
+<ol>
+<li> 原则1：加锁的基本单位是 next-key lock。next-key lock 是前开后闭区间。</li>
+<li> 原则2：查找过程中访问到的对象才会加锁。</li>
+<li> 优化1：索引上的等值查询，给唯一索引加锁的时候，next-key lock 退化为行锁。</li>
+<li> 优化2：索引上的等值查询，向右遍历时且最后一个值不满足等值条件的时候，next-key lock 退化为间隙锁。</li>
+<li> 一个 bug：唯一索引上的范围查询会访问到不满足条件的第一个值为止。</li>
+</ol>
+<h3 id="4-3-4-经典的死锁case"><a href="#4-3-4-经典的死锁case" class="headerlink" title="4.3.4 经典的死锁case"></a>4.3.4 经典的死锁case</h3><p>最后，拿一个最经典的三个insert并发，导致死锁的case分析：</p>
+<p><img src="/images/2021/mysql/20211122000627.png" alt="锁兼容"></p>
+<p>上述描述了互相等待的场景，因为插入意向X锁和S锁是不相容的。这也是一种典型的锁升级导致的死锁。如果session1执行COMMIT的话，则另外两个线程都会因为duplicate key失败。</p>
+<p>这里需要解释下为何要申请插入意向锁，因为ROLLBACK时原记录回滚时是被标记删除的。而我们尝试插入的记录和这个标记删除的记录是相邻的(键值相同)，根据插入意向锁的规则，插入位置的下一条记录上如果存在与插入意向X锁冲突的锁时，则需要获取插入意向X锁。</p>
+<p><strong>插入回滚时，由于数据标记删除，但是数据未删除，导致其他事务插入时，需要申请插入意向X锁</strong></p>
+<h2 id="4-4-InnoDB-RR对于幻读的处理"><a href="#4-4-InnoDB-RR对于幻读的处理" class="headerlink" title="4.4  InnoDB RR对于幻读的处理"></a>4.4  InnoDB RR对于幻读的处理</h2><p>在上节已经说过，对于快照读的幻读，RR隔离级别下，使用MVCC即可解决。而，针对当前读，则需要使用next-key lock来解决。</p>
+<p>我们知道，在 InnoDB 的实现中，对于当前读，像是 INSERT、UPDATE 和 DELETE 等 DML 命令，或者<code>SELECT FOR UPDATE</code>等显示加锁来当前读的SQL命令，看到的就不是 快照数据，而是命令执行时，数据库中所有已经被 commit 的数据。</p>
+<p>这就意味着，如果一个session A 开启一个事务的时候，如果先是通过简单的<code>SELECT WHERE</code>来查询数据，那么只是使用MVCC通过read review视图来获取快照数据；那么，这个时候，其他session B 开启另一个事务，在<code>SELECT WHERE</code>的查询范围内执行<code>INSER INTO </code>一条数据并commit提交，那么，在session A的事务里，执行当前读，比如<code>SELECT FOR UPDATE</code>或者<code>UPDATE ... WHERE</code>，则会发现在session A中，可以发现session B提交的数据。</p>
+<p>因此，InnoDB并没有彻底解决幻读的问题。</p>
+<h1 id="五、总结"><a href="#五、总结" class="headerlink" title="五、总结"></a>五、总结</h1><p>本文主要是针对MySQL InnoDB 引擎执行写操作的流程做了一些介绍。</p>
+<p>针对一个会持久化到磁盘的存储组件，MySQL为了支持更高并发和性能，使用了<code>buffer pool</code> + <code>change buffer</code>，并且自定义<code>young + old</code> 缓存淘汰机制。当然，高性能的内存操作虽然避免频繁的磁盘IO，但是同样对数据的安全性提出了很高的要求。因此，使用<code>double write buffer</code>+ <code>redo log</code>+<code>undo log</code>来做持久化和原子性保证。此外，本文介绍比较少的binlog，更是通过主从复制方式，来避免单机单点问题。</p>
+<p>此外，同样为了支持高并发，避免并发下多事务之间的冲突，使用了MVCC和锁来完成ANSI约定的4种隔离级别的实现。</p>
+<p>最后，本文参考了非常多的网络资料，非常感谢也非常享受互联网的技术分享氛围。</p>
+<p>有些知识可能还未涉及全面，后面再逐步修正和完善。</p>
+<h1 id="六、推荐资料"><a href="#六、推荐资料" class="headerlink" title="六、推荐资料"></a>六、推荐资料</h1><ol>
+<li><a target="_blank" rel="noopener" href="http://catkang.github.io/2019/01/16/crash-recovery.html"> 数据库故障恢复机制的前世今生</a></li>
+<li><a target="_blank" rel="noopener" href="http://catkang.github.io/2020/02/27/mysql-redo.html"> 庖丁解InnoDB之REDO LOG</a></li>
+<li><a target="_blank" rel="noopener" href="http://catkang.github.io/2021/10/30/mysql-undo.html"> 庖丁解InnoDB之Undo LOG</a></li>
+<li><a target="_blank" rel="noopener" href="http://catkang.github.io/2018/08/31/isolation-level.html"> 数据库事务隔离发展历史</a></li>
+<li><a target="_blank" rel="noopener" href="http://mysql.taobao.org/monthly/2016/01/01/">MySQL · 引擎特性 · InnoDB 事务锁系统简介</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.modb.pro/db/88214">對於 MySQL Repeatable Read Isolation 常見的三個誤解</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>柯小小西
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://ketao1989.github.io/2021/11/22/2021-11-22-mysql-innodb-design-for-write-part/" title="MySQL InnoDB 事务部分核心设计和原理">https://ketao1989.github.io/2021/11/22/2021-11-22-mysql-innodb-design-for-write-part/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/11/08/2021-11-08-mysql-innodb-design-for-query-part/" rel="prev" title="MySQL InnoDB 查询部分核心设计和原理">
+      <i class="fa fa-chevron-left"></i> MySQL InnoDB 查询部分核心设计和原理
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">一、前言</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-1-%E6%95%B0%E6%8D%AE%E5%86%99%E5%85%A5%E6%B5%81%E7%A8%8B"><span class="nav-number">1.1.</span> <span class="nav-text">1.1 数据写入流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1-2-%E5%BC%95%E5%85%A5%E4%BA%8B%E5%8A%A1%E6%A6%82%E5%BF%B5"><span class="nav-number">1.2.</span> <span class="nav-text">1.2 引入事务概念</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1-3-ACID-%E7%AE%80%E4%BB%8B"><span class="nav-number">1.3.</span> <span class="nav-text">1.3 ACID 简介</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8C%E3%80%81InnoDB-%E5%BC%95%E6%93%8E%E5%A4%84%E7%90%86%E6%95%B0%E6%8D%AE%E5%86%99%E6%B5%81%E7%A8%8B"><span class="nav-number">2.</span> <span class="nav-text">二、InnoDB 引擎处理数据写流程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#2-1-%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84%E6%95%B0%E6%8D%AE%E5%86%99%E5%85%A5%E6%96%87%E4%BB%B6%E6%B5%81%E7%A8%8B"><span class="nav-number">2.1.</span> <span class="nav-text">2.1 一个简单的数据写入文件流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-2-%E4%BD%BF%E7%94%A8buffer-pool-%E4%BC%98%E5%8C%96%E7%9A%84%E6%B5%81%E7%A8%8B"><span class="nav-number">2.2.</span> <span class="nav-text">2.2 使用buffer pool 优化的流程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-1-%E6%95%B0%E6%8D%AE%E5%8A%A0%E8%BD%BD"><span class="nav-number">2.2.1.</span> <span class="nav-text">2.2.1 数据加载</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-2-%E6%95%B0%E6%8D%AE%E5%9B%9E%E5%86%99"><span class="nav-number">2.2.2.</span> <span class="nav-text">2.2.2 数据回写</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-3-%E6%95%B0%E6%8D%AE%E5%9D%97%E6%B7%98%E6%B1%B0"><span class="nav-number">2.2.3.</span> <span class="nav-text">2.2.3 数据块淘汰</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-4-%E6%95%B0%E6%8D%AE%E7%B2%92%E5%BA%A6"><span class="nav-number">2.2.4.</span> <span class="nav-text">2.2.4 数据粒度</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-5-%E6%9B%B4%E8%BF%9B%E4%B8%80%E6%AD%A5%E7%9A%84%E4%BC%98%E5%8C%96"><span class="nav-number">2.2.5.</span> <span class="nav-text">2.2.5 更进一步的优化</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-3-%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E6%80%A7%E4%BF%9D%E8%AF%81"><span class="nav-number">2.3.</span> <span class="nav-text">2.3 数据持久性保证</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-1-%E5%BC%95%E5%85%A5redo-log-%E8%AE%BE%E8%AE%A1"><span class="nav-number">2.3.1.</span> <span class="nav-text">2.3.1 引入redo log 设计</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-2-double-write-buffer"><span class="nav-number">2.3.2.</span> <span class="nav-text">2.3.2 double write buffer</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-4-%E6%95%B0%E6%8D%AE%E5%8E%9F%E5%AD%90%E6%80%A7%E4%BF%9D%E8%AF%81"><span class="nav-number">2.4.</span> <span class="nav-text">2.4 数据原子性保证</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-5-%E5%86%99%E5%85%A5%E6%B5%81%E7%A8%8B"><span class="nav-number">2.5.</span> <span class="nav-text">2.5 写入流程</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%89%E3%80%81InnoDB-%E5%BC%95%E6%93%8E%E6%95%85%E9%9A%9C%E6%81%A2%E5%A4%8D%E6%B5%81%E7%A8%8B"><span class="nav-number">3.</span> <span class="nav-text">三、InnoDB 引擎故障恢复流程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#3-1-redo-log-%E6%81%A2%E5%A4%8D"><span class="nav-number">3.1.</span> <span class="nav-text">3.1 redo log 恢复</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-2-binlog-undo-log-%E6%81%A2%E5%A4%8D"><span class="nav-number">3.2.</span> <span class="nav-text">3.2 binlog + undo log 恢复</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9B%9B%E3%80%81InnoDB-%E5%BC%95%E6%93%8E%E6%95%B0%E6%8D%AE%E9%9A%94%E7%A6%BB%E5%AE%9E%E7%8E%B0"><span class="nav-number">4.</span> <span class="nav-text">四、InnoDB 引擎数据隔离实现</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#4-1-InnoDB%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB"><span class="nav-number">4.1.</span> <span class="nav-text">4.1 InnoDB隔离级别</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-2-MVCC%E6%9C%BA%E5%88%B6"><span class="nav-number">4.2.</span> <span class="nav-text">4.2 MVCC机制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#4-2-1-read-view-%E8%A7%86%E5%9B%BE"><span class="nav-number">4.2.1.</span> <span class="nav-text">4.2.1 read view 视图</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-2-2-InnoDB-%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E4%B8%AD%E7%9A%84read-view"><span class="nav-number">4.2.2.</span> <span class="nav-text">4.2.2 InnoDB 隔离级别中的read view</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-2-3-MVCC-%E5%92%8C-%E5%B9%BB%E8%AF%BB"><span class="nav-number">4.2.3.</span> <span class="nav-text">4.2.3 MVCC 和 幻读</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-3-InnoDB-%E9%94%81"><span class="nav-number">4.3.</span> <span class="nav-text">4.3 InnoDB 锁</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#4-3-1-%E7%BB%86%E5%88%86%E8%A1%8C%E9%94%81"><span class="nav-number">4.3.1.</span> <span class="nav-text">4.3.1 细分行锁</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#4-3-1-1-LOCK-REC-NOT-GAP"><span class="nav-number">4.3.1.1.</span> <span class="nav-text">4.3.1.1 LOCK_REC_NOT_GAP</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-3-1-2-LOCK-GAP"><span class="nav-number">4.3.1.2.</span> <span class="nav-text">4.3.1.2 LOCK_GAP</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-3-1-3-Next-Key-Lock"><span class="nav-number">4.3.1.3.</span> <span class="nav-text">4.3.1.3 Next-Key Lock</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-3-2-%E6%84%8F%E5%90%91%E9%94%81"><span class="nav-number">4.3.2.</span> <span class="nav-text">4.3.2 意向锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-3-3-InnoDB%E9%94%81%E7%AE%A1%E7%90%86"><span class="nav-number">4.3.3.</span> <span class="nav-text">4.3.3 InnoDB锁管理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-3-4-%E7%BB%8F%E5%85%B8%E7%9A%84%E6%AD%BB%E9%94%81case"><span class="nav-number">4.3.4.</span> <span class="nav-text">4.3.4 经典的死锁case</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-4-InnoDB-RR%E5%AF%B9%E4%BA%8E%E5%B9%BB%E8%AF%BB%E7%9A%84%E5%A4%84%E7%90%86"><span class="nav-number">4.4.</span> <span class="nav-text">4.4  InnoDB RR对于幻读的处理</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E6%80%BB%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">五、总结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%AD%E3%80%81%E6%8E%A8%E8%8D%90%E8%B5%84%E6%96%99"><span class="nav-number">6.</span> <span class="nav-text">六、推荐资料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="柯小小西"
+      src="/images/ava.gif">
+  <p class="site-author-name" itemprop="name">柯小小西</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">58</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">63</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-CN" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">柯小小西</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">571k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">8:39</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="//cdn.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js"></script>
+<script src="//cdn.jsdelivr.net/npm/instantsearch.js@4/dist/instantsearch.production.min.js"></script>
+<script src="/js/algolia-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'JHHXvxc1poIUYczSRlzKC3hQ-MdYXbMMI',
+      appKey     : 'yV8QHmFeQEBNceFuU9tKH3cl',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : true,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
