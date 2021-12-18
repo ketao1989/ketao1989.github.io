@@ -1,0 +1,996 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  
+  <url>
+    <loc>https://ketao1989.github.io/2021/11/22/2021-11-22-mysql-innodb-design-for-write-part/</loc>
+    
+    <lastmod>2021-11-21</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2021/06/02/2021-06-02-talk-about-fin-risk-arch/</loc>
+    
+    <lastmod>2021-11-13</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2021/05/28/2021-05-28-unit-test-experiencce/</loc>
+    
+    <lastmod>2021-11-13</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2021/11/08/2021-11-08-mysql-innodb-design-for-query-part/</loc>
+    
+    <lastmod>2021-11-08</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2021/10/31/2021-10-31-redis-arch-design-and-implement-analyse/</loc>
+    
+    <lastmod>2021-11-02</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2021/10/23/2021-10-23-nsq-consume-code-analyse-and-rate-limit-componet-implement/</loc>
+    
+    <lastmod>2021-10-24</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2021/09/10/2021-09-10-how-to-code-review-for-dev/</loc>
+    
+    <lastmod>2021-09-11</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2021/09/03/2021-09-03-talk-about-java8-Parameter-Reflect/</loc>
+    
+    <lastmod>2021-09-04</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2021/08/21/2021-08-21-transaction-mq-design-base-nsq/</loc>
+    
+    <lastmod>2021-08-21</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/index.html</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2020/11/26/2020-11-26-biz-monitor-experience/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2020/04/27/2020-04-27-ddd-system-arch-code/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2018/01/15/2018-01-15-design-principle-intro/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2018/05/05/2018-05-05-netty-series-of-nio/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/about/index.html</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2016/12/10/2016-12-10-rpc-theory-in-action/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2017/03/29/2017-03-29-java-server-in-action/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2018/01/04/2018-01-03-dubbo-generic-serial-process/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2016/04/29/2016-04-29-thrift-service-discory-using-zookeeper-ourea/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2016/05/29/2016-05-29-talk-about-java-gc/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2015/08/30/2015-08-30-nginx-proxy-configure-and-sduty/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2015/09/05/2015-09-05-zookeeper-programmer-guide/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2016/01/02/2016-01-02-delayed-message-consume-service-use-kafka/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2016/03/10/2016-03-10-junit-mockito-guice-in-action-and-junit-test-mechanism/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2015/02/15/2015-02-15-Python-Tutoril-Python-Function-And-Advances/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2015/02/17/2015-02-17-Python-Tutoril-Python-Functional-Programing/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2015/02/26/2015-02-26-Python-Tutoril-Python-Object-Oriented-Programming/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2015/04/29/2015-04-29-LogBack-Implemention-And-Slf4j-Mdc/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2015/01/27/2015-01-27-Git-Reset-Operate/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2015/02/07/2015-02-07-Jackson-Serialize-Java-Object-Implementation/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2015/02/10/2015-02-10-Jackson-Deserialize-Java-Object-Implementation/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2015/02/13/2015-02-13-Python-Tutoril-Python-Basic-Knowledge/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2014/12/28/2014-12-28-Redis-Cookbook-Inverted-Index-Text-Search/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2015/01/12/2015-01-12-Spring-Dynamic-Data-Source-Guide/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2014/12/20/2014-12-20-Redis-Cookbook-Chat-System/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2014/11/29/2014-11-29-Redis-Cookbook-Analytics-Time-Based-Data/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2014/12/19/2014-12-19-Guava-Cache-Guide-And-Implement-Analyse/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2014/11/24/2014-11-24-java-some-tips/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2014/11/26/2014-11-26-Java-Implement-One-Algorithm-by-Day/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2014/10/09/2014-10-09-Mysql-Delete-Insert-Deadlock-Analyse/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2014/09/09/2014-09-09-Jackson-Manual-and-Implementation-Analyzing/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2014/10/22/2014-10-22-Dubbo-Provider-Groups-Bug-Analyse/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2014/08/11/2014-08-11-Redis-Cookbook-Implementing-OAuth/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2014/08/26/2014-08-26-Vim-Plugin-On-Mac/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2014/06/27/2014-06-27-Intelij-IDEA-Keymap/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2014/07/03/2014-07-03-Query-DB-Python-Shell/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2014/08/10/2014-08-10-Redis-CookBook-Redis-Data-Types/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2014/08/10/2014-08-10-Redis-Cookbook-Redis-KeyValue-Store/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2014/06/24/2014-06-24-Linux-Software-Install-Understand/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2014/05/28/2014-05-28-Online-Mysql-Deadlock-Analyse/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2014/05/30/2014-05-30-Linux-Awk-Study-Note/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2014/06/04/2014-06-04-Ubuntu-Software-Configure-and-Install/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2014/06/10/2014-06-10-Ubuntu-Chrome-Start-Fail-Resolve/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2014/05/24/2014-05-24-Java-Fork-Join-Task-Framework-API-Introduce/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2014/05/26/2014-05-26-Spring-MVC-Project-Introduction/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2014/05/27/2014-05-27-Jstat-GC-Guide-Introduce/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2014/05/02/2014-05-02-Java-slf4j-Introduce/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2014/05/03/2014-05-03-Java-MultiThread-ThreadPool-Introduce/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2014/04/16/2014-04-16-google-java-style/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/2014/04/29/2014-04-29-Intelij-IDEA-Remote-Debug-Tomcat-App/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+
+  <url>
+    <loc>https://ketao1989.github.io/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  
+
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/Java/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/Java/Thread/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/Java/Spring/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/Java/IDE/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/GC/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/Mysql/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/Java/Log/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/Script/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/Linux/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/IDE/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/Python/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/Redis/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/tools/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/Java/Json/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/Java/Dubbo/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/Script/Linux/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/Git/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/Nginx/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/Python/Script/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/Log/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/Zookeeper/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/Kafka/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/Redis/Redis-Cookbook/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/JUnit/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/Java/Thrift/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/Java/GC/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/rpc/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/java/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/stability/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/monitor/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/Nginx/Script/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/Log/Java/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/Zookeeper/Translation/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/Kafka/Java/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/JUnit/Guice/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/Java/Thrift/Zookeeper/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/rpc/dubbo/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/java/socket/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/java/dubbo/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/java/design/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/java/netty/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/monitor/stability/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/Nginx/Script/Linux/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/JUnit/Guice/Java/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/rpc/dubbo/thrift/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/java/socket/thrift/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/java/dubbo/hessian/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/java/transaction-mq/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/java8/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/java8/maven-compiler-plugin/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/java8/maven-compiler-plugin/mybatis/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/Code-Review/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/mq/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/mq/nsq/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/redis/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/redis/%E6%9E%B6%E6%9E%84/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/mysql/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/mysql/innodb/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/mysql/innodb/%E6%9E%B6%E6%9E%84/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/unit-test/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/unit-test/stability/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/risk/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ketao1989.github.io/categories/risk/%E6%9E%B6%E6%9E%84/</loc>
+    <lastmod>2021-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+</urlset>
